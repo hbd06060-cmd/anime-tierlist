@@ -1,0 +1,106 @@
+export default async function handler(req, res) {
+    if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
+    
+    const { titles } = req.body;
+    const apiKey = process.env.GEMINI_API_KEY;
+    const tmdbApiKey = process.env.TMDB_API_KEY;
+
+    const payload = {
+        contents: [{
+            parts: [{ text: `사용자가 다음 애니메이션들을 시청했습니다: ${titles}. 이 취향과 장르 분포를 바탕으로, 아직 사용자가 안 봤을 만한 완전히 새로운 애니메이션 명작을 정확히 3개만 추천해.` }]
+        }],
+        generationConfig: {
+            responseMimeType: "application/json",
+            responseSchema: {
+                type: "ARRAY",
+                items: {
+                    type: "OBJECT",
+                    properties: {
+                        title: { type: "STRING" },
+                        reason: { type: "STRING" }
+                    }
+                }
+            }
+        }
+    };
+
+    let recArray = null;
+    const models = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-3-flash', 'gemini-3.1-flash-lite'];
+    
+    for (const model of models) {
+        try {
+            const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (!r.ok) continue;
+            
+            const json = await r.json();
+            const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (text) {
+                recArray = JSON.parse(text.replace(/```json/g, '').replace(/```/g, '').trim());
+                break;
+            }
+        } catch(e) {
+            continue;
+        }
+    }
+
+    if (!recArray) {
+        return res.status(429).json({ error: 'AI limit reached' });
+    }
+
+    const genreMap = { 
+        28: "액션", 12: "모험", 16: "애니메이션", 35: "코미디", 80: "범죄", 99: "다큐멘터리", 
+        18: "드라마", 10751: "가족", 14: "판타지", 36: "역사", 27: "공포", 10402: "음악", 
+        9648: "미스터리", 10749: "로맨스", 878: "SF", 10770: "TV 영화", 53: "스릴러", 10752: "전쟁", 
+        37: "서부", 10759: "액션/어드벤처", 10762: "아동", 10763: "뉴스", 10764: "리얼리티", 
+        10765: "SF/판타지", 10766: "소프", 10767: "토크", 10768: "전쟁/정치"
+    };
+
+    const finalRecs = [];
+    for (const rec of recArray.slice(0, 3)) {
+        let tmdbInfo = null;
+        if (tmdbApiKey) {
+            try {
+                let tmdbRes = await fetch(`https://api.themoviedb.org/3/search/tv?api_key=${tmdbApiKey}&language=ko-KR&query=${encodeURIComponent(rec.title)}`);
+                let tmdbData = await tmdbRes.json();
+                let bestMatch = tmdbData.results?.[0];
+
+                if (!bestMatch) {
+                    tmdbRes = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${tmdbApiKey}&language=ko-KR&query=${encodeURIComponent(rec.title)}`);
+                    tmdbData = await tmdbRes.json();
+                    bestMatch = tmdbData.results?.[0];
+                }
+
+                if (bestMatch) {
+                    tmdbInfo = {
+                        title: bestMatch.name || bestMatch.title || rec.title,
+                        originalTitle: bestMatch.original_name || bestMatch.original_title || '',
+                        overview: bestMatch.overview || '',
+                        rating: bestMatch.vote_average || 0,
+                        releaseDate: bestMatch.first_air_date || bestMatch.release_date || '',
+                        genres: (bestMatch.genre_ids || []).map(id => genreMap[id]).filter(g => g && g !== '애니메이션'),
+                        posterUrl: bestMatch.poster_path ? `https://image.tmdb.org/t/p/w500${bestMatch.poster_path}` : ''
+                    };
+                }
+            } catch (e) {
+                console.error('TMDb Error:', e);
+            }
+        }
+        
+        finalRecs.push({
+            title: tmdbInfo ? tmdbInfo.title : rec.title,
+            originalTitle: tmdbInfo?.originalTitle || '',
+            posterUrl: tmdbInfo?.posterUrl || '',
+            genres: tmdbInfo?.genres || [],
+            overview: tmdbInfo?.overview || '',
+            rating: tmdbInfo?.rating || 0,
+            releaseDate: tmdbInfo?.releaseDate || '',
+            reason: rec.reason
+        });
+    }
+
+    return res.status(200).json(finalRecs);
+}
