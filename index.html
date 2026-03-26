@@ -405,7 +405,7 @@
         }
 
         // ==========================================
-        // Local Storage 로직
+        // DB 및 Local Storage 로직
         // ==========================================
         function saveLocalExtras() {
             if (!appState.user.name) return;
@@ -431,6 +431,65 @@
             updateRecButtonUI();
         }
 
+        async function loadUserMetaFromDB() {
+            if (!supabaseClient || !appState.user.name) {
+                loadLocalExtras();
+                return;
+            }
+            try {
+                const { data, error } = await supabaseClient
+                    .from('user_meta')
+                    .select('*')
+                    .eq('username', appState.user.name);
+
+                if (error) throw error;
+
+                if (data && data.length > 0) {
+                    const meta = data[0];
+                    appState.tasteProfile = {
+                        titleKo: meta.taste_profile_title_ko || "아직 분석되지 않음",
+                        titleEn: meta.taste_profile_title_en || "Not Analyzed",
+                        description: meta.taste_profile_description || "티어리스트를 채우고 분석해보세요."
+                    };
+                    appState.recommendedItems = meta.recommended_items || [];
+                    
+                    renderTasteProfile();
+                    renderRecommendations();
+                    updateRecButtonUI();
+                } else {
+                    loadLocalExtras();
+                }
+            } catch (err) {
+                console.error("Load User Meta Error:", err);
+                loadLocalExtras();
+            }
+        }
+
+        async function saveUserMetaToDB() {
+            saveLocalExtras(); 
+
+            if (!supabaseClient || !appState.user.name) return;
+            
+            try {
+                const payload = {
+                    username: appState.user.name,
+                    taste_profile_title_ko: appState.tasteProfile.titleKo,
+                    taste_profile_title_en: appState.tasteProfile.titleEn,
+                    taste_profile_description: appState.tasteProfile.description,
+                    recommended_items: appState.recommendedItems,
+                    updated_at: new Date().toISOString()
+                };
+
+                const { error } = await supabaseClient
+                    .from('user_meta')
+                    .upsert(payload, { onConflict: 'username' });
+
+                if (error) console.error("Save User Meta Error:", error);
+            } catch (err) {
+                console.error("Save User Meta Catch Error:", err);
+            }
+        }
+
         // ==========================================
         // 초기화 및 렌더링
         // ==========================================
@@ -442,7 +501,7 @@
                 saveCurrentUser(savedName);
                 closeNamePopup();
                 renderUserInfo();
-                loadLocalExtras(); 
+                await loadUserMetaFromDB(); 
                 await loadTierListFromDB();
             } else {
                 openNamePopup();
@@ -729,8 +788,10 @@
             
             appState.tierList = { S: [], A: [], B: [], C: [] };
             renderTierList();
-            loadLocalExtras();
-            loadTierListFromDB();
+            
+            loadUserMetaFromDB().then(() => {
+                loadTierListFromDB();
+            });
         }
 
         function handleLogout() {
@@ -1136,7 +1197,7 @@
                     if (savedData && savedData[0]) movedAnime.id = savedData[0].id;
                     else movedAnime.id = Date.now(); 
 
-                    saveLocalExtras(); 
+                    saveUserMetaToDB(); 
                     persistTierOrder(targetTier);
                 }
             } else if (targetTier === currentTier) {
@@ -1375,7 +1436,7 @@
 
                 const result = await response.json();
                 appState.tasteProfile = result;
-                saveLocalExtras();
+                await saveUserMetaToDB();
                 renderTasteProfile();
                 showToast('취향 분석 완료!');
             } catch (err) {
@@ -1436,7 +1497,7 @@
                     recommendationReason: rec.reason
                 }));
 
-                saveLocalExtras();
+                await saveUserMetaToDB();
                 renderRecommendations();
                 updateRecButtonUI();
                 showToast('추천 작품 로드 완료!');
