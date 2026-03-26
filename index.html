@@ -1515,6 +1515,35 @@
                 document.getElementById('rec-loading').classList.add('hidden');
             }
         }
+
+        // ==========================================
+        // ESC 키 닫기 이벤트 추가
+        // ==========================================
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape' || event.key === 'Esc') {
+                const detailModal = document.getElementById('detailModal');
+                const addModal = document.getElementById('addModal');
+                const aiSearchResults = document.getElementById('aiSearchResults');
+
+                // 1. 상세 모달이 열려있는 경우 (가장 우선)
+                if (detailModal && !detailModal.classList.contains('hidden')) {
+                    closeDetailModal();
+                    return;
+                }
+
+                // 2. 추가 모달이 열려있는 경우
+                if (addModal && !addModal.classList.contains('hidden')) {
+                    // 2-1. 검색 결과 리스트가 열려있는 경우 리스트 먼저 닫기
+                    if (aiSearchResults && !aiSearchResults.classList.contains('hidden')) {
+                        resetSearchUI();
+                        return;
+                    }
+                    // 2-2. 검색 결과 리스트가 없으면 모달 닫기
+                    closeAddModal();
+                    return;
+                }
+            }
+        });
     </script>
 </body>
 </html>
