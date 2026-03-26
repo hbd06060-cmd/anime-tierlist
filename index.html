@@ -1254,8 +1254,8 @@
                 div.onclick = () => selectCandidate(item, div);
                 
                 const safeTitle = item.title.replace(/"/g, '&quot;');
-                const img = item.posterUrl || getPlaceholderUrl(safeTitle);
-                const year = item.releaseDate ? item.releaseDate.substring(0,4) : '-';
+                const img = item.poster_url || getPlaceholderUrl(safeTitle);
+                const year = item.release_date ? item.release_date.substring(0,4) : '-';
                 const genres = item.genres && item.genres.length > 0 ? item.genres.slice(0,2).join(', ') : '';
 
                 div.innerHTML = `
@@ -1277,23 +1277,23 @@
 
             tempAnimeData = {
                 title: item.title,
-                originalTitle: item.originalTitle,
+                originalTitle: item.original_title,
                 overview: item.overview,
-                rating: item.rating,
-                releaseDate: item.releaseDate,
+                rating: item.vote_average,
+                releaseDate: item.release_date,
                 genres: item.genres,
-                imgSrc: item.posterUrl || getPlaceholderUrl(item.title),
+                imgSrc: item.poster_url || getPlaceholderUrl(item.title),
                 aiReview: ''
             };
 
             document.getElementById('animeTitle').value = item.title;
-            document.getElementById('animeOriginalTitle').value = item.originalTitle;
-            document.getElementById('animeRating').value = item.rating ? Number(item.rating).toFixed(1) : '';
-            document.getElementById('imgUrl').value = item.posterUrl;
+            document.getElementById('animeOriginalTitle').value = item.original_title;
+            document.getElementById('animeRating').value = item.vote_average ? Number(item.vote_average).toFixed(1) : '';
+            document.getElementById('imgUrl').value = item.poster_url;
             
             document.getElementById('addPreviewImg').src = tempAnimeData.imgSrc;
             document.getElementById('addPreviewTitle').innerText = item.title;
-            document.getElementById('addPreviewRating').innerText = item.rating ? Number(item.rating).toFixed(1) : '0.0';
+            document.getElementById('addPreviewRating').innerText = item.vote_average ? Number(item.vote_average).toFixed(1) : '0.0';
             document.getElementById('addPreviewGenres').innerText = item.genres.length > 0 ? item.genres.slice(0,2).join(', ') : '-';
             
             document.getElementById('addPreviewReview').innerText = 'AI가 한줄평을 생성하고 있습니다...';
@@ -1311,11 +1311,11 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         title: item.title,
-                        originalTitle: item.originalTitle,
+                        original_title: item.original_title,
                         overview: item.overview,
                         genres: item.genres,
-                        releaseDate: item.releaseDate,
-                        voteAverage: item.rating
+                        release_date: item.release_date,
+                        vote_average: item.vote_average
                     })
                 });
 
