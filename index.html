@@ -17,13 +17,13 @@
         ::-webkit-scrollbar-track { background: #1f2937; }
         ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
-        
+
         .anime-card-container { transition: all 0.3s ease; }
         .anime-card-container:hover {
             transform: translateY(-5px);
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
         }
-        
+
         .tier-s:hover { box-shadow: 0 0 15px rgba(234, 179, 8, 0.4); border-color: rgba(234, 179, 8, 0.8); }
         .tier-a:hover { box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); border-color: rgba(239, 68, 68, 0.8); }
         .tier-b:hover { box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); border-color: rgba(59, 130, 246, 0.8); }
@@ -37,7 +37,7 @@
             to { opacity: 1; transform: translateY(0); }
         }
         .animate-fade-in { animation: fadeIn 0.6s ease-out forwards; }
-        
+
         .line-clamp-2 {
             display: -webkit-box;
             -webkit-line-clamp: 2;
@@ -59,7 +59,7 @@
             animation: spin 1s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
+
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 3px; }
@@ -84,7 +84,7 @@
                 <div class="flex-1 min-w-0">
                     <h2 class="text-blue-400 font-bold tracking-widest text-sm mb-1">ANIME TIER LIST</h2>
                     <h1 id="report-title" class="text-4xl md:text-5xl font-black text-white mb-4">사용자님의 티어리스트</h1>
-                    
+
                     <div class="bg-gray-800/60 p-4 rounded-xl border border-gray-700/50 flex flex-col md:flex-row md:items-start gap-3">
                         <div class="flex-1 min-w-0">
                             <p class="text-gray-300 text-sm md:text-base font-bold mb-1">성향 분석 : <span class="text-yellow-400 text-base md:text-lg" id="taste-profile-title">아직 분석되지 않음</span></p>
@@ -182,7 +182,7 @@
                     </div>
                     <span id="rec-status-text" class="text-xs text-gray-400">추천된 작품을 드래그해서 위 티어로 바로 넣을 수 있습니다.</span>
                 </div>
-                
+
                 <div id="rec-loading" class="hidden flex flex-col items-center justify-center py-12 text-purple-400">
                     <div class="loader mb-4"></div>
                     <p class="text-sm font-bold animate-pulse">사용자의 취향을 분석하여 맞춤형 작품을 선정하고 있습니다...</p>
@@ -195,7 +195,7 @@
                 </div>
             </section>
         </main>
-        
+
         <footer class="text-center text-gray-600 mt-20 pb-10 text-sm">
             <p id="footer-text">Anime Tier List Maker</p>
         </footer>
@@ -208,7 +208,7 @@
                 <span id="modal-tier-badge" class="px-2 py-1 rounded text-sm mr-3 font-black"></span> 
                 새 작품 추가
             </h3>
-            
+
             <div class="flex flex-col md:flex-row gap-8">
                 <div class="w-full md:w-1/3 flex-shrink-0 flex flex-col items-center">
                     <p class="text-gray-400 text-sm mb-3 font-bold">카드 미리보기</p>
@@ -243,11 +243,11 @@
                             </button>
                         </div>
                         <p id="aiLoadingText" class="text-purple-400 text-xs mt-2 hidden">작품 정보를 찾고 있습니다...</p>
-                        
+
                         <!-- AI 검색 결과 후보 리스트 영역 -->
                         <div id="aiSearchResults" class="hidden mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto pr-2 custom-scrollbar"></div>
                     </div>
-                    
+
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-400 mb-2">원제</label>
@@ -279,7 +279,7 @@
             <button onclick="closeDetailModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white bg-gray-700/80 hover:bg-gray-600 p-2 rounded-full transition-colors z-20">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
-            
+
             <div class="flex flex-col md:flex-row h-full overflow-y-auto">
                 <div class="w-full md:w-2/5 flex-shrink-0 bg-gray-900 relative">
                     <img id="detailImg" src="" alt="포스터" class="w-full h-auto md:h-full object-cover border-b md:border-b-0 md:border-r border-gray-700">
@@ -292,7 +292,7 @@
                         <div id="detailGenres" class="flex flex-wrap gap-2 mb-3"></div>
                         <h2 id="detailTitle" class="text-3xl md:text-4xl font-black text-white leading-tight mb-2">제목</h2>
                         <p id="detailOriginalTitle" class="text-base text-gray-400 italic mb-6">원제</p>
-                        
+
                         <div class="flex items-center gap-6 text-sm text-gray-300 mb-6 bg-gray-900/80 p-4 rounded-xl border border-gray-700 shadow-inner">
                             <div class="flex flex-col">
                                 <span class="text-gray-500 text-xs mb-1">평점</span>
@@ -305,7 +305,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div id="detailReviewArea" class="mb-8 bg-gray-700/30 p-5 rounded-xl border border-gray-600">
                         <h3 class="text-sm font-bold text-gray-300 mb-3 flex justify-between items-center">
                             <span>내 한줄평</span>
@@ -324,7 +324,7 @@
                         </h3>
                         <p id="detailReasonText" class="text-gray-300 text-sm leading-relaxed"></p>
                     </div>
-                    
+
                     <div class="flex-grow">
                         <h3 class="text-base font-bold text-gray-300 mb-3 border-b border-gray-700 pb-2">줄거리</h3>
                         <p id="detailOverview" class="text-gray-400 text-sm leading-relaxed whitespace-pre-wrap"></p>
@@ -375,7 +375,7 @@
         let currentBtn = null;
         let currentDetailId = null;
         let currentDetailIsRecommended = false;
-        
+
         let aiAbortController = null;
         let isDragging = false;
         let draggedCard = null;
@@ -452,7 +452,7 @@
                         description: meta.taste_profile_description || "티어리스트를 채우고 분석해보세요."
                     };
                     appState.recommendedItems = meta.recommended_items || [];
-                    
+
                     renderTasteProfile();
                     renderRecommendations();
                     updateRecButtonUI();
@@ -469,7 +469,7 @@
             saveLocalExtras(); 
 
             if (!supabaseClient || !appState.user.name) return;
-            
+
             try {
                 const payload = {
                     username: appState.user.name,
@@ -493,6 +493,288 @@
         // ==========================================
         // 초기화 및 렌더링
         // ==========================================
+        document.addEventListener('DOMContentLoaded', () => { initializeApp(); });
+
+        async function initializeApp() {
+            const savedName = getCurrentUser();
+            if (savedName) {
+                saveCurrentUser(savedName);
+                closeNamePopup();
+                renderUserInfo();
+                await loadUserMetaFromDB(); 
+                await loadTierListFromDB();
+            } else {
+                openNamePopup();
+            }
+            setupDragAndDrop();
+        }
+
+        function renderUserInfo() {
+            if (!appState.user.isLoggedIn) return;
+            document.getElementById('report-title').innerText = appState.user.name + '님의 티어리스트';
+            document.title = appState.user.name + '님의 티어리스트';
+            document.getElementById('footer-text').innerText = 'Tier List created by ' + appState.user.name;
+            renderTasteProfile();
+        }
+
+        function updateTotalCount() {
+            const total = appState.tierList.S.length + appState.tierList.A.length + appState.tierList.B.length + appState.tierList.C.length;
+            document.getElementById('total-count').innerText = total;
+            renderTierHeaders();
+        }
+
+        function renderTierHeaders() {
+            const tiers = ['S', 'A', 'B', 'C'];
+            tiers.forEach(tier => {
+                const count = appState.tierList[tier].length;
+                const spanId = `tier-desc-${tier.toLowerCase()}`;
+                document.getElementById(spanId).innerText = `${TIER_LABELS[tier]} (${count}작품)`;
+            });
+        }
+
+        function renderTasteProfile() {
+            const prof = appState.tasteProfile;
+            const titleEl = document.getElementById('taste-profile-title');
+            const descEl = document.getElementById('taste-profile-desc');
+            
+            if (prof && prof.titleKo && prof.titleKo !== "아직 분석되지 않음") {
+                titleEl.innerText = `${prof.titleKo} (${prof.titleEn})`;
+                descEl.innerText = prof.description || '';
+            } else {
+                titleEl.innerText = "아직 분석되지 않음";
+                descEl.innerText = "티어리스트를 채우고 분석해보세요.";
+            }
+        }
+
+        function renderTierList() {
+            const tiers = ['S', 'A', 'B', 'C'];
+            tiers.forEach(tier => {
+                const grid = document.getElementById(`grid-tier-${tier.toLowerCase()}`);
+                grid.querySelectorAll('.anime-card-container').forEach(c => c.remove());
+                
+                const addBtn = grid.querySelector('button[onclick^="openAddModal"]');
+                appState.tierList[tier].forEach(anime => {
+                    const cardHtml = createCardHtml(anime, false);
+                    if (addBtn) {
+                        addBtn.insertAdjacentHTML('beforebegin', cardHtml);
+                    } else {
+                        grid.insertAdjacentHTML('beforeend', cardHtml);
+                    }
+                });
+            });
+            updateTotalCount();
+        }
+
+        function renderRecommendations() {
+            const grid = document.getElementById('grid-tier-recommended');
+            grid.innerHTML = '';
+            
+            if (!appState.recommendedItems || appState.recommendedItems.length === 0) {
+                grid.innerHTML = `<div id="rec-empty-state" class="col-span-full text-center py-12 text-gray-500 border-2 border-dashed border-gray-700 rounded-xl">추천받기 버튼을 눌러 내 취향에 맞는 새로운 애니메이션을 발견해보세요.</div>`;
+                return;
+            }
+            
+            appState.recommendedItems.forEach(anime => {
+                const cardHtml = createCardHtml(anime, true);
+                grid.insertAdjacentHTML('beforeend', cardHtml);
+            });
+        }
+
+        function updateRecButtonUI() {
+            const btnText = document.getElementById('recommendBtnText');
+            const statusText = document.getElementById('rec-status-text');
+            if (appState.recommendedItems && appState.recommendedItems.length > 0) {
+                btnText.innerText = "다시 추천받기";
+                statusText.innerText = "현재 추천 목록이 저장되어 있습니다. 다시 추천받기를 누르면 새 추천으로 교체됩니다.";
+            } else {
+                btnText.innerText = "추천받기";
+                statusText.innerText = "추천된 작품을 드래그해서 위 티어로 바로 넣을 수 있습니다.";
+            }
+        }
+
+        function createCardHtml(anime, isRecommended = false) {
+            const { id, title, imgSrc, tier, genres, rating, rank, recommendationReason } = anime;
+            const displayReview = isRecommended 
+                ? recommendationReason 
+                : (anime.userReview || anime.aiReview || '리뷰 없음');
+            
+            const cardTier = isRecommended ? 'recommended' : tier.toLowerCase();
+            let baseClass = `anime-card-container tier-${cardTier} bg-gray-800 rounded-lg overflow-hidden border border-gray-700 relative group cursor-pointer flex flex-col`;
+            
+            if (!isRecommended && tier === 'C') {
+                baseClass = `anime-card-container tier-c bg-gray-900 rounded border border-gray-700 opacity-60 hover:opacity-100 relative group cursor-pointer flex flex-col`;
+            }
+
+            const safeTitle = (title || '').replace(/"/g, '&quot;');
+            const safeReview = (displayReview || '').replace(/"/g, '&quot;');
+            const fallbackImg = getPlaceholderUrl(safeTitle);
+            
+            let dataAttrs = `data-id="${id}" data-tier="${isRecommended ? 'RECOMMENDED' : tier}" draggable="true" ondragstart="handleDragStart(event)" ondragend="handleDragEnd(event)" onclick="openDetailModal('${id}', ${isRecommended})"`;
+            
+            let deleteBtn = isRecommended ? '' : `<button onclick="deleteAnime(this, event, '${id}', '${tier}')" class="absolute top-2 right-2 bg-red-600/90 hover:bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20 text-xs font-bold shadow-lg" title="삭제">✕</button>`;
+            let rankBadge = isRecommended ? `<div class="absolute top-0 right-0 bg-purple-600 text-white text-xs font-bold px-3 py-1 rounded-bl-lg z-10">NO. ${rank}</div>` : '';
+
+            const imgTagAttr = `src="${imgSrc}" onerror="this.onerror=null; this.src='${fallbackImg}';" alt="${safeTitle}"`;
+            
+            let genreBadge = '';
+            const filteredGenres = (genres || []).filter(g => g && g !== '애니메이션');
+            if (filteredGenres && filteredGenres.length > 0) {
+                const displayGenres = filteredGenres.slice(0, 2).join(', ');
+                genreBadge = `<span class="inline-block bg-gray-700 text-gray-300 text-[10px] px-1.5 py-0.5 rounded border border-gray-600 truncate max-w-full">${displayGenres}</span>`;
+            }
+
+            const ratingNum = Number(rating);
+            const ratingDisplay = ratingNum ? `⭐ ${ratingNum.toFixed(1)}` : '';
+
+            let innerHtml = '';
+            if (isRecommended || tier === 'S') {
+                innerHtml = `
+                    ${deleteBtn}
+                    ${rankBadge}
+                    <div class="relative h-48 md:h-60 flex-shrink-0">
+                        <img ${imgTagAttr} class="w-full h-full object-cover object-top opacity-90 group-hover:opacity-100 transition-opacity pointer-events-none">
+                    </div>
+                    <div class="p-3 pointer-events-none flex flex-col flex-grow justify-end">
+                        <div class="flex justify-between items-start gap-2 mb-1 w-full overflow-hidden">
+                            <div class="flex-1 min-w-0 flex items-center">
+                                ${genreBadge}
+                            </div>
+                            <div class="flex-shrink-0 whitespace-nowrap text-yellow-400 text-xs font-bold pt-0.5">
+                                ${ratingDisplay}
+                            </div>
+                        </div>
+                        <h4 class="font-bold text-white text-lg leading-tight line-clamp-2">${safeTitle}</h4>
+                        <p class="text-xs ${isRecommended ? 'text-purple-400' : 'text-yellow-500'} mt-1 line-clamp-2">${safeReview}</p>
+                    </div>`;
+            } else if (tier === 'A') {
+                innerHtml = `
+                    ${deleteBtn}
+                    <div class="relative h-40 flex-shrink-0">
+                        <img ${imgTagAttr} class="w-full h-full object-cover object-top opacity-80 group-hover:opacity-100 transition-opacity pointer-events-none">
+                    </div>
+                    <div class="p-3 pointer-events-none flex flex-col flex-grow justify-end">
+                        <div class="flex justify-between items-start gap-2 mb-1 w-full overflow-hidden">
+                            <div class="flex-1 min-w-0 flex items-center">
+                                ${genreBadge}
+                            </div>
+                            <div class="flex-shrink-0 whitespace-nowrap text-yellow-400 text-xs font-bold pt-0.5">
+                                ${ratingDisplay}
+                            </div>
+                        </div>
+                        <h4 class="font-bold text-gray-200 text-sm md:text-base line-clamp-1">${safeTitle}</h4>
+                        <p class="text-xs text-red-400 mt-1 line-clamp-2">${safeReview}</p>
+                    </div>`;
+            } else if (tier === 'B') {
+                innerHtml = `
+                    ${deleteBtn}
+                    <div class="relative h-32 flex-shrink-0">
+                        <img ${imgTagAttr} class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity pointer-events-none">
+                    </div>
+                    <div class="p-2 pointer-events-none flex flex-col flex-grow justify-center">
+                        <div class="flex justify-between items-start gap-1 mb-1 w-full overflow-hidden">
+                            <div class="flex-1 min-w-0 flex items-center text-left">
+                                ${genreBadge}
+                            </div>
+                            <div class="flex-shrink-0 whitespace-nowrap text-yellow-400 text-[10px] font-bold">
+                                ${ratingDisplay}
+                            </div>
+                        </div>
+                        <h4 class="font-medium text-gray-300 text-xs md:text-sm w-full line-clamp-1">${safeTitle}</h4>
+                        <p class="text-[10px] text-gray-400 w-full line-clamp-1 mt-0.5">${safeReview}</p>
+                    </div>`;
+            } else if (tier === 'C') {
+                innerHtml = `
+                    ${deleteBtn}
+                    <div class="relative h-24 flex-shrink-0">
+                        <img ${imgTagAttr} class="w-full h-full object-cover filter grayscale hover:grayscale-0 transition-all pointer-events-none">
+                    </div>
+                    <div class="p-2 text-center pointer-events-none flex flex-col flex-grow justify-center items-center">
+                        <span class="text-xs text-gray-400 w-full line-clamp-1">${safeTitle}</span>
+                        <p class="text-[9px] text-gray-600 mt-1 w-full line-clamp-1">${safeReview}</p>
+                    </div>`;
+            }
+
+            return `<div class="${baseClass}" ${dataAttrs}>${innerHtml}</div>`;
+        }
+
+        // ==========================================
+        // Supabase 데이터 통신
+        // ==========================================
+        async function loadTierListFromDB() {
+            if (supabaseClient && appState.user.name) {
+                const { data, error } = await supabaseClient
+                    .from('tier_items')
+                    .select('*')
+                    .eq('username', appState.user.name)
+                    .order('sort_order', { ascending: true });
+                
+                if (!error && data) {
+                    appState.tierList = { S: [], A: [], B: [], C: [] };
+                    data.forEach(row => {
+                        if (appState.tierList[row.tier]) {
+                            appState.tierList[row.tier].push({
+                                id: row.id,
+                                title: row.title,
+                                originalTitle: row.original_title,
+                                imgSrc: row.poster_url,
+                                genres: row.genres ? row.genres.split(', ').filter(g => g && g !== '애니메이션') : [],
+                                overview: row.overview,
+                                rating: row.vote_average,
+                                releaseDate: row.release_date,
+                                tier: row.tier,
+                                aiReview: row.ai_review,
+                                userReview: row.user_review
+                            });
+                        }
+                    });
+                }
+            }
+            renderTierList();
+        }
+
+        async function saveAnimeToDB(anime, sortOrder) {
+            if (supabaseClient && appState.user.name) {
+                const { data, error } = await supabaseClient.from('tier_items').insert({
+                    username: appState.user.name,
+                    title: anime.title,
+                    original_title: anime.originalTitle,
+                    poster_url: anime.imgSrc,
+                    genres: anime.genres && anime.genres.length > 0 ? anime.genres.join(', ') : '',
+                    overview: anime.overview,
+                    vote_average: anime.rating,
+                    release_date: anime.releaseDate,
+                    tier: anime.tier,
+                    ai_review: anime.aiReview,
+                    user_review: anime.userReview,
+                    sort_order: sortOrder
+                }).select();
+                if (!error && data && data.length > 0) return data;
+            }
+            return null;
+        }
+
+        async function updateAnimeTierInDB(id, newTier) {
+            if (supabaseClient) await supabaseClient.from('tier_items').update({ tier: newTier }).eq('id', id);
+        }
+
+        async function updateAnimeReviewInDB(id, review) {
+            if (supabaseClient) await supabaseClient.from('tier_items').update({ user_review: review }).eq('id', id);
+        }
+
+        async function deleteAnimeFromDB(id) {
+            if (supabaseClient) await supabaseClient.from('tier_items').delete().eq('id', id);
+        }
+        
+        async function persistTierOrder(tier) {
+            if (!supabaseClient || tier === 'RECOMMENDED') return;
+            const items = appState.tierList[tier];
+            const promises = items.map((anime, index) => {
+                return supabaseClient.from('tier_items').update({ sort_order: index }).eq('id', anime.id);
+            });
+            try {
+                await Promise.all(promises);
+            } catch(e) { console.error('Order save error:', e); }
+        }
         window.addEventListener('keydown', function(event) {
     if (event.key !== 'Escape') return;
 
@@ -534,10 +816,10 @@
             saveCurrentUser(userName);
             renderUserInfo();
             closeNamePopup();
-            
+
             appState.tierList = { S: [], A: [], B: [], C: [] };
             renderTierList();
-            
+
             loadUserMetaFromDB().then(() => {
                 loadTierListFromDB();
             });
@@ -589,7 +871,7 @@
             toast.className = `px-6 py-3 rounded-full shadow-2xl text-white text-sm font-bold transition-all duration-300 transform translate-y-10 opacity-0 ${isError ? 'bg-red-600' : 'bg-green-600'}`;
             toast.innerText = message;
             container.appendChild(toast);
-            
+
             requestAnimationFrame(() => {
                 toast.style.transform = 'translateY(0)';
                 toast.style.opacity = '1';
@@ -629,7 +911,7 @@
             const btn = document.getElementById('aiSearchBtn');
             const loadingText = document.getElementById('aiLoadingText');
             const searchResults = document.getElementById('aiSearchResults');
-            
+
             if (btn) {
                 btn.disabled = false;
                 btn.classList.remove('opacity-50', 'cursor-not-allowed');
@@ -652,7 +934,7 @@
             currentTier = tier;
             currentBtn = btnElement;
             tempAnimeData = null;
-            
+
             const badge = document.getElementById('modal-tier-badge');
             badge.textContent = tier + ' 등급';
             const tierColorBg = tierThemes[tier] ? `${tierThemes[tier].color} ${tierThemes[tier].bg}` : 'text-gray-400 bg-gray-400/20';
@@ -661,10 +943,10 @@
             document.getElementById('imgUrl').value = '';
             document.getElementById('animeTitle').value = '';
             document.getElementById('animeReview').value = '';
-            
+
             initPreviewCard();
             resetSearchUI();
-            
+
             const modal = document.getElementById('addModal');
             modal.classList.remove('hidden');
             modal.classList.add('flex');
@@ -679,7 +961,7 @@
 
         function openDetailModal(id, isRecommended = false) {
             if (isDragging) return;
-            
+
             let foundAnime = null;
             if (isRecommended) {
                 foundAnime = appState.recommendedItems.find(a => String(a.id) === String(id));
@@ -701,15 +983,15 @@
 
             const badge = document.getElementById('detailBadge');
             badge.innerText = isRecommended ? `추천작 No.${foundAnime.rank}` : `${foundAnime.tier} 등급`;
-            
+
             document.getElementById('detailTitle').innerText = foundAnime.title || '제목 없음';
             document.getElementById('detailOriginalTitle').innerText = foundAnime.originalTitle || '';
             document.getElementById('detailRating').innerText = foundAnime.rating ? Number(foundAnime.rating).toFixed(1) : '-';
             document.getElementById('detailDate').innerText = foundAnime.releaseDate || '-';
-            
+
             const overviewEl = document.getElementById('detailOverview');
             overviewEl.innerText = foundAnime.overview ? foundAnime.overview : '등록된 줄거리가 없습니다.';
-            
+
             const genresContainer = document.getElementById('detailGenres');
             genresContainer.innerHTML = '';
             const filteredGenres = (foundAnime.genres || []).filter(g => g && g !== '애니메이션');
@@ -751,7 +1033,7 @@
         async function saveEditedReview() {
             if (!currentDetailId || currentDetailIsRecommended) return;
             const newReview = document.getElementById('detailReviewInput').value.trim();
-            
+
             for (const tier in appState.tierList) {
                 const anime = appState.tierList[tier].find(a => String(a.id) === String(currentDetailId));
                 if (anime) {
@@ -759,7 +1041,7 @@
                     break;
                 }
             }
-            
+
             await updateAnimeReviewInDB(currentDetailId, newReview);
             renderTierList();
             showToast('한줄평이 수정되었습니다.');
@@ -797,7 +1079,7 @@
             }
 
             appState.tierList[currentTier].push(newAnime);
-            
+
             renderTierList();
             closeAddModal();
             showToast('새 작품이 추가되었습니다.');
@@ -806,7 +1088,7 @@
         async function deleteAnime(btn, event, id, tier) {
             event.stopPropagation();
             if(!confirm('정말 이 작품을 삭제하시겠습니까?')) return;
-            
+
             appState.tierList[tier] = appState.tierList[tier].filter(a => String(a.id) !== String(id));
             await deleteAnimeFromDB(id);
             renderTierList();
@@ -836,7 +1118,7 @@
             const scrollSpeed = 20;
             const clientY = e.clientY;
             const windowHeight = window.innerHeight;
-            
+
             let direction = 0;
             if (clientY < edgeThreshold) direction = -1;
             else if (clientY > windowHeight - edgeThreshold) direction = 1;
@@ -890,17 +1172,17 @@
                 const yCenter = rect.top + rect.height / 2;
                 const xCenter = rect.left + rect.width / 2;
                 let isAfter;
-                
+
                 if (Math.abs(e.clientY - yCenter) > rect.height / 2) {
                     isAfter = e.clientY > yCenter;
                 } else {
                     isAfter = e.clientX > xCenter;
                 }
-                
+
                 if (draggedParent === grid) {
                     const draggedIndex = Array.from(grid.children).indexOf(draggedCard);
                     const targetIndex = Array.from(grid.children).indexOf(targetCard);
-                    
+
                     if (draggedIndex < targetIndex && isAfter) targetCard.after(draggedCard);
                     else if (draggedIndex > targetIndex && !isAfter) targetCard.before(draggedCard);
                 } else {
@@ -927,7 +1209,7 @@
             const targetTier = grid.id.split('-').pop().toUpperCase();
             const id = draggedCard.getAttribute('data-id');
             const currentTier = draggedCard.getAttribute('data-tier');
-            
+
             if (currentTier === 'RECOMMENDED') {
                 const idx = appState.recommendedItems.findIndex(a => String(a.id) === String(id));
                 if (idx > -1) {
@@ -935,12 +1217,12 @@
                     movedAnime.tier = targetTier;
                     movedAnime.aiReview = movedAnime.recommendationReason;
                     movedAnime.userReview = '';
-                    
+
                     appState.tierList[targetTier].push(movedAnime);
-                    
+
                     const newOrder = Array.from(grid.querySelectorAll('.anime-card-container')).map(card => String(card.getAttribute('data-id')));
                     appState.tierList[targetTier].sort((a, b) => newOrder.indexOf(String(a.id)) - newOrder.indexOf(String(b.id)));
-                    
+
                     const finalSortOrder = appState.tierList[targetTier].findIndex(a => String(a.id) === String(movedAnime.id));
                     const savedData = await saveAnimeToDB(movedAnime, finalSortOrder);
                     if (savedData && savedData[0]) movedAnime.id = savedData[0].id;
@@ -972,10 +1254,10 @@
                     persistTierOrder(targetTier);
                 }
             }
-            
+
             if(draggedCard) draggedCard.classList.remove('opacity-50', 'scale-95');
             draggedCard = null;
-            
+
             renderTierList();
             renderRecommendations();
             updateRecButtonUI();
@@ -988,7 +1270,7 @@
         async function searchAnimeAI(btn) {
             const titleInput = document.getElementById('animeTitle');
             const query = titleInput.value.trim();
-            
+
             if (!query) return showToast('검색할 작품 제목을 대략적으로라도 먼저 입력해주세요.', true);
             if (isSearching) return;
 
@@ -998,7 +1280,7 @@
             const signal = aiAbortController.signal;
 
             const loadingText = document.getElementById('aiLoadingText');
-            
+
             btn.disabled = true;
             btn.classList.add('opacity-50', 'cursor-not-allowed');
             loadingText.classList.remove('hidden');
@@ -1012,14 +1294,14 @@
                     body: JSON.stringify({ query }),
                     signal: signal
                 });
-                
+
                 if (!response.ok) {
                     if (response.status === 429) throw new Error("429");
                     throw new Error("API_ERROR");
                 }
-                
+
                 const data = await response.json();
-                
+
                 titleInput.value = data.correctedTitle || query;
                 renderSearchResults(data.results);
 
@@ -1062,7 +1344,7 @@
                 const div = document.createElement('div');
                 div.className = "flex bg-gray-900 border border-gray-700 rounded-lg p-3 cursor-pointer hover:border-purple-500 transition-colors gap-3 items-center group";
                 div.onclick = () => selectCandidate(item, div);
-                
+
                 const safeTitle = item.title.replace(/"/g, '&quot;');
                 const img = item.poster_url || getPlaceholderUrl(safeTitle);
                 const year = item.release_date ? item.release_date.substring(0,4) : '-';
@@ -1100,12 +1382,12 @@
             document.getElementById('animeOriginalTitle').value = item.original_title;
             document.getElementById('animeRating').value = item.vote_average ? Number(item.vote_average).toFixed(1) : '';
             document.getElementById('imgUrl').value = item.poster_url;
-            
+
             document.getElementById('addPreviewImg').src = tempAnimeData.imgSrc;
             document.getElementById('addPreviewTitle').innerText = item.title;
             document.getElementById('addPreviewRating').innerText = item.vote_average ? Number(item.vote_average).toFixed(1) : '0.0';
             document.getElementById('addPreviewGenres').innerText = item.genres.length > 0 ? item.genres.slice(0,2).join(', ') : '-';
-            
+
             document.getElementById('addPreviewReview').innerText = 'AI가 한줄평을 생성하고 있습니다...';
             document.getElementById('animeReview').value = '';
 
@@ -1131,13 +1413,13 @@
 
                 if (!res.ok) throw new Error("Review API Error");
                 const reviewData = await res.json();
-                
+
                 const reviewText = reviewData.shortReview || "한줄평을 작성해주세요.";
                 tempAnimeData.aiReview = reviewText;
-                
+
                 document.getElementById('animeReview').value = reviewText;
                 document.getElementById('addPreviewReview').innerText = reviewText;
-                
+
                 loadingText.innerText = "한줄평 생성이 완료되었습니다!";
                 loadingText.classList.replace('text-purple-400', 'text-green-400');
                 loadingText.classList.remove('animate-pulse');
@@ -1155,7 +1437,7 @@
         let isTasteProfileOnCooldown = false;
         async function generateTasteProfile(btn) {
             if (isTasteProfileOnCooldown) return showToast('잠시 후 다시 시도해주세요 (약 15초 쿨타임).', true);
-            
+
             const allItems = [...appState.tierList.S, ...appState.tierList.A, ...appState.tierList.B, ...appState.tierList.C];
             if (allItems.length < 3) return showToast('최소 3개 이상의 작품을 티어리스트에 추가해야 취향을 분석할 수 있습니다.', true);
 
@@ -1177,7 +1459,7 @@
                         c: appState.tierList.C.map(a=>a.title).join(', ')
                     })
                 });
-                
+
                 if (!response.ok) {
                     if (response.status === 429) throw new Error("429");
                     throw new Error("API_ERROR");
@@ -1205,7 +1487,7 @@
         let isRecOnCooldown = false;
         async function generateRecommendations(btn) {
             if (isRecOnCooldown) return showToast('잠시 후 다시 시도해주세요 (약 20초 쿨타임).', true);
-            
+
             const allItems = [...appState.tierList.S, ...appState.tierList.A, ...appState.tierList.B, ...appState.tierList.C];
             if (allItems.length < 2) return showToast('기존 작품이 부족하여 추천할 수 없습니다.', true);
 
@@ -1224,14 +1506,14 @@
                         titles: allItems.map(a=>a.title).join(', ')
                     })
                 });
-                
+
                 if (!response.ok) {
                     if (response.status === 429) throw new Error("429");
                     throw new Error("API_ERROR");
                 }
 
                 const recs = await response.json();
-                
+
                 appState.recommendedItems = recs.map((rec, index) => ({
                     id: generateId(),
                     rank: index + 1,
@@ -1265,7 +1547,34 @@
             }
         }
 
+        // ==========================================
+        // ESC 키 닫기 이벤트 추가
+        // ==========================================
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape' || event.key === 'Esc') {
+                const detailModal = document.getElementById('detailModal');
+                const addModal = document.getElementById('addModal');
+                const aiSearchResults = document.getElementById('aiSearchResults');
 
+                // 1. 상세 모달이 열려있는 경우 (가장 우선)
+                if (detailModal && !detailModal.classList.contains('hidden')) {
+                    closeDetailModal();
+                    return;
+                }
+
+                // 2. 추가 모달이 열려있는 경우
+                if (addModal && !addModal.classList.contains('hidden')) {
+                    // 2-1. 검색 결과 리스트가 열려있는 경우 리스트 먼저 닫기
+                    if (aiSearchResults && !aiSearchResults.classList.contains('hidden')) {
+                        resetSearchUI();
+                        return;
+                    }
+                    // 2-2. 검색 결과 리스트가 없으면 모달 닫기
+                    closeAddModal();
+                    return;
+                }
+            }
+        });
     </script>
 </body>
 </html>
