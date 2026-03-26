@@ -7,17 +7,17 @@ export default async function handler(req, res) {
     const apiKey = process.env.GEMINI_API_KEY;
     const tmdbApiKey = process.env.TMDB_API_KEY;
 
+    // 1단계: Gemini를 통한 검색어 보정 (작품 확정 X)
     const payload = {
         contents: [{
-            parts: [{ text: `애니메이션 "${query}"에 대한 정보를 찾아주세요. 반드시 아래 형식의 순수 JSON 객체로만 응답하세요. 마크다운이나 다른 설명은 절대 추가하지 마세요.\n{"correctedTitle": "정확한 공식 한국어 제목", "shortReview": "해당 작품의 핵심을 나타내는 15자 이내의 아주 짧은 한줄평"}` }]
+            parts: [{ text: `사용자가 애니메이션 "${query}"을(를) 찾으려 합니다. 줄임말, 오타, 비공식 명칭일 수 있습니다. TMDb에서 검색하기 가장 적합한 공식 한국어 제목으로 보정해서 JSON 객체로 반환하세요. 마크다운 없이 순수 JSON만 응답하세요.\n{"correctedTitle": "정확한 공식 한국어 제목"}` }]
         }],
         generationConfig: {
             responseMimeType: "application/json",
             responseSchema: {
                 type: "OBJECT",
                 properties: {
-                    correctedTitle: { type: "STRING" },
-                    shortReview: { type: "STRING" }
+                    correctedTitle: { type: "STRING" }
                 }
             }
         }
@@ -49,9 +49,11 @@ export default async function handler(req, res) {
         return res.status(429).json({ error: 'AI limit reached' });
     }
 
-    let tmdbInfo = null;
+    const correctedTitle = geminiData.correctedTitle || query;
+    let results = [];
+
+    // 2단계: TMDb에서 TV와 Movie 모두 검색 후 후보 리스트 반환
     if (tmdbApiKey) {
-        const searchTitle = geminiData.correctedTitle || query;
         const genreMap = { 
             28: "액션", 12: "모험", 16: "애니메이션", 35: "코미디", 80: "범죄", 99: "다큐멘터리", 
             18: "드라마", 10751: "가족", 14: "판타지", 36: "역사", 27: "공포", 10402: "음악", 
@@ -61,36 +63,47 @@ export default async function handler(req, res) {
         };
         
         try {
-            let tmdbRes = await fetch(`https://api.themoviedb.org/3/search/tv?api_key=${tmdbApiKey}&language=ko-KR&query=${encodeURIComponent(searchTitle)}`);
-            let tmdbData = await tmdbRes.json();
-            let bestMatch = tmdbData.results?.[0];
+            const [tvRes, movieRes] = await Promise.all([
+                fetch(`https://api.themoviedb.org/3/search/tv?api_key=${tmdbApiKey}&language=ko-KR&query=${encodeURIComponent(correctedTitle)}`),
+                fetch(`https://api.themoviedb.org/3/search/movie?api_key=${tmdbApiKey}&language=ko-KR&query=${encodeURIComponent(correctedTitle)}`)
+            ]);
 
-            if (!bestMatch) {
-                tmdbRes = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${tmdbApiKey}&language=ko-KR&query=${encodeURIComponent(searchTitle)}`);
-                tmdbData = await tmdbRes.json();
-                bestMatch = tmdbData.results?.[0];
-            }
+            const tvData = await tvRes.json();
+            const movieData = await movieRes.json();
 
-            if (bestMatch) {
-                tmdbInfo = {
-                    title: bestMatch.name || bestMatch.title || searchTitle,
-                    originalTitle: bestMatch.original_name || bestMatch.original_title || '',
-                    overview: bestMatch.overview || '',
-                    rating: bestMatch.vote_average || 0,
-                    popularity: bestMatch.popularity || 0,
-                    releaseDate: bestMatch.first_air_date || bestMatch.release_date || '',
-                    genres: (bestMatch.genre_ids || []).map(id => genreMap[id]).filter(g => g && g !== '애니메이션'),
-                    posterUrl: bestMatch.poster_path ? `https://image.tmdb.org/t/p/w500${bestMatch.poster_path}` : ''
-                };
-            }
+            const allItems = [...(tvData.results || []), ...(movieData.results || [])];
+
+            // 정렬 기준: 애니메이션 장르 우대, 인기도순
+            allItems.sort((a, b) => {
+                const aIsAnime = (a.genre_ids || []).includes(16) ? 1 : 0;
+                const bIsAnime = (b.genre_ids || []).includes(16) ? 1 : 0;
+                if (aIsAnime !== bIsAnime) return bIsAnime - aIsAnime;
+                return (b.popularity || 0) - (a.popularity || 0);
+            });
+
+            // 상위 5개 후보 추출
+            const topCandidates = allItems.slice(0, 5);
+
+            results = topCandidates.map(item => ({
+                id: item.id,
+                mediaType: item.name ? 'tv' : 'movie',
+                title: item.name || item.title || correctedTitle,
+                originalTitle: item.original_name || item.original_title || '',
+                overview: item.overview || '',
+                rating: item.vote_average || 0,
+                popularity: item.popularity || 0,
+                releaseDate: item.first_air_date || item.release_date || '',
+                genres: (item.genre_ids || []).map(id => genreMap[id]).filter(g => g && g !== '애니메이션'),
+                posterUrl: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : ''
+            }));
+
         } catch(e) {
             console.error('TMDb Error:', e);
         }
     }
 
     return res.status(200).json({
-        correctedTitle: geminiData.correctedTitle,
-        shortReview: geminiData.shortReview,
-        tmdbInfo
+        correctedTitle: correctedTitle,
+        results: results
     });
 }
