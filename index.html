@@ -65,103 +65,103 @@
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 3px; }
     </style>
 </head>
-<body id="main-body" class="p-4 md:p-8 min-h-screen overflow-hidden">
+<body id="main-body" class="p-3 sm:p-4 md:p-8 min-h-screen overflow-hidden">
 
     <div id="name-popup" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-md transition-all duration-500">
-        <div id="name-popup-content" class="bg-gray-800 p-8 rounded-2xl border border-gray-600 w-full max-w-md shadow-2xl text-center transform transition-transform duration-500 scale-100 mx-4">
-            <h2 class="text-3xl text-white font-black mb-2">나만의 티어리스트</h2>
-            <p class="text-gray-400 text-sm mb-8">티어리스트의 주인공은 누구인가요?</p>
+        <div id="name-popup-content" class="bg-gray-800 p-6 sm:p-8 rounded-2xl border border-gray-600 w-full max-w-md shadow-2xl text-center transform transition-transform duration-500 scale-100 mx-4">
+            <h2 class="text-2xl sm:text-3xl text-white font-black mb-2">나만의 티어리스트</h2>
+            <p class="text-gray-400 text-xs sm:text-sm mb-8">티어리스트의 주인공은 누구인가요?</p>
             <div class="space-y-4">
-                <input type="text" id="userNameInput" placeholder="이름을 입력해주세요 (예: 홍길동)" class="w-full bg-gray-900 border border-gray-600 text-white rounded-xl p-4 text-center text-lg focus:outline-none focus:border-blue-500 transition-colors" onkeypress="if(event.key === 'Enter') handleLogin()">
-                <button onclick="handleLogin()" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors shadow-lg text-lg">시작하기</button>
+                <input type="text" id="userNameInput" placeholder="이름을 입력해주세요 (예: 홍길동)" class="w-full bg-gray-900 border border-gray-600 text-white rounded-xl p-4 text-center text-base sm:text-lg focus:outline-none focus:border-blue-500 transition-colors" onkeypress="if(event.key === 'Enter') handleLogin()">
+                <button onclick="handleLogin()" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors shadow-lg text-base sm:text-lg">시작하기</button>
             </div>
         </div>
     </div>
 
     <div id="main-content">
-        <header class="max-w-7xl mx-auto mb-12 border-b border-gray-700 pb-8">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-                <div class="flex-1 min-w-0">
-                    <h2 class="text-blue-400 font-bold tracking-widest text-sm mb-1">ANIME TIER LIST</h2>
-                    <h1 id="report-title" class="text-4xl md:text-5xl font-black text-white mb-4">사용자님의 티어리스트</h1>
+        <header class="max-w-7xl mx-auto mb-8 sm:mb-12 border-b border-gray-700 pb-6 sm:pb-8">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-5 sm:gap-6">
+                <div class="flex-1 min-w-0 w-full">
+                    <h2 class="text-blue-400 font-bold tracking-widest text-xs sm:text-sm mb-1">ANIME TIER LIST</h2>
+                    <h1 id="report-title" class="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-4 word-break break-keep">사용자님의 티어리스트</h1>
                     
-                    <div class="bg-gray-800/60 p-4 rounded-xl border border-gray-700/50 flex flex-col md:flex-row md:items-start gap-3">
+                    <div class="bg-gray-800/60 p-4 rounded-xl border border-gray-700/50 flex flex-col sm:flex-row sm:items-start gap-3">
                         <div class="flex-1 min-w-0">
-                            <p class="text-gray-300 text-sm md:text-base font-bold mb-1">성향 분석 : <span class="text-yellow-400 text-base md:text-lg" id="taste-profile-title">아직 분석되지 않음</span></p>
+                            <p class="text-gray-300 text-sm md:text-base font-bold mb-1">성향 분석 : <span class="text-yellow-400 text-sm sm:text-base md:text-lg" id="taste-profile-title">아직 분석되지 않음</span></p>
                             <p id="taste-profile-desc" class="text-xs text-gray-500 leading-relaxed">티어리스트를 채우고 분석해보세요.</p>
                         </div>
-                        <button id="tasteProfileBtn" onclick="generateTasteProfile(this)" class="text-gray-400 hover:text-white transition bg-gray-700/50 hover:bg-gray-600 p-2 rounded-lg flex-shrink-0 flex items-center justify-center self-start" title="전체 취향 분석 새로고침">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                        <button id="tasteProfileBtn" onclick="generateTasteProfile(this)" class="text-gray-400 hover:text-white transition bg-gray-700/50 hover:bg-gray-600 p-2 sm:p-3 rounded-lg flex-shrink-0 flex items-center justify-center self-start sm:self-center" title="전체 취향 분석 새로고침">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                         </button>
                     </div>
                 </div>
-                <div class="flex-shrink-0 w-full md:w-auto text-right flex flex-col items-end gap-2">
-                    <button onclick="handleLogout()" class="text-xs text-gray-400 hover:text-white transition-colors underline mb-1">
+                <div class="flex-shrink-0 w-full md:w-auto text-right flex flex-row md:flex-col items-center md:items-end justify-between md:justify-start gap-3 sm:gap-2">
+                    <button onclick="handleLogout()" class="text-xs text-gray-400 hover:text-white transition-colors underline mb-0 md:mb-1">
                         이름 변경 (로그아웃)
                     </button>
-                    <div class="bg-gray-800 rounded-lg p-4 px-6 text-sm text-gray-300 shadow-lg border border-gray-700 min-w-[160px] text-center">
-                        <p class="text-sm text-blue-400 font-black mb-1">🎯 총 등록된 작품</p>
-                        <p class="text-white text-2xl font-bold"><span id="total-count">0</span><span class="text-base text-gray-400 ml-1">편</span></p>
+                    <div class="bg-gray-800 rounded-lg p-3 sm:p-4 px-4 sm:px-6 text-sm text-gray-300 shadow-lg border border-gray-700 min-w-[140px] sm:min-w-[160px] text-center flex-shrink-0">
+                        <p class="text-xs sm:text-sm text-blue-400 font-black mb-1">🎯 총 등록된 작품</p>
+                        <p class="text-white text-xl sm:text-2xl font-bold"><span id="total-count">0</span><span class="text-sm sm:text-base text-gray-400 ml-1">편</span></p>
                     </div>
                 </div>
             </div>
         </header>
 
-        <main class="max-w-7xl mx-auto space-y-16">
+        <main class="max-w-7xl mx-auto space-y-12 sm:space-y-16">
             <section>
-                <div class="flex flex-col gap-10">
-                    <div class="bg-gray-800/50 rounded-xl p-6 border border-yellow-500/30">
-                        <div class="flex items-center mb-6">
-                            <span class="text-4xl font-black text-yellow-500 mr-4 drop-shadow-md">S</span>
+                <div class="flex flex-col gap-8 sm:gap-10">
+                    <div class="bg-gray-800/50 rounded-xl p-4 sm:p-6 border border-yellow-500/30">
+                        <div class="flex items-center mb-5 sm:mb-6">
+                            <span class="text-3xl sm:text-4xl font-black text-yellow-500 mr-3 sm:mr-4 drop-shadow-md">S</span>
                             <div class="h-1 flex-grow bg-gradient-to-r from-yellow-500/50 to-transparent rounded"></div>
-                            <span id="tier-desc-s" class="text-yellow-500 font-bold ml-4 text-sm md:text-base">취향의 기준작 (0작품)</span>
+                            <span id="tier-desc-s" class="text-yellow-500 font-bold ml-3 sm:ml-4 text-xs sm:text-sm md:text-base whitespace-nowrap">취향의 기준작 (0작품)</span>
                         </div>
-                        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6" id="grid-tier-s">
-                            <button onclick="openAddModal('S', this)" class="flex flex-col items-center justify-center bg-gray-800/30 rounded-lg border-2 border-dashed border-gray-600 hover:border-yellow-500 hover:bg-gray-800 transition-all group cursor-pointer min-h-[300px]">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-500 group-hover:text-yellow-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
-                                <span class="mt-2 text-sm text-gray-500 group-hover:text-yellow-500 font-bold transition-colors">새 작품 추가</span>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-6" id="grid-tier-s">
+                            <button onclick="openAddModal('S', this)" class="flex flex-col items-center justify-center bg-gray-800/30 rounded-lg border-2 border-dashed border-gray-600 hover:border-yellow-500 hover:bg-gray-800 transition-all group cursor-pointer min-h-[200px] sm:min-h-[250px] md:min-h-[300px]">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 sm:h-12 sm:w-12 text-gray-500 group-hover:text-yellow-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                                <span class="mt-2 text-xs sm:text-sm text-gray-500 group-hover:text-yellow-500 font-bold transition-colors">새 작품 추가</span>
                             </button>
                         </div>
                     </div>
 
-                    <div class="bg-gray-800/50 rounded-xl p-6 border border-red-500/30">
-                        <div class="flex items-center mb-6">
-                            <span class="text-4xl font-black text-red-500 mr-4 drop-shadow-md">A</span>
+                    <div class="bg-gray-800/50 rounded-xl p-4 sm:p-6 border border-red-500/30">
+                        <div class="flex items-center mb-5 sm:mb-6">
+                            <span class="text-3xl sm:text-4xl font-black text-red-500 mr-3 sm:mr-4 drop-shadow-md">A</span>
                             <div class="h-1 flex-grow bg-gradient-to-r from-red-500/50 to-transparent rounded"></div>
-                            <span id="tier-desc-a" class="text-red-500 font-bold ml-4 text-sm md:text-base">강력 추천작 (0작품)</span>
+                            <span id="tier-desc-a" class="text-red-500 font-bold ml-3 sm:ml-4 text-xs sm:text-sm md:text-base whitespace-nowrap">강력 추천작 (0작품)</span>
                         </div>
-                        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 md:gap-6" id="grid-tier-a">
-                            <button onclick="openAddModal('A', this)" class="flex flex-col items-center justify-center bg-gray-800/30 rounded-lg border-2 border-dashed border-gray-600 hover:border-red-500 hover:bg-gray-800 transition-all group cursor-pointer min-h-[220px]">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-gray-500 group-hover:text-red-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
-                                <span class="mt-2 text-xs text-gray-500 group-hover:text-red-500 font-bold transition-colors">새 작품 추가</span>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4 md:gap-6" id="grid-tier-a">
+                            <button onclick="openAddModal('A', this)" class="flex flex-col items-center justify-center bg-gray-800/30 rounded-lg border-2 border-dashed border-gray-600 hover:border-red-500 hover:bg-gray-800 transition-all group cursor-pointer min-h-[180px] sm:min-h-[200px] md:min-h-[220px]">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 sm:h-10 sm:w-10 text-gray-500 group-hover:text-red-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                                <span class="mt-2 text-[10px] sm:text-xs text-gray-500 group-hover:text-red-500 font-bold transition-colors">새 작품 추가</span>
                             </button>
                         </div>
                     </div>
 
-                    <div class="bg-gray-800/50 rounded-xl p-6 border border-blue-500/30">
-                        <div class="flex items-center mb-6">
-                            <span class="text-4xl font-black text-blue-400 mr-4 drop-shadow-md">B</span>
+                    <div class="bg-gray-800/50 rounded-xl p-4 sm:p-6 border border-blue-500/30">
+                        <div class="flex items-center mb-5 sm:mb-6">
+                            <span class="text-3xl sm:text-4xl font-black text-blue-400 mr-3 sm:mr-4 drop-shadow-md">B</span>
                             <div class="h-1 flex-grow bg-gradient-to-r from-blue-500/50 to-transparent rounded"></div>
-                            <span id="tier-desc-b" class="text-blue-400 font-bold ml-4 text-sm md:text-base">인정하지만 아쉬운 작품 (0작품)</span>
+                            <span id="tier-desc-b" class="text-blue-400 font-bold ml-3 sm:ml-4 text-xs sm:text-sm md:text-base whitespace-nowrap">아쉬운 작품 (0작품)</span>
                         </div>
-                        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4" id="grid-tier-b">
-                            <button onclick="openAddModal('B', this)" class="flex flex-col items-center justify-center bg-gray-800/30 rounded-lg border-2 border-dashed border-gray-600 hover:border-blue-500 hover:bg-gray-800 transition-all group cursor-pointer min-h-[170px]">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-500 group-hover:text-blue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4" id="grid-tier-b">
+                            <button onclick="openAddModal('B', this)" class="flex flex-col items-center justify-center bg-gray-800/30 rounded-lg border-2 border-dashed border-gray-600 hover:border-blue-500 hover:bg-gray-800 transition-all group cursor-pointer min-h-[150px] sm:min-h-[170px]">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 sm:h-8 sm:w-8 text-gray-500 group-hover:text-blue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
                                 <span class="mt-1 text-[10px] text-gray-500 group-hover:text-blue-500 font-bold transition-colors">새 작품 추가</span>
                             </button>
                         </div>
                     </div>
 
-                    <div class="bg-gray-800/50 rounded-xl p-6 border border-gray-600">
-                        <div class="flex items-center mb-6">
-                            <span class="text-4xl font-black text-gray-500 mr-4 drop-shadow-md">C</span>
+                    <div class="bg-gray-800/50 rounded-xl p-4 sm:p-6 border border-gray-600">
+                        <div class="flex items-center mb-5 sm:mb-6">
+                            <span class="text-3xl sm:text-4xl font-black text-gray-500 mr-3 sm:mr-4 drop-shadow-md">C</span>
                             <div class="h-1 flex-grow bg-gradient-to-r from-gray-600/50 to-transparent rounded"></div>
-                            <span id="tier-desc-c" class="text-gray-500 font-bold ml-4 text-sm md:text-base">취향과 어긋난 작품 (0작품)</span>
+                            <span id="tier-desc-c" class="text-gray-500 font-bold ml-3 sm:ml-4 text-xs sm:text-sm md:text-base whitespace-nowrap">어긋난 작품 (0작품)</span>
                         </div>
-                        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3" id="grid-tier-c">
-                            <button onclick="openAddModal('C', this)" class="flex flex-col items-center justify-center bg-gray-800/30 rounded-lg border-2 border-dashed border-gray-600 hover:border-gray-400 hover:bg-gray-800 transition-all group cursor-pointer min-h-[140px]">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-500 group-hover:text-gray-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
-                                <span class="mt-1 text-[9px] text-gray-500 group-hover:text-gray-400 font-bold transition-colors">새 작품 추가</span>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3" id="grid-tier-c">
+                            <button onclick="openAddModal('C', this)" class="flex flex-col items-center justify-center bg-gray-800/30 rounded-lg border-2 border-dashed border-gray-600 hover:border-gray-400 hover:bg-gray-800 transition-all group cursor-pointer min-h-[130px] sm:min-h-[140px]">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6 text-gray-500 group-hover:text-gray-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                                <span class="mt-1 text-[9px] sm:text-[10px] text-gray-500 group-hover:text-gray-400 font-bold transition-colors">새 작품 추가</span>
                             </button>
                         </div>
                     </div>
@@ -169,165 +169,171 @@
             </section>
 
             <section id="recommended-section" class="pt-8 border-t border-gray-700/50">
-                <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-                    <div class="flex items-center">
-                        <h3 class="text-2xl font-bold flex items-center text-purple-400 mr-4">
-                            <span class="bg-purple-500 w-2 h-8 mr-3 rounded"></span>
+                <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 sm:mb-8 gap-3 sm:gap-4">
+                    <div class="flex items-center justify-between w-full md:w-auto">
+                        <h3 class="text-xl sm:text-2xl font-bold flex items-center text-purple-400 mr-2 sm:mr-4">
+                            <span class="bg-purple-500 w-1.5 sm:w-2 h-6 sm:h-8 mr-2 sm:mr-3 rounded"></span>
                             AI RECOMMENDED
                         </h3>
-                        <button id="recommendBtn" onclick="generateRecommendations(this)" class="flex items-center gap-1.5 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors text-sm font-bold shadow-lg flex-shrink-0">
+                        <button id="recommendBtn" onclick="generateRecommendations(this)" class="flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors text-xs sm:text-sm font-bold shadow-lg flex-shrink-0">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
                             <span id="recommendBtnText">추천받기</span>
                         </button>
                     </div>
-                    <span id="rec-status-text" class="text-xs text-gray-400">추천된 작품을 드래그해서 위 티어로 바로 넣을 수 있습니다.</span>
+                    <span id="rec-status-text" class="text-[10px] sm:text-xs text-gray-400">추천된 작품을 드래그해서 위 티어로 바로 넣을 수 있습니다.</span>
                 </div>
                 
                 <div id="rec-loading" class="hidden flex flex-col items-center justify-center py-12 text-purple-400">
                     <div class="loader mb-4"></div>
-                    <p class="text-sm font-bold animate-pulse">사용자의 취향을 분석하여 맞춤형 작품을 선정하고 있습니다...</p>
+                    <p class="text-xs sm:text-sm font-bold animate-pulse text-center px-4">사용자의 취향을 분석하여 맞춤형 작품을 선정하고 있습니다...</p>
                 </div>
 
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6" id="grid-tier-recommended">
-                    <div id="rec-empty-state" class="col-span-full text-center py-12 text-gray-500 border-2 border-dashed border-gray-700 rounded-xl">
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-6" id="grid-tier-recommended">
+                    <div id="rec-empty-state" class="col-span-full text-center py-10 sm:py-12 px-4 text-gray-500 border-2 border-dashed border-gray-700 rounded-xl text-xs sm:text-sm">
                         추천받기 버튼을 눌러 내 취향에 맞는 새로운 애니메이션을 발견해보세요.
                     </div>
                 </div>
             </section>
         </main>
         
-        <footer class="text-center text-gray-600 mt-20 pb-10 text-sm">
+        <footer class="text-center text-gray-600 mt-16 sm:mt-20 pb-8 sm:pb-10 text-xs sm:text-sm">
             <p id="footer-text">Anime Tier List Maker</p>
         </footer>
     </div>
 
     <!-- 작품 추가 모달 -->
-    <div id="addModal" onclick="if(event.target === this) closeAddModal()" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 p-4 transition-opacity overflow-y-auto">
-        <div class="bg-gray-800 p-6 md:p-8 rounded-xl border border-gray-600 w-full max-w-4xl shadow-2xl relative my-8">
-            <h3 class="text-2xl font-bold text-white mb-6 flex items-center">
-                <span id="modal-tier-badge" class="px-2 py-1 rounded text-sm mr-3 font-black"></span> 
+    <div id="addModal" onclick="if(event.target === this) closeAddModal()" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 p-3 sm:p-4 transition-opacity overflow-y-auto">
+        <div class="bg-gray-800 p-5 sm:p-6 md:p-8 rounded-xl border border-gray-600 w-full max-w-4xl shadow-2xl relative my-4 sm:my-8">
+            <h3 class="text-xl sm:text-2xl font-bold text-white mb-5 sm:mb-6 flex items-center">
+                <span id="modal-tier-badge" class="px-2 py-1 rounded text-xs sm:text-sm mr-2 sm:mr-3 font-black"></span> 
                 새 작품 추가
             </h3>
             
-            <div class="flex flex-col md:flex-row gap-8">
-                <div class="w-full md:w-1/3 flex-shrink-0 flex flex-col items-center">
-                    <p class="text-gray-400 text-sm mb-3 font-bold">카드 미리보기</p>
-                    <div id="addPreviewCard" class="w-full max-w-[220px] bg-gray-900 rounded-lg overflow-hidden border border-gray-700 relative shadow-lg">
-                        <img id="addPreviewImg" src="https://placehold.co/300x450/1f2937/9ca3af?text=No+Image&font=roboto" class="w-full h-64 object-cover object-top opacity-90 transition-opacity">
+            <div class="flex flex-col lg:flex-row gap-6 md:gap-8">
+                <!-- Preview 영역 -->
+                <div class="w-full lg:w-1/3 flex-shrink-0 flex flex-col items-center">
+                    <p class="text-gray-400 text-xs sm:text-sm mb-3 font-bold">카드 미리보기</p>
+                    <div id="addPreviewCard" class="w-full max-w-[200px] sm:max-w-[220px] mx-auto bg-gray-900 rounded-lg overflow-hidden border border-gray-700 relative shadow-lg">
+                        <img id="addPreviewImg" src="https://placehold.co/300x450/1f2937/9ca3af?text=No+Image&font=roboto" class="w-full h-56 sm:h-64 object-cover object-top opacity-90 transition-opacity">
                         <div class="p-3">
                             <div class="flex justify-between items-start gap-1 mb-1 w-full overflow-hidden">
                                 <div class="flex-1 min-w-0 flex items-center">
-                                    <span id="addPreviewGenres" class="inline-block bg-gray-700 text-gray-300 text-[10px] px-1.5 py-0.5 rounded border border-gray-600 truncate max-w-full">-</span>
+                                    <span id="addPreviewGenres" class="inline-block bg-gray-700 text-gray-300 text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded border border-gray-600 truncate max-w-full">-</span>
                                 </div>
                                 <div class="flex-shrink-0 whitespace-nowrap text-yellow-400 text-[10px] font-bold pt-0.5">
                                     ⭐ <span id="addPreviewRating">0.0</span>
                                 </div>
                             </div>
-                            <h4 id="addPreviewTitle" class="font-bold text-white text-base leading-tight line-clamp-2">작품 제목</h4>
-                            <p id="addPreviewReview" class="text-xs text-gray-400 mt-1 line-clamp-2">한줄평이 여기에 표시됩니다.</p>
+                            <h4 id="addPreviewTitle" class="font-bold text-white text-sm sm:text-base leading-tight line-clamp-2">작품 제목</h4>
+                            <p id="addPreviewReview" class="text-[10px] sm:text-xs text-gray-400 mt-1 line-clamp-2">한줄평이 여기에 표시됩니다.</p>
                         </div>
                     </div>
                 </div>
 
-                <div class="w-full md:w-2/3 space-y-5">
+                <!-- 입력 영역 -->
+                <div class="w-full lg:w-2/3 space-y-4 sm:space-y-5">
                     <div>
-                        <label class="block text-sm font-medium text-gray-400 mb-2">포스터 이미지 주소 (URL)</label>
-                        <input type="text" id="imgUrl" placeholder="https://... (작품 선택 시 자동 채워짐)" class="w-full bg-gray-900 border border-gray-700 text-white rounded-lg p-3 focus:outline-none focus:border-blue-500 transition-colors" oninput="updatePreviewImage()">
+                        <label class="block text-xs sm:text-sm font-medium text-gray-400 mb-1.5 sm:mb-2">포스터 이미지 주소 (URL)</label>
+                        <input type="text" id="imgUrl" placeholder="https://... (작품 선택 시 자동 채워짐)" class="w-full bg-gray-900 border border-gray-700 text-white rounded-lg p-2.5 sm:p-3 text-sm focus:outline-none focus:border-blue-500 transition-colors" oninput="updatePreviewImage()">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-400 mb-2">작품 제목 검색 <span class="text-red-500">*</span></label>
-                        <div class="flex gap-2">
-                            <input type="text" id="animeTitle" placeholder="대략적인 제목 입력 후 엔터 또는 AI 검색 클릭" class="w-full bg-gray-900 border border-gray-700 text-white rounded-lg p-3 focus:outline-none focus:border-blue-500 transition-colors" onkeypress="if(event.key === 'Enter') searchAnimeAI(document.getElementById('aiSearchBtn'))">
-                            <button onclick="searchAnimeAI(this)" id="aiSearchBtn" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-bold flex-shrink-0 flex items-center gap-2 transition-colors">
+                        <label class="block text-xs sm:text-sm font-medium text-gray-400 mb-1.5 sm:mb-2">작품 제목 검색 <span class="text-red-500">*</span></label>
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <input type="text" id="animeTitle" placeholder="대략적인 제목 입력 후 엔터 또는 AI 검색 클릭" class="w-full bg-gray-900 border border-gray-700 text-white rounded-lg p-2.5 sm:p-3 text-sm focus:outline-none focus:border-blue-500 transition-colors" onkeypress="if(event.key === 'Enter') searchAnimeAI(document.getElementById('aiSearchBtn'))">
+                            <button onclick="searchAnimeAI(this)" id="aiSearchBtn" class="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 sm:py-2 rounded-lg text-sm font-bold flex-shrink-0 flex items-center justify-center gap-2 transition-colors">
                                 🔍 검색하기
                             </button>
                         </div>
-                        <p id="aiLoadingText" class="text-purple-400 text-xs mt-2 hidden">작품 정보를 찾고 있습니다...</p>
+                        <p id="aiLoadingText" class="text-purple-400 text-[10px] sm:text-xs mt-2 hidden">작품 정보를 찾고 있습니다...</p>
                         
                         <!-- AI 검색 결과 후보 리스트 영역 -->
-                        <div id="aiSearchResults" class="hidden mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto pr-2 custom-scrollbar"></div>
+                        <div id="aiSearchResults" class="hidden mt-3 sm:mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 max-h-48 sm:max-h-60 overflow-y-auto pr-1 sm:pr-2 custom-scrollbar"></div>
                     </div>
                     
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-400 mb-2">원제</label>
-                            <input type="text" id="animeOriginalTitle" class="w-full bg-gray-900 border border-gray-700 text-gray-400 rounded-lg p-3 focus:outline-none" readonly>
+                            <label class="block text-xs sm:text-sm font-medium text-gray-400 mb-1.5 sm:mb-2">원제</label>
+                            <input type="text" id="animeOriginalTitle" class="w-full bg-gray-900 border border-gray-700 text-gray-400 rounded-lg p-2.5 sm:p-3 text-sm focus:outline-none" readonly>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-400 mb-2">평점 (TMDb)</label>
-                            <input type="text" id="animeRating" class="w-full bg-gray-900 border border-gray-700 text-gray-400 rounded-lg p-3 focus:outline-none" readonly>
+                            <label class="block text-xs sm:text-sm font-medium text-gray-400 mb-1.5 sm:mb-2">평점 (TMDb)</label>
+                            <input type="text" id="animeRating" class="w-full bg-gray-900 border border-gray-700 text-gray-400 rounded-lg p-2.5 sm:p-3 text-sm focus:outline-none" readonly>
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-400 mb-2">한줄평 (작품 선택 시 AI가 자동 생성) <span class="text-red-500">*</span></label>
-                        <textarea id="animeReview" rows="2" placeholder="후보 리스트에서 작품을 선택하면 AI가 한줄평을 생성합니다." class="w-full bg-gray-900 border border-gray-700 text-white rounded-lg p-3 focus:outline-none focus:border-blue-500 transition-colors" oninput="updatePreviewReview()"></textarea>
+                        <label class="block text-xs sm:text-sm font-medium text-gray-400 mb-1.5 sm:mb-2">한줄평 (작품 선택 시 AI가 자동 생성) <span class="text-red-500">*</span></label>
+                        <textarea id="animeReview" rows="2" placeholder="후보 리스트에서 작품을 선택하면 AI가 한줄평을 생성합니다." class="w-full bg-gray-900 border border-gray-700 text-white rounded-lg p-2.5 sm:p-3 text-sm focus:outline-none focus:border-blue-500 transition-colors" oninput="updatePreviewReview()"></textarea>
                     </div>
                 </div>
             </div>
 
-            <div class="flex justify-end gap-3 mt-8 border-t border-gray-700 pt-6">
-                <button onclick="closeAddModal()" class="px-5 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-gray-700 transition-colors">취소</button>
-                <button onclick="saveAnime()" class="px-5 py-2.5 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors">목록에 추가</button>
+            <!-- Footer Buttons -->
+            <div class="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 mt-6 sm:mt-8 border-t border-gray-700 pt-5 sm:pt-6">
+                <button onclick="closeAddModal()" class="w-full sm:w-auto px-5 py-3 sm:py-2.5 rounded-lg text-sm font-medium text-gray-300 bg-gray-700 sm:bg-transparent sm:text-gray-400 hover:text-white hover:bg-gray-600 transition-colors">취소</button>
+                <button onclick="saveAnime()" class="w-full sm:w-auto px-5 py-3 sm:py-2.5 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-md sm:shadow-none">목록에 추가</button>
             </div>
         </div>
     </div>
 
     <!-- 작품 상세 정보 모달 창 -->
-    <div id="detailModal" onclick="if(event.target === this) closeDetailModal()" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-[150] p-4 transition-opacity">
-        <div class="bg-gray-800 rounded-2xl border border-gray-600 w-full max-w-5xl shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]" onclick="event.stopPropagation()">
-            <button onclick="closeDetailModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white bg-gray-700/80 hover:bg-gray-600 p-2 rounded-full transition-colors z-20">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+    <div id="detailModal" onclick="if(event.target === this) closeDetailModal()" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-[150] p-3 sm:p-4 transition-opacity">
+        <div class="bg-gray-800 rounded-xl sm:rounded-2xl border border-gray-600 w-full max-w-5xl shadow-2xl relative overflow-hidden flex flex-col h-[85vh] sm:h-auto sm:max-h-[90vh]" onclick="event.stopPropagation()">
+            <button onclick="closeDetailModal()" class="absolute top-3 right-3 sm:top-4 sm:right-4 text-gray-400 hover:text-white bg-gray-700/80 hover:bg-gray-600 p-2 rounded-full transition-colors z-20 shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
             
-            <div class="flex flex-col md:flex-row h-full overflow-y-auto">
-                <div class="w-full md:w-2/5 flex-shrink-0 bg-gray-900 relative">
-                    <img id="detailImg" src="" alt="포스터" class="w-full h-auto md:h-full object-cover border-b md:border-b-0 md:border-r border-gray-700">
-                    <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-gray-900 to-transparent p-6 pt-20">
-                        <span id="detailBadge" class="px-3 py-1 bg-blue-600 text-white font-bold rounded-lg shadow-lg text-sm"></span>
+            <div class="flex flex-col md:flex-row h-full overflow-y-auto custom-scrollbar">
+                <!-- 이미지 영역 -->
+                <div class="w-full md:w-2/5 flex-shrink-0 bg-gray-900 relative h-64 sm:h-80 md:h-auto min-h-[250px] md:min-h-0">
+                    <img id="detailImg" src="" alt="포스터" class="w-full h-full object-cover border-b md:border-b-0 md:border-r border-gray-700">
+                    <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-gray-900 to-transparent p-4 sm:p-6 pt-16 sm:pt-20">
+                        <span id="detailBadge" class="px-2 sm:px-3 py-1 bg-blue-600 text-white font-bold rounded-lg shadow-lg text-xs sm:text-sm"></span>
                     </div>
                 </div>
-                <div class="w-full md:w-3/5 p-6 md:p-10 flex flex-col bg-gray-800">
-                    <div class="mb-6">
-                        <div id="detailGenres" class="flex flex-wrap gap-2 mb-3"></div>
-                        <h2 id="detailTitle" class="text-3xl md:text-4xl font-black text-white leading-tight mb-2">제목</h2>
-                        <p id="detailOriginalTitle" class="text-base text-gray-400 italic mb-6">원제</p>
+                
+                <!-- 콘텐츠 영역 -->
+                <div class="w-full md:w-3/5 p-5 sm:p-6 md:p-10 flex flex-col bg-gray-800 flex-grow">
+                    <div class="mb-5 sm:mb-6">
+                        <div id="detailGenres" class="flex flex-wrap gap-1.5 sm:gap-2 mb-2 sm:mb-3"></div>
+                        <h2 id="detailTitle" class="text-2xl sm:text-3xl md:text-4xl font-black text-white leading-tight mb-1 sm:mb-2 word-break break-keep">제목</h2>
+                        <p id="detailOriginalTitle" class="text-sm sm:text-base text-gray-400 italic mb-4 sm:mb-6">원제</p>
                         
-                        <div class="flex items-center gap-6 text-sm text-gray-300 mb-6 bg-gray-900/80 p-4 rounded-xl border border-gray-700 shadow-inner">
+                        <div class="flex items-center gap-4 sm:gap-6 text-xs sm:text-sm text-gray-300 mb-5 sm:mb-6 bg-gray-900/80 p-3 sm:p-4 rounded-xl border border-gray-700 shadow-inner overflow-x-auto whitespace-nowrap custom-scrollbar">
                             <div class="flex flex-col">
-                                <span class="text-gray-500 text-xs mb-1">평점</span>
-                                <span class="font-bold text-yellow-400 flex items-center gap-1 text-lg">⭐ <span id="detailRating">-</span></span>
+                                <span class="text-gray-500 text-[10px] sm:text-xs mb-0.5 sm:mb-1">평점</span>
+                                <span class="font-bold text-yellow-400 flex items-center gap-1 text-base sm:text-lg">⭐ <span id="detailRating">-</span></span>
                             </div>
-                            <div class="w-px h-10 bg-gray-700"></div>
+                            <div class="w-px h-8 sm:h-10 bg-gray-700"></div>
                             <div class="flex flex-col">
-                                <span class="text-gray-500 text-xs mb-1">방영/개봉</span>
-                                <span id="detailDate" class="font-medium text-base">-</span>
+                                <span class="text-gray-500 text-[10px] sm:text-xs mb-0.5 sm:mb-1">방영/개봉</span>
+                                <span id="detailDate" class="font-medium text-sm sm:text-base">-</span>
                             </div>
                         </div>
                     </div>
                     
-                    <div id="detailReviewArea" class="mb-8 bg-gray-700/30 p-5 rounded-xl border border-gray-600">
-                        <h3 class="text-sm font-bold text-gray-300 mb-3 flex justify-between items-center">
+                    <div id="detailReviewArea" class="mb-6 sm:mb-8 bg-gray-700/30 p-4 sm:p-5 rounded-xl border border-gray-600">
+                        <h3 class="text-xs sm:text-sm font-bold text-gray-300 mb-2 sm:mb-3 flex justify-between items-center">
                             <span>내 한줄평</span>
-                            <span class="text-xs font-normal text-gray-500">엔터 키로 바로 저장</span>
+                            <span class="text-[10px] sm:text-xs font-normal text-gray-500 hidden sm:inline">엔터 키로 바로 저장</span>
                         </h3>
-                        <div class="flex gap-2">
-                            <input type="text" id="detailReviewInput" class="w-full bg-gray-900 border border-gray-600 text-white rounded-lg p-3 focus:outline-none focus:border-blue-500 transition-colors" onkeypress="if(event.key === 'Enter') saveEditedReview()">
-                            <button onclick="saveEditedReview()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold flex-shrink-0 transition-colors">저장</button>
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <input type="text" id="detailReviewInput" class="w-full bg-gray-900 border border-gray-600 text-white rounded-lg p-2.5 sm:p-3 text-sm focus:outline-none focus:border-blue-500 transition-colors" onkeypress="if(event.key === 'Enter') saveEditedReview()">
+                            <button onclick="saveEditedReview()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 sm:py-2 rounded-lg text-sm font-bold flex-shrink-0 transition-colors shadow-md sm:shadow-none">저장</button>
                         </div>
                     </div>
 
-                    <div id="detailReasonArea" class="mb-8 bg-purple-900/20 p-5 rounded-xl border border-purple-500/30 hidden">
-                        <h3 class="text-sm font-bold text-purple-400 mb-3 flex items-center gap-2">
+                    <div id="detailReasonArea" class="mb-6 sm:mb-8 bg-purple-900/20 p-4 sm:p-5 rounded-xl border border-purple-500/30 hidden">
+                        <h3 class="text-xs sm:text-sm font-bold text-purple-400 mb-2 sm:mb-3 flex items-center gap-1.5 sm:gap-2">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                             AI 추천 이유
                         </h3>
-                        <p id="detailReasonText" class="text-gray-300 text-sm leading-relaxed"></p>
+                        <p id="detailReasonText" class="text-gray-300 text-xs sm:text-sm leading-relaxed word-break break-keep"></p>
                     </div>
                     
                     <div class="flex-grow">
-                        <h3 class="text-base font-bold text-gray-300 mb-3 border-b border-gray-700 pb-2">줄거리</h3>
-                        <p id="detailOverview" class="text-gray-400 text-sm leading-relaxed whitespace-pre-wrap"></p>
+                        <h3 class="text-sm sm:text-base font-bold text-gray-300 mb-2 sm:mb-3 border-b border-gray-700 pb-2">줄거리</h3>
+                        <p id="detailOverview" class="text-gray-400 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap word-break break-keep pb-4"></p>
                     </div>
                 </div>
             </div>
@@ -582,11 +588,11 @@
             if (!container) {
                 container = document.createElement('div');
                 container.id = 'toast-container';
-                container.className = 'fixed bottom-5 left-1/2 transform -translate-x-1/2 z-[200] flex flex-col gap-2 pointer-events-none';
+                container.className = 'fixed bottom-5 left-1/2 transform -translate-x-1/2 z-[200] flex flex-col gap-2 pointer-events-none w-11/12 sm:w-auto max-w-sm';
                 document.body.appendChild(container);
             }
             const toast = document.createElement('div');
-            toast.className = `px-6 py-3 rounded-full shadow-2xl text-white text-sm font-bold transition-all duration-300 transform translate-y-10 opacity-0 ${isError ? 'bg-red-600' : 'bg-green-600'}`;
+            toast.className = `px-4 sm:px-6 py-3 rounded-full shadow-2xl text-white text-xs sm:text-sm font-bold transition-all duration-300 transform translate-y-10 opacity-0 text-center ${isError ? 'bg-red-600' : 'bg-green-600'}`;
             toast.innerText = message;
             container.appendChild(toast);
             
@@ -656,7 +662,7 @@
             const badge = document.getElementById('modal-tier-badge');
             badge.textContent = tier + ' 등급';
             const tierColorBg = tierThemes[tier] ? `${tierThemes[tier].color} ${tierThemes[tier].bg}` : 'text-gray-400 bg-gray-400/20';
-            badge.className = `px-2 py-1 rounded text-sm mr-3 font-black ${tierColorBg}`;
+            badge.className = `px-2 py-1 rounded text-xs sm:text-sm mr-2 sm:mr-3 font-black ${tierColorBg}`;
 
             document.getElementById('imgUrl').value = '';
             document.getElementById('animeTitle').value = '';
@@ -716,7 +722,7 @@
             if (filteredGenres && filteredGenres.length > 0) {
                 filteredGenres.forEach(genre => {
                     const span = document.createElement('span');
-                    span.className = 'px-3 py-1 bg-gray-700 text-gray-200 text-xs rounded-lg font-medium border border-gray-600 shadow-sm';
+                    span.className = 'px-2 sm:px-3 py-0.5 sm:py-1 bg-gray-700 text-gray-200 text-[10px] sm:text-xs rounded-lg font-medium border border-gray-600 shadow-sm';
                     span.innerText = genre;
                     genresContainer.appendChild(span);
                 });
@@ -1054,13 +1060,13 @@
             container.classList.remove('hidden');
 
             if (!results || results.length === 0) {
-                container.innerHTML = '<p class="text-sm text-gray-400 py-2">검색 결과가 없습니다.</p>';
+                container.innerHTML = '<p class="text-xs sm:text-sm text-gray-400 py-2">검색 결과가 없습니다.</p>';
                 return;
             }
 
             results.forEach(item => {
                 const div = document.createElement('div');
-                div.className = "flex bg-gray-900 border border-gray-700 rounded-lg p-3 cursor-pointer hover:border-purple-500 transition-colors gap-3 items-center group";
+                div.className = "flex bg-gray-900 border border-gray-700 rounded-lg p-2.5 sm:p-3 cursor-pointer hover:border-purple-500 transition-colors gap-2.5 sm:gap-3 items-center group";
                 div.onclick = () => selectCandidate(item, div);
                 
                 const safeTitle = item.title.replace(/"/g, '&quot;');
@@ -1069,11 +1075,11 @@
                 const genres = item.genres && item.genres.length > 0 ? item.genres.slice(0,2).join(', ') : '';
 
                 div.innerHTML = `
-                    <img src="${img}" class="w-12 h-16 object-cover rounded bg-gray-800 flex-shrink-0" onerror="this.onerror=null; this.src='${getPlaceholderUrl(safeTitle)}'">
+                    <img src="${img}" class="w-12 h-16 sm:w-14 sm:h-20 object-cover rounded bg-gray-800 flex-shrink-0" onerror="this.onerror=null; this.src='${getPlaceholderUrl(safeTitle)}'">
                     <div class="flex-col overflow-hidden flex-1">
-                        <div class="text-white font-bold text-sm truncate group-hover:text-purple-400 transition-colors">${safeTitle}</div>
-                        <div class="text-xs text-gray-400 truncate mt-0.5">${year}${genres ? ' | ' + genres : ''}</div>
-                        <div class="text-[10px] text-gray-500 line-clamp-1 mt-1">${item.overview || '줄거리 정보 없음'}</div>
+                        <div class="text-white font-bold text-xs sm:text-sm truncate group-hover:text-purple-400 transition-colors">${safeTitle}</div>
+                        <div class="text-[10px] sm:text-xs text-gray-400 truncate mt-0.5">${year}${genres ? ' | ' + genres : ''}</div>
+                        <div class="text-[9px] sm:text-[10px] text-gray-500 line-clamp-1 sm:line-clamp-2 mt-1">${item.overview || '줄거리 정보 없음'}</div>
                     </div>
                 `;
                 container.appendChild(div);
