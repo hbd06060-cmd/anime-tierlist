@@ -1434,28 +1434,7 @@ function handleMobileTouchCancel() {
 
   resetMobileTouchState();
 }
-function getClosestTierCard(x, y) {
-  const allCards = Array.from(document.querySelectorAll('.anime-card-container'));
 
-  return allCards
-    .filter(card => card !== mobileDraggedCard)
-    .reduce((closest, card) => {
-      const rect = card.getBoundingClientRect();
-      const withinX = x >= rect.left && x <= rect.right;
-      const withinY = y >= rect.top - 18 && y <= rect.bottom + 18;
-
-      if (!withinX || !withinY) return closest;
-
-      const centerY = rect.top + rect.height / 2;
-      const distance = Math.abs(y - centerY);
-
-      if (!closest || distance < closest.distance) {
-        return { card, distance };
-      }
-
-      return closest;
-    }, null)?.card || null;
-}
 async function handleMobileTouchEnd(e) {
   if (mobilePressTimer) {
     clearTimeout(mobilePressTimer);
