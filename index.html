@@ -1238,16 +1238,29 @@ function handleMobileTouchMove(e) {
   const deltaX = Math.abs(touch.clientX - mobileTouchStartX);
   const deltaY = Math.abs(touch.clientY - mobileTouchStartY);
 
-  // 손가락이 조금이라도 의미 있게 움직였으면
-  // 스크롤/이동으로 판단
+  // 스크롤 감지
   if (deltaX > 8 || deltaY > 8) {
     mobileTouchMoved = true;
   }
 
-  // 움직임이 생기면 long press 타이머 취소
+  // long press 타이머 취소
   if (mobilePressTimer) {
     clearTimeout(mobilePressTimer);
     mobilePressTimer = null;
+  }
+
+  // 🔥 드래그 모드일 때만 카드 따라 움직이기
+  if (mobileDragMode && mobileDraggedCard) {
+    e.preventDefault(); // 스크롤 막기
+
+    const x = touch.clientX;
+    const y = touch.clientY;
+
+    mobileDraggedCard.style.position = 'fixed';
+    mobileDraggedCard.style.left = `${x - 60}px`;
+    mobileDraggedCard.style.top = `${y - 80}px`;
+    mobileDraggedCard.style.zIndex = '9999';
+    mobileDraggedCard.style.pointerEvents = 'none';
   }
 }
 
@@ -1266,6 +1279,13 @@ function handleMobileTouchEnd(e) {
   if (mobileLongPressTriggered) {
     setTimeout(() => {
       card.classList.remove('mobile-drag-ready');
+
+// 🔥 이동 스타일 초기화
+card.style.position = '';
+card.style.left = '';
+card.style.top = '';
+card.style.zIndex = '';
+card.style.pointerEvents = '';
       mobileDragMode = false;
       mobileDraggedCard = null;
       mobileLongPressTriggered = false;
