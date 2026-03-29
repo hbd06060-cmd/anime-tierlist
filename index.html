@@ -87,21 +87,12 @@ animation: spin 1s linear infinite;
 }
 
 .mobile-drag-ghost {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 99999;
-  pointer-events: none;
-
-  transform: translate(-50%, -50%) scale(1.06);
-  transition: transform 0.08s ease, opacity 0.12s ease;
-
-  opacity: 1;
-  display: block;
-
-  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.65);
+  transform: translate(-50%, -50%) scale(1.05);
+  transition: transform 0.08s ease;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
   border-radius: 12px;
   overflow: hidden;
+  opacity: 0.98;
 }
 
 .mobile-drop-placeholder {
@@ -487,6 +478,7 @@ let ghostTargetY = 0;
 let ghostCurrentX = 0;
 let ghostCurrentY = 0;
 let ghostAnimationFrame = null;
+let originalCardInlineStyle = '';
 
 const supabaseClient = (SUPABASE_DB_URL && SUPABASE_ANON_KEY && typeof supabase !== 'undefined') 
 ? supabase.createClient(SUPABASE_DB_URL, SUPABASE_ANON_KEY) 
@@ -1329,8 +1321,11 @@ function handleMobileTouchStart(e) {
 
     card.parentNode.insertBefore(mobilePlaceholderEl, card);
 
-    // 손가락 따라다니는 고스트 카드
-    mobileGhostEl = card.cloneNode(true);
+    // 원본 카드의 현재 inline style 저장
+    originalCardInlineStyle = card.getAttribute('style') || '';
+
+    // 원본 카드 자체를 고스트처럼 사용
+    mobileGhostEl = card;
     mobileGhostEl.classList.add('mobile-drag-ghost');
 
     ghostTargetX = touch.clientX;
@@ -1338,23 +1333,22 @@ function handleMobileTouchStart(e) {
     ghostCurrentX = touch.clientX;
     ghostCurrentY = touch.clientY;
 
+    mobileGhostEl.style.position = 'fixed';
     mobileGhostEl.style.left = `${ghostCurrentX}px`;
     mobileGhostEl.style.top = `${ghostCurrentY}px`;
     mobileGhostEl.style.width = `${rect.width}px`;
-    mobileGhostEl.style.display = 'block';
-    mobileGhostEl.style.opacity = '1';
+    mobileGhostEl.style.height = `${rect.height}px`;
+    mobileGhostEl.style.zIndex = '99999';
+    mobileGhostEl.style.pointerEvents = 'none';
+    mobileGhostEl.style.margin = '0';
 
     document.body.appendChild(mobileGhostEl);
     startGhostAnimation();
-
-    // 원본 카드는 고스트를 만든 뒤 숨김
-    card.style.display = 'none';
 
     if (navigator.vibrate) {
       navigator.vibrate(50);
     }
 
-    // 롱프레스 직후 너무 급하게 끌리지 않게 잠깐 완충
     setTimeout(() => {
       mobileDragArmed = true;
     }, 120);
@@ -1609,18 +1603,19 @@ function getClosestCardInGrid(grid, x, y) {
 }
 
 function resetMobileTouchState() {
-  if (mobileDraggedCard) {
-    mobileDraggedCard.style.display = '';
-  }
-
-  if (mobileGhostEl) {
-    mobileGhostEl.remove();
-    mobileGhostEl = null;
-  }
-
   if (ghostAnimationFrame) {
     cancelAnimationFrame(ghostAnimationFrame);
     ghostAnimationFrame = null;
+  }
+
+  if (mobileGhostEl) {
+    mobileGhostEl.classList.remove('mobile-drag-ghost');
+
+    if (originalCardInlineStyle) {
+      mobileGhostEl.setAttribute('style', originalCardInlineStyle);
+    } else {
+      mobileGhostEl.removeAttribute('style');
+    }
   }
 
   if (mobilePlaceholderEl) {
@@ -1640,13 +1635,17 @@ function resetMobileTouchState() {
   mobileDropTargetTier = null;
   mobileDragArmed = false;
   mobileOriginalGrid = null;
+  mobileGhostEl = null;
+  originalCardInlineStyle = '';
 
   ghostTargetX = 0;
   ghostTargetY = 0;
   ghostCurrentX = 0;
   ghostCurrentY = 0;
 
-  mobileDragArmed = true;
+  setTimeout(() => {
+    mobileSuppressClick = false;
+  }, 250);
 }
 
 async function handleMobileTouchEnd(e) {
