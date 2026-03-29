@@ -1375,7 +1375,14 @@ function handleMobileTouchMove(e) {
   }
 
   if (!mobileDragMode || !mobileDraggedCard) return;
-  if (!mobileDragArmed) return;
+  if (!mobileDragArmed) {
+  // 고스트 위치는 계속 업데이트 (중요)
+  if (mobileGhostEl) {
+    ghostTargetX = touch.clientX;
+    ghostTargetY = touch.clientY;
+  }
+  return;
+}
 
   e.preventDefault();
 
@@ -1632,9 +1639,7 @@ function resetMobileTouchState() {
   ghostCurrentX = 0;
   ghostCurrentY = 0;
 
-  setTimeout(() => {
-    mobileSuppressClick = false;
-  }, 250);
+  mobileDragArmed = true;
 }
 
 async function handleMobileTouchEnd(e) {
