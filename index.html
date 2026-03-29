@@ -534,10 +534,10 @@ function getPlaceholderUrl(title) {
 return `https://placehold.co/300x450/1f2937/9ca3af?text=${encodeURIComponent(title || 'No Image')}&font=roboto`;
 }
 function escapeFileName(name) {
-return (name || 'user')
-.replace(/[<>:"/\|?* -]/g, '')
-.replace(/\s+/g, '_')
-.slice(0, 50);
+  return (name || 'user')
+    .replace(/[<>:"/\\|?*\x00-\x1F]/g, '')
+    .replace(/\s+/g, '_')
+    .slice(0, 50);
 }
 
 function downloadTextFile(filename, text, mimeType = 'application/json;charset=utf-8') {
