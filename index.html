@@ -79,6 +79,28 @@ animation: spin 1s linear infinite;
 .mobile-drop-target-after {
   box-shadow: inset 0 -4px 0 0 #60a5fa;
 }
+.mobile-dragging-original {
+  opacity: 0.28 !important;
+}
+
+.mobile-drag-ghost {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(1.03);
+  width: 44vw;
+  max-width: 220px;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.45);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.mobile-drop-placeholder {
+  border: 2px dashed #60a5fa;
+  border-radius: 12px;
+  background: rgba(96, 165, 250, 0.08);
+  min-height: 140px;
+}
 </style>
 </head>
 <body id="main-body" class="p-4 md:p-8 min-h-screen overflow-hidden">
@@ -444,6 +466,8 @@ let mobileDropTargetCard = null;
 let mobileDropPosition = null;
 let mobileDropTargetTier = null;
 let mobileSuppressClick = false;
+let mobileGhostEl = null;
+let mobilePlaceholderEl = null;
 
 const supabaseClient = (SUPABASE_DB_URL && SUPABASE_ANON_KEY && typeof supabase !== 'undefined') 
 ? supabase.createClient(SUPABASE_DB_URL, SUPABASE_ANON_KEY) 
@@ -1253,7 +1277,22 @@ function handleMobileTouchStart(e) {
     mobileDraggedCard = card;
     mobileSuppressClick = true;
 
-    card.classList.add('mobile-drag-ready');
+    card.classList.add('mobile-drag-ready', 'mobile-dragging-original');
+
+    // 고스트 카드 생성
+    mobileGhostEl = card.cloneNode(true);
+    mobileGhostEl.classList.add('mobile-drag-ghost');
+    mobileGhostEl.style.left = `${touch.clientX}px`;
+    mobileGhostEl.style.top = `${touch.clientY}px`;
+    document.body.appendChild(mobileGhostEl);
+
+    // 플레이스홀더 생성
+    const rect = card.getBoundingClientRect();
+    mobilePlaceholderEl = document.createElement('div');
+    mobilePlaceholderEl.className = 'mobile-drop-placeholder';
+    mobilePlaceholderEl.style.height = `${rect.height}px`;
+
+    card.parentNode.insertBefore(mobilePlaceholderEl, card.nextSibling);
 
     if (navigator.vibrate) {
       navigator.vibrate(50);
@@ -1281,48 +1320,56 @@ function handleMobileTouchMove(e) {
     return;
   }
 
-  // long press가 아니면 아무것도 막지 않음
   if (!mobileDragMode || !mobileDraggedCard) return;
 
-  // long press 드래그 중일 때만 스크롤 막기
   e.preventDefault();
 
   const x = touch.clientX;
   const y = touch.clientY;
 
-  clearMobileDropTargetStyles();
+  // 고스트 카드가 손가락 따라다님
+  if (mobileGhostEl) {
+    mobileGhostEl.style.left = `${x}px`;
+    mobileGhostEl.style.top = `${y}px`;
+  }
 
   const grid = getTierGridFromPoint(x, y);
   if (!grid) {
     mobileDropTargetCard = null;
     mobileDropPosition = null;
     mobileDropTargetTier = null;
+    clearMobileDropTargetStyles();
     return;
   }
 
   const targetTier = getTierNameFromGrid(grid);
   mobileDropTargetTier = targetTier;
 
-  const closestCard = getClosestCardInGrid(grid, x, y);
+  clearMobileDropTargetStyles();
 
-  // 카드가 없는 빈 티어면 맨 끝 append
-  if (!closestCard) {
+  const closestResult = getClosestCardInGrid(grid, x, y);
+
+  // 빈 티어면 placeholder를 그리드 끝으로
+  if (!closestResult || !closestResult.card) {
     mobileDropTargetCard = null;
     mobileDropPosition = 'append';
+    movePlaceholderToGridEnd(grid);
     return;
   }
 
-  const rect = closestCard.getBoundingClientRect();
-  const isBefore = y < rect.top + rect.height / 2;
+  const closestCard = closestResult.card;
+  const position = closestResult.position;
 
   mobileDropTargetCard = closestCard;
-  mobileDropPosition = isBefore ? 'before' : 'after';
+  mobileDropPosition = position;
 
-  if (isBefore) {
+  if (position === 'before') {
     closestCard.classList.add('mobile-drop-target-before');
   } else {
     closestCard.classList.add('mobile-drop-target-after');
   }
+
+  movePlaceholderBeforeTarget(closestCard, position);
 }
 
 // ==========================================
@@ -1370,7 +1417,6 @@ function getTierGridFromPoint(x, y) {
 
 function getTierNameFromGrid(grid) {
   if (!grid) return null;
-
   if (grid.id === 'grid-tier-ss') return 'SS';
   if (grid.id === 'grid-tier-s') return 'S';
   if (grid.id === 'grid-tier-a') return 'A';
@@ -1378,6 +1424,39 @@ function getTierNameFromGrid(grid) {
   if (grid.id === 'grid-tier-c') return 'C';
   if (grid.id === 'grid-tier-d') return 'D';
   if (grid.id === 'grid-tier-recommended') return 'RECOMMENDED';
+
+  return null;
+}
+
+function movePlaceholderToGridEnd(grid) {
+  if (!mobilePlaceholderEl || !grid) return;
+
+  const addBtn = grid.querySelector('button[onclick^="openAddModal"]');
+  if (addBtn) {
+    grid.insertBefore(mobilePlaceholderEl, addBtn);
+  } else {
+    grid.appendChild(mobilePlaceholderEl);
+  }
+}
+
+function movePlaceholderBeforeTarget(targetCard, position) {
+  if (!mobilePlaceholderEl || !targetCard) return;
+
+  if (position === 'before') {
+    targetCard.parentNode.insertBefore(mobilePlaceholderEl, targetCard);
+  } else {
+    targetCard.parentNode.insertBefore(mobilePlaceholderEl, targetCard.nextSibling);
+  }
+}
+
+function getCardAfterPlaceholder(grid) {
+  const cards = Array.from(grid.querySelectorAll('.anime-card-container'));
+  const placeholderIndex = Array.from(grid.children).indexOf(mobilePlaceholderEl);
+
+  for (const card of cards) {
+    const cardIndex = Array.from(grid.children).indexOf(card);
+    if (cardIndex > placeholderIndex) return card;
+  }
 
   return null;
 }
@@ -1390,6 +1469,7 @@ function getClosestCardInGrid(grid, x, y) {
 
   let closestCard = null;
   let closestDistance = Infinity;
+  let closestPosition = 'after';
 
   cards.forEach(card => {
     const rect = card.getBoundingClientRect();
@@ -1399,15 +1479,29 @@ function getClosestCardInGrid(grid, x, y) {
     if (distance < closestDistance) {
       closestDistance = distance;
       closestCard = card;
+      closestPosition = y < centerY ? 'before' : 'after';
     }
   });
 
-  return closestCard;
+  return {
+    card: closestCard,
+    position: closestPosition
+  };
 }
 
 function resetMobileTouchState() {
   if (mobileDraggedCard) {
-    mobileDraggedCard.classList.remove('mobile-drag-ready');
+    mobileDraggedCard.classList.remove('mobile-drag-ready', 'mobile-dragging-original');
+  }
+
+  if (mobileGhostEl) {
+    mobileGhostEl.remove();
+    mobileGhostEl = null;
+  }
+
+  if (mobilePlaceholderEl) {
+    mobilePlaceholderEl.remove();
+    mobilePlaceholderEl = null;
   }
 
   clearMobileDropTargetStyles();
@@ -1443,7 +1537,6 @@ async function handleMobileTouchEnd(e) {
 
   const card = e.currentTarget;
 
-  // long press가 실제로 발동된 경우
   if (mobileLongPressTriggered) {
     e.preventDefault();
     e.stopPropagation();
@@ -1452,31 +1545,39 @@ async function handleMobileTouchEnd(e) {
     const originTier = mobileOriginTier;
     const targetTier = mobileDropTargetTier;
 
-    if (originTier && targetTier) {
-      // 1) 같은 티어 안 순서 변경
-      if (
-        originTier === targetTier &&
-        originTier !== 'RECOMMENDED'
-      ) {
-        if (mobileDropTargetCard && mobileDropPosition !== 'append') {
-          const targetId = mobileDropTargetCard.getAttribute('data-id');
+    if (originTier && targetTier && mobilePlaceholderEl) {
+      const targetGrid = document.getElementById(
+        targetTier === 'RECOMMENDED'
+          ? 'grid-tier-recommended'
+          : `grid-tier-${targetTier.toLowerCase()}`
+      );
 
+      const nextCard = getCardAfterPlaceholder(targetGrid);
+
+      // 1) 같은 티어 안 재정렬
+      if (originTier === targetTier && originTier !== 'RECOMMENDED') {
+        if (nextCard) {
           appState.tierList[originTier] = reorderTierItems(
             originTier,
             draggedId,
-            targetId,
-            mobileDropPosition
+            nextCard.getAttribute('data-id'),
+            'before'
           );
-
-          await persistTierOrder(originTier);
+        } else {
+          const list = [...appState.tierList[originTier]];
+          const fromIndex = list.findIndex(item => String(item.id) === String(draggedId));
+          if (fromIndex !== -1) {
+            const [movedItem] = list.splice(fromIndex, 1);
+            list.push(movedItem);
+            appState.tierList[originTier] = list;
+          }
         }
+
+        await persistTierOrder(originTier);
       }
 
       // 2) 일반 티어 -> 다른 일반 티어
-      else if (
-        originTier !== 'RECOMMENDED' &&
-        targetTier !== 'RECOMMENDED'
-      ) {
+      else if (originTier !== 'RECOMMENDED' && targetTier !== 'RECOMMENDED') {
         const fromList = appState.tierList[originTier];
         const fromIndex = fromList.findIndex(item => String(item.id) === String(draggedId));
 
@@ -1486,16 +1587,15 @@ async function handleMobileTouchEnd(e) {
 
           await updateAnimeTierInDB(movedItem.id, targetTier);
 
-          if (mobileDropTargetCard && mobileDropPosition !== 'append') {
-            appState.tierList[targetTier].push(movedItem);
+          appState.tierList[targetTier].push(movedItem);
+
+          if (nextCard) {
             appState.tierList[targetTier] = reorderTierItems(
               targetTier,
               movedItem.id,
-              mobileDropTargetCard.getAttribute('data-id'),
-              mobileDropPosition
+              nextCard.getAttribute('data-id'),
+              'before'
             );
-          } else {
-            appState.tierList[targetTier].push(movedItem);
           }
 
           await persistTierOrder(originTier);
@@ -1504,10 +1604,7 @@ async function handleMobileTouchEnd(e) {
       }
 
       // 3) 추천 티어 -> 일반 티어
-      else if (
-        originTier === 'RECOMMENDED' &&
-        targetTier !== 'RECOMMENDED'
-      ) {
+      else if (originTier === 'RECOMMENDED' && targetTier !== 'RECOMMENDED') {
         const recIndex = appState.recommendedItems.findIndex(item => String(item.id) === String(draggedId));
 
         if (recIndex !== -1) {
@@ -1524,16 +1621,15 @@ async function handleMobileTouchEnd(e) {
             movedItem.id = savedData[0].id;
           }
 
-          if (mobileDropTargetCard && mobileDropPosition !== 'append') {
-            appState.tierList[targetTier].push(movedItem);
+          appState.tierList[targetTier].push(movedItem);
+
+          if (nextCard) {
             appState.tierList[targetTier] = reorderTierItems(
               targetTier,
               movedItem.id,
-              mobileDropTargetCard.getAttribute('data-id'),
-              mobileDropPosition
+              nextCard.getAttribute('data-id'),
+              'before'
             );
-          } else {
-            appState.tierList[targetTier].push(movedItem);
           }
 
           await persistTierOrder(targetTier);
@@ -1548,14 +1644,10 @@ async function handleMobileTouchEnd(e) {
     return;
   }
 
-  // 스크롤/움직임 있었으면 클릭 막기
   if (mobileTouchMoved) {
     mobileTouchMoved = false;
     return;
   }
-
-  // 여기서는 모달 직접 열지 않음
-  // 실제 클릭은 handleCardClick 에서만 처리
 }
 
 function handleGlobalAutoScroll(e) {
