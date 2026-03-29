@@ -1326,7 +1326,6 @@ function handleMobileTouchStart(e) {
     mobilePlaceholderEl.style.height = `${rect.height}px`;
 
     card.parentNode.insertBefore(mobilePlaceholderEl, card);
-    card.style.display = 'none';
 
     // 손가락 따라다니는 고스트 카드
     mobileGhostEl = card.cloneNode(true);
@@ -1339,9 +1338,14 @@ function handleMobileTouchStart(e) {
 
     mobileGhostEl.style.left = `${ghostCurrentX}px`;
     mobileGhostEl.style.top = `${ghostCurrentY}px`;
+    mobileGhostEl.style.display = '';
+    mobileGhostEl.style.opacity = '1';
 
     document.body.appendChild(mobileGhostEl);
     startGhostAnimation();
+
+    // 원본 카드는 고스트를 만든 뒤 숨김
+    card.style.display = 'none';
 
     if (navigator.vibrate) {
       navigator.vibrate(50);
