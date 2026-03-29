@@ -569,10 +569,10 @@ function getPlaceholderUrl(title) {
 return `https://placehold.co/300x450/1f2937/9ca3af?text=${encodeURIComponent(title || 'No Image')}&font=roboto`;
 }
 function escapeFileName(name) {
-return (name || 'user')
-.replace(/[<>:"/\|?* -]/g, '')
-.replace(/\s+/g, '_')
-.slice(0, 50);
+  return (name || 'user')
+    .replace(/[<>:"/\\|?*\x00-\x1F]/g, '')
+    .replace(/\s+/g, '_')
+    .slice(0, 50);
 }
 
 function utf8ToBase64(value) {
@@ -1333,7 +1333,7 @@ showToast('기록 불러오기가 완료되었습니다.');
 console.error('Import apply error:', err);
 showToast('불러오기 중 저장 오류가 발생했습니다.', true);
 }
-}
+
 
 function openNamePopup() {
 document.getElementById('main-body').classList.add('overflow-hidden');
