@@ -7,10 +7,15 @@ export default async function handler(req, res) {
     const apiKey = process.env.GEMINI_API_KEY;
     const tmdbApiKey = process.env.TMDB_API_KEY;
 
+    const watchedTitles = String(titles || '')
+        .split(',')
+        .map(t => t.trim().toLowerCase())
+        .filter(Boolean);
+
     const payload = {
         contents: [{
             parts: [{
-                text: `사용자가 다음 애니메이션들을 시청했습니다: ${titles}. 이 취향과 장르 분포를 바탕으로, 아직 사용자가 안 봤을 만한 완전히 새로운 애니메이션 명작을 정확히 3개만 추천해.`
+                text: `사용자가 다음 애니메이션들을 시청했습니다: ${titles}. 이 취향과 장르 분포를 바탕으로, 아직 사용자가 안 봤을 만한 완전히 새로운 애니메이션 명작을 정확히 3개만 추천해. 이미 본 작품이나 같은 작품의 중복 표기는 추천하지 마.`
             }]
         }],
         generationConfig: {
@@ -92,6 +97,14 @@ export default async function handler(req, res) {
         10768: "전쟁/정치"
     };
 
+    function normalizeTitle(title) {
+        return String(title || '')
+            .toLowerCase()
+            .replace(/\s+/g, '')
+            .replace(/[:：\-–—]/g, '')
+            .trim();
+    }
+
     async function correctTitleForTMDb(title) {
         if (!title || !apiKey) return title;
 
@@ -147,12 +160,8 @@ export default async function handler(req, res) {
 
         try {
             const [tvRes, movieRes] = await Promise.all([
-                fetch(
-                    `https://api.themoviedb.org/3/search/tv?api_key=${tmdbApiKey}&language=ko-KR&query=${encodeURIComponent(term)}`
-                ),
-                fetch(
-                    `https://api.themoviedb.org/3/search/movie?api_key=${tmdbApiKey}&language=ko-KR&query=${encodeURIComponent(term)}`
-                )
+                fetch(`https://api.themoviedb.org/3/search/tv?api_key=${tmdbApiKey}&language=ko-KR&query=${encodeURIComponent(term)}`),
+                fetch(`https://api.themoviedb.org/3/search/movie?api_key=${tmdbApiKey}&language=ko-KR&query=${encodeURIComponent(term)}`)
             ]);
 
             const tvData = await tvRes.json();
@@ -194,6 +203,26 @@ export default async function handler(req, res) {
         if ((item.genre_ids || []).includes(16)) score += 2;
         if (item.media_type === 'tv') score += 1;
         return score;
+    }
+
+    function isAlreadyWatched(candidateTitle, originalTitle = '') {
+        const normalizedCandidate = normalizeTitle(candidateTitle);
+        const normalizedOriginal = normalizeTitle(originalTitle);
+
+        return watchedTitles.some(watched => {
+            const normalizedWatched = normalizeTitle(watched);
+            return (
+                normalizedWatched &&
+                (
+                    normalizedWatched === normalizedCandidate ||
+                    normalizedWatched === normalizedOriginal ||
+                    normalizedCandidate.includes(normalizedWatched) ||
+                    normalizedWatched.includes(normalizedCandidate) ||
+                    normalizedOriginal.includes(normalizedWatched) ||
+                    normalizedWatched.includes(normalizedOriginal)
+                )
+            );
+        });
     }
 
     async function resolveAnimeFromTMDb(rawTitle) {
@@ -285,18 +314,34 @@ export default async function handler(req, res) {
     }
 
     const finalRecs = [];
+    const usedRecommendationKeys = new Set();
 
-    for (const rec of recArray.slice(0, 3)) {
+    for (const rec of recArray) {
+        if (finalRecs.length >= 3) break;
+
         let tmdbInfo = null;
+        let resolvedTitleKey = normalizeTitle(rec.title);
 
         if (tmdbApiKey) {
             try {
                 const bestMatch = await resolveAnimeFromTMDb(rec.title);
 
                 if (bestMatch) {
+                    const matchedTitle = bestMatch.name || bestMatch.title || rec.title;
+                    const matchedOriginal = bestMatch.original_name || bestMatch.original_title || '';
+                    resolvedTitleKey = normalizeTitle(matchedTitle);
+
+                    if (isAlreadyWatched(matchedTitle, matchedOriginal)) {
+                        continue;
+                    }
+
+                    if (usedRecommendationKeys.has(resolvedTitleKey)) {
+                        continue;
+                    }
+
                     tmdbInfo = {
-                        title: bestMatch.name || bestMatch.title || rec.title,
-                        originalTitle: bestMatch.original_name || bestMatch.original_title || '',
+                        title: matchedTitle,
+                        originalTitle: matchedOriginal,
                         overview: bestMatch.overview || '',
                         rating: bestMatch.vote_average || 0,
                         releaseDate: bestMatch.first_air_date || bestMatch.release_date || '',
@@ -307,11 +352,33 @@ export default async function handler(req, res) {
                             ? `https://image.tmdb.org/t/p/w500${bestMatch.poster_path}`
                             : ''
                     };
+                } else {
+                    if (isAlreadyWatched(rec.title)) {
+                        continue;
+                    }
+                    if (usedRecommendationKeys.has(resolvedTitleKey)) {
+                        continue;
+                    }
                 }
             } catch (e) {
                 console.error('TMDb Error:', e);
+                if (isAlreadyWatched(rec.title)) {
+                    continue;
+                }
+                if (usedRecommendationKeys.has(resolvedTitleKey)) {
+                    continue;
+                }
+            }
+        } else {
+            if (isAlreadyWatched(rec.title)) {
+                continue;
+            }
+            if (usedRecommendationKeys.has(resolvedTitleKey)) {
+                continue;
             }
         }
+
+        usedRecommendationKeys.add(resolvedTitleKey);
 
         finalRecs.push({
             title: tmdbInfo ? tmdbInfo.title : rec.title,
