@@ -64,6 +64,14 @@ animation: spin 1s linear infinite;
 .custom-scrollbar::-webkit-scrollbar { width: 6px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 3px; }
+/* ==========================================
+   모바일 long press 선택 상태
+========================================== */
+.mobile-drag-ready {
+  transform: scale(1.04);
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.15), 0 12px 30px rgba(0,0,0,0.35);
+  opacity: 0.95;
+}
 </style>
 </head>
 <body id="main-body" class="p-4 md:p-8 min-h-screen overflow-hidden">
@@ -414,10 +422,33 @@ let isDragging = false;
 let draggedCard = null;
 let autoScrollAnimationFrame = null;
 
+// ==========================================
+// 모바일 long press 드래그용 상태값
+// ==========================================
+let mobilePressTimer = null;
+let mobileDragMode = false;
+let mobileDraggedCard = null;
+let mobileLongPressTriggered = false;
+
 const supabaseClient = (SUPABASE_DB_URL && SUPABASE_ANON_KEY && typeof supabase !== 'undefined') 
 ? supabase.createClient(SUPABASE_DB_URL, SUPABASE_ANON_KEY) 
 : null;
+// ==========================================
+// 모바일 / 터치 디바이스 감지 유틸
+// ==========================================
 
+// 이 함수는 "손가락 기반 기기인지" 판단
+// (모바일, 태블릿 등 터치 위주 디바이스)
+function isTouchDevice() {
+  return window.matchMedia('(pointer: coarse)').matches;
+}
+
+// 이 함수는 "모바일 레이아웃을 써야 하는지" 판단
+// - 화면이 작거나 (768px 이하)
+// - 또는 터치 디바이스인 경우
+function isMobileLayout() {
+  return window.innerWidth < 768 || isTouchDevice();
+}
 // ==========================================
 // 유틸리티 함수
 // ==========================================
@@ -1116,27 +1147,121 @@ showToast('작품이 삭제되었습니다.', true);
 // ==========================================
 // 드래그 앤 드롭
 // ==========================================
+// ==========================================
+// PC / 모바일 드래그 초기화 분기
+// ==========================================
 function setupDragAndDrop() {
-const grids = [
-  'grid-tier-ss',
-  'grid-tier-s',
-  'grid-tier-a',
-  'grid-tier-b',
-  'grid-tier-c',
-  'grid-tier-d',
-  'grid-tier-recommended'
-];
-grids.forEach(id => {
-const grid = document.getElementById(id);
-if(grid) {
-grid.addEventListener('dragover', handleDragOver);
-grid.addEventListener('drop', handleDrop);
+  const grids = [
+    'grid-tier-ss',
+    'grid-tier-s',
+    'grid-tier-a',
+    'grid-tier-b',
+    'grid-tier-c',
+    'grid-tier-d',
+    'grid-tier-recommended'
+  ];
+
+  // 모바일 또는 터치 디바이스라면
+  // 기존 PC 드래그 대신 모바일용 터치 로직으로 분기
+  if (isMobileLayout()) {
+    setupMobileTouchDnD();
+    return;
+  }
+
+  // PC에서는 기존 드래그앤드롭 로직 유지
+  grids.forEach(id => {
+    const grid = document.getElementById(id);
+    if (grid) {
+      grid.addEventListener('dragover', handleDragOver);
+      grid.addEventListener('drop', handleDrop);
+    }
+  });
+
+  window.addEventListener('dragover', handleGlobalAutoScroll);
+  window.addEventListener('dragend', stopAutoScroll);
+  window.addEventListener('drop', stopAutoScroll);
 }
-});
-window.addEventListener('dragover', handleGlobalAutoScroll);
-window.addEventListener('dragend', stopAutoScroll);
-window.addEventListener('drop', stopAutoScroll);
+
+// ==========================================
+// 모바일용 터치 드래그 초기화
+// ==========================================
+function setupMobileTouchDnD() {
+  const cards = document.querySelectorAll('.anime-card-container');
+
+  cards.forEach(card => {
+    card.addEventListener('touchstart', handleMobileTouchStart, { passive: true });
+    card.addEventListener('touchend', handleMobileTouchEnd, { passive: true });
+    card.addEventListener('touchmove', handleMobileTouchMove, { passive: true });
+  });
+
+  console.log('모바일 터치 드래그 초기화 완료');
 }
+
+// ==========================================
+// 모바일 long press 시작
+// ==========================================
+function handleMobileTouchStart(e) {
+  const card = e.currentTarget;
+
+  mobileLongPressTriggered = false;
+
+  mobilePressTimer = setTimeout(() => {
+    mobileLongPressTriggered = true;
+    mobileDragMode = true;
+    mobileDraggedCard = card;
+
+    card.classList.add('mobile-drag-ready');
+
+    // 진동 피드백 (지원 기기만)
+    if (navigator.vibrate) {
+      navigator.vibrate(50);
+    }
+
+    console.log('long press 감지됨:', card.getAttribute('data-id'));
+  }, 350); // 0.35초 이상 누르면 long press
+}
+
+// ==========================================
+// 손가락이 움직이면 long press 취소
+// (스크롤과 충돌 방지)
+// ==========================================
+function handleMobileTouchMove() {
+  if (mobilePressTimer) {
+    clearTimeout(mobilePressTimer);
+    mobilePressTimer = null;
+  }
+}
+
+// ==========================================
+// 터치 종료
+// ==========================================
+function handleMobileTouchEnd(e) {
+  if (mobilePressTimer) {
+    clearTimeout(mobilePressTimer);
+    mobilePressTimer = null;
+  }
+
+  const card = e.currentTarget;
+
+  // long press가 실제로 발동된 경우
+  if (mobileLongPressTriggered) {
+    // 일단 이번 단계에서는 "선택 상태 표시 후 해제"까지만
+    setTimeout(() => {
+      card.classList.remove('mobile-drag-ready');
+      mobileDragMode = false;
+      mobileDraggedCard = null;
+      mobileLongPressTriggered = false;
+    }, 250);
+
+    return;
+  }
+
+  // long press가 아니면 기존처럼 카드 클릭(상세 모달)
+  const id = card.getAttribute('data-id');
+  const isRecommended = card.getAttribute('data-tier') === 'RECOMMENDED';
+  openDetailModal(id, isRecommended);
+}
+
 
 function handleGlobalAutoScroll(e) {
 if (!draggedCard) return;
