@@ -2493,6 +2493,55 @@ function buildPreferenceInsights() {
 // ==========================================
 // 백엔드 API 연동 로직
 // ==========================================
+async function fetchRecommendationMeta(title, originalTitle = '') {
+  const queries = [title, originalTitle].map(v => String(v || '').trim()).filter(Boolean);
+
+  for (const query of queries) {
+    try {
+      const response = await fetch('/api/search-anime', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query })
+      });
+
+      if (!response.ok) continue;
+
+      const data = await response.json();
+      const results = Array.isArray(data.results) ? data.results : [];
+      if (results.length > 0) {
+        return results[0];
+      }
+    } catch (err) {
+      console.error('Recommendation meta fetch error:', err);
+    }
+  }
+
+  return null;
+}
+
+async function enrichRecommendationsWithTMDb(recs) {
+  const enriched = await Promise.all(
+    recs.map(async (rec, index) => {
+      const meta = await fetchRecommendationMeta(rec.title, rec.originalTitle);
+
+      return {
+        id: generateId(),
+        rank: index + 1,
+        title: meta?.title || rec.title,
+        originalTitle: meta?.original_title || rec.originalTitle || '',
+        imgSrc: meta?.poster_url || getPlaceholderUrl(rec.title),
+        genres: meta?.genres || [],
+        overview: meta?.overview || '',
+        rating: Number(meta?.vote_average ?? 0) || 0,
+        releaseDate: meta?.release_date || '',
+        tier: 'RECOMMENDED',
+        recommendationReason: rec.reason || ''
+      };
+    })
+  );
+
+  return enriched;
+}
 let isSearching = false;
 async function searchAnimeAI(btn) {
 const titleInput = document.getElementById('animeTitle');
@@ -2763,19 +2812,8 @@ async function generateRecommendations(btn) {
 
     const recs = await response.json();
 
-    appState.recommendedItems = recs.map((rec, index) => ({
-      id: generateId(),
-      rank: index + 1,
-      title: rec.title,
-      originalTitle: rec.originalTitle || '',
-      imgSrc: rec.posterUrl || getPlaceholderUrl(rec.title),
-      genres: rec.genres || [],
-      overview: rec.overview || '',
-      rating: rec.rating || 0,
-      releaseDate: rec.releaseDate || '',
-      tier: 'RECOMMENDED',
-      recommendationReason: rec.reason
-    }));
+    // 여기서 AI 결과를 TMDb 실제 데이터로 보강
+    appState.recommendedItems = await enrichRecommendationsWithTMDb(recs);
 
     await saveUserMetaToDB();
     renderRecommendations();
