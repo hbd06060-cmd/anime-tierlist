@@ -2271,6 +2271,226 @@ updateRecButtonUI();
 }
 
 // ==========================================
+// 한줄평 해석 / 취향 신호 생성
+// ==========================================
+const TIER_SCORES = {
+  SS: 5,
+  S: 4,
+  A: 3,
+  B: 1,
+  C: -2,
+  D: -4
+};
+
+const REVIEW_FEATURE_DICT = {
+  story: ['서사', '스토리', '플롯', '각본', '설정', '세계관', '떡밥'],
+  pacing: ['전개', '호흡', '템포', '중반', '후반', '초반', '루즈', '늘어짐', '몰입감', '몰입'],
+  ending: ['결말', '마무리', '엔딩', '완결', '열린 결말'],
+  character: ['캐릭', '인물', '관계성', '캐릭감', '매력'],
+  protagonist: ['주인공', '남주', '여주', '히로인', '발암'],
+  emotion: ['감성', '여운', '감동', '분위기', '정서', '울림'],
+  visual: ['작화', '그림체', '영상미', '비주얼', '색감'],
+  direction: ['연출', '연기', '성우', '음악', 'ost', '액션'],
+  seasonality: ['1기', '2기', '3기', '시즌'],
+  meme: ['goat', '레전드', '미쳤', '언제 나오', '추억', '명작']
+};
+
+const POSITIVE_HINTS = [
+  '좋', '훌륭', '완벽', '최고', '명작', '재밌', '재미', '황홀', '매력', '순수',
+  '몰입', '잘', '뛰어', '레전드', 'goat', '감동', '여운', '훌륭'
+];
+
+const NEGATIVE_HINTS = [
+  '별로', '아쉽', '아쉬', '불호', '노잼', '지루', '루즈', '답답', '발암',
+  '별론', '실망', '불만', '못', '흠', '불편', '애매'
+];
+
+function safeText(value) {
+  return String(value || '').trim();
+}
+
+function detectSentimentFromText(text) {
+  const normalized = safeText(text).toLowerCase();
+  if (!normalized) return 0;
+
+  let score = 0;
+
+  POSITIVE_HINTS.forEach(word => {
+    if (normalized.includes(word.toLowerCase())) score += 1;
+  });
+
+  NEGATIVE_HINTS.forEach(word => {
+    if (normalized.includes(word.toLowerCase())) score -= 1;
+  });
+
+  if (normalized.includes('goat')) score += 2;
+  if (normalized.includes('명작')) score += 2;
+  if (normalized.includes('최고')) score += 2;
+  if (normalized.includes('최악')) score -= 2;
+
+  return Math.max(-3, Math.min(3, score));
+}
+
+function extractFeatureSignalsFromReview(text) {
+  const normalized = safeText(text).toLowerCase();
+  const signals = {};
+
+  if (!normalized) return signals;
+
+  const baseSentiment = detectSentimentFromText(normalized);
+
+  Object.entries(REVIEW_FEATURE_DICT).forEach(([feature, keywords]) => {
+    let hit = false;
+    keywords.forEach(keyword => {
+      if (normalized.includes(keyword.toLowerCase())) hit = true;
+    });
+
+    if (!hit) return;
+
+    let featureScore = 0;
+
+    // 기본 감정 반영
+    if (baseSentiment > 0) featureScore += Math.min(2, baseSentiment);
+    if (baseSentiment < 0) featureScore += Math.max(-2, baseSentiment);
+
+    // 특징별 특수 처리
+    if (feature === 'protagonist' && normalized.includes('발암')) featureScore -= 2;
+    if (feature === 'ending' && normalized.includes('열린 결말')) featureScore -= 1;
+    if (feature === 'pacing' && (normalized.includes('몰입') || normalized.includes('호흡 좋'))) featureScore += 1;
+    if (feature === 'pacing' && (normalized.includes('늘어') || normalized.includes('루즈'))) featureScore -= 1;
+    if (feature === 'visual' && (normalized.includes('작화') || normalized.includes('영상미'))) {
+      if (baseSentiment === 0) featureScore += 1;
+    }
+    if (feature === 'direction' && normalized.includes('음악')) {
+      if (baseSentiment === 0) featureScore += 1;
+    }
+
+    if (featureScore === 0) {
+      featureScore = baseSentiment === 0 ? 1 : baseSentiment;
+    }
+
+    signals[feature] = featureScore;
+  });
+
+  return signals;
+}
+
+function getRepresentativeReview(anime) {
+  return safeText(anime.userReview) || safeText(anime.aiReview) || '';
+}
+
+function buildPreferenceInsights() {
+  const tiers = ['SS', 'S', 'A', 'B', 'C', 'D'];
+  const allEntries = [];
+  const featureTotals = {};
+  const featureCounts = {};
+  const genreTotals = {};
+  const genreCounts = {};
+
+  tiers.forEach(tier => {
+    (appState.tierList[tier] || []).forEach(anime => {
+      const reviewText = getRepresentativeReview(anime);
+      const tierScore = TIER_SCORES[tier] ?? 0;
+      const reviewSignals = extractFeatureSignalsFromReview(reviewText);
+
+      allEntries.push({
+        title: anime.title,
+        tier,
+        tierScore,
+        genres: anime.genres || [],
+        reviewText,
+        reviewSignals
+      });
+
+      (anime.genres || []).forEach(genre => {
+        if (!genre || genre === '애니메이션') return;
+        genreTotals[genre] = (genreTotals[genre] || 0) + tierScore;
+        genreCounts[genre] = (genreCounts[genre] || 0) + 1;
+      });
+
+      Object.entries(reviewSignals).forEach(([feature, value]) => {
+        const weightedValue = value + tierScore * 0.35;
+        featureTotals[feature] = (featureTotals[feature] || 0) + weightedValue;
+        featureCounts[feature] = (featureCounts[feature] || 0) + 1;
+      });
+    });
+  });
+
+  const topFavorites = allEntries
+    .filter(item => item.tier === 'SS' || item.tier === 'S')
+    .slice(0, 8)
+    .map(item => ({
+      title: item.title,
+      tier: item.tier,
+      review: item.reviewText
+    }));
+
+  const dislikedTitles = allEntries
+    .filter(item => item.tier === 'C' || item.tier === 'D')
+    .slice(0, 8)
+    .map(item => ({
+      title: item.title,
+      tier: item.tier,
+      review: item.reviewText
+    }));
+
+  const featurePreferences = Object.keys(featureTotals)
+    .map(feature => {
+      const total = featureTotals[feature];
+      const count = featureCounts[feature] || 1;
+      const average = total / count;
+      return {
+        feature,
+        average: Number(average.toFixed(2)),
+        count,
+        confidence: count >= 6 ? 'high' : count >= 3 ? 'medium' : 'low'
+      };
+    })
+    .sort((a, b) => b.average - a.average);
+
+  const likedFeatures = featurePreferences.filter(item => item.average >= 1).slice(0, 5);
+  const dislikedFeatures = featurePreferences.filter(item => item.average <= -0.5).slice(0, 5);
+
+  const genrePreferences = Object.keys(genreTotals)
+    .map(genre => {
+      const total = genreTotals[genre];
+      const count = genreCounts[genre] || 1;
+      const average = total / count;
+      const confidenceMultiplier = Math.log(count + 1);
+      const weighted = average * confidenceMultiplier;
+
+      return {
+        genre,
+        average: Number(average.toFixed(2)),
+        weighted: Number(weighted.toFixed(2)),
+        count,
+        confidence: count >= 6 ? 'high' : count >= 3 ? 'medium' : 'low'
+      };
+    })
+    .sort((a, b) => b.weighted - a.weighted);
+
+  const reviewEvidence = allEntries
+    .filter(item => item.reviewText)
+    .slice(0, 24)
+    .map(item => ({
+      title: item.title,
+      tier: item.tier,
+      review: item.reviewText
+    }));
+
+  return {
+    summaryVersion: 1,
+    totalItems: allEntries.length,
+    topFavorites,
+    dislikedTitles,
+    likedFeatures,
+    dislikedFeatures,
+    genrePreferences: genrePreferences.slice(0, 8),
+    reviewEvidence
+  };
+}
+
+// ==========================================
 // 백엔드 API 연동 로직
 // ==========================================
 let isSearching = false;
@@ -2443,131 +2663,137 @@ loadingText.classList.add('hidden');
 
 let isTasteProfileOnCooldown = false;
 async function generateTasteProfile(btn) {
-if (isTasteProfileOnCooldown) return showToast('잠시 후 다시 시도해주세요 (약 15초 쿨타임).', true);
+  if (isTasteProfileOnCooldown) return showToast('잠시 후 다시 시도해주세요 (약 15초 쿨타임).', true);
 
-const allItems = [
-  ...appState.tierList.SS,
-  ...appState.tierList.S,
-  ...appState.tierList.A,
-  ...appState.tierList.B,
-  ...appState.tierList.C,
-  ...appState.tierList.D
-];
-if (allItems.length < 3) return showToast('최소 3개 이상의 작품을 티어리스트에 추가해야 취향을 분석할 수 있습니다.', true);
+  const allItems = [
+    ...appState.tierList.SS,
+    ...appState.tierList.S,
+    ...appState.tierList.A,
+    ...appState.tierList.B,
+    ...appState.tierList.C,
+    ...appState.tierList.D
+  ];
+  if (allItems.length < 3) return showToast('최소 3개 이상의 작품을 티어리스트에 추가해야 취향을 분석할 수 있습니다.', true);
 
-isTasteProfileOnCooldown = true;
-setTimeout(() => { isTasteProfileOnCooldown = false; }, 15000);
+  isTasteProfileOnCooldown = true;
+  setTimeout(() => { isTasteProfileOnCooldown = false; }, 15000);
 
-btn.classList.add('animate-spin', 'pointer-events-none');
-document.getElementById('taste-profile-title').innerText = "분석 중...";
-document.getElementById('taste-profile-desc').innerText = "";
+  btn.classList.add('animate-spin', 'pointer-events-none');
+  document.getElementById('taste-profile-title').innerText = "분석 중...";
+  document.getElementById('taste-profile-desc').innerText = "";
 
-try {
-const response = await fetch('/api/taste-profile', {
-method: 'POST',
-headers: { 'Content-Type': 'application/json' },
-body: JSON.stringify({
-ss: appState.tierList.SS.map(a => a.title).join(', '),
-s: appState.tierList.S.map(a => a.title).join(', '),
-a: appState.tierList.A.map(a => a.title).join(', '),
-b: appState.tierList.B.map(a => a.title).join(', '),
-c: appState.tierList.C.map(a => a.title).join(', '),
-d: appState.tierList.D.map(a => a.title).join(', ')
-})
-});
+  try {
+    const preferenceInsights = buildPreferenceInsights();
 
-if (!response.ok) {
-if (response.status === 429) throw new Error("429");
-throw new Error("API_ERROR");
-}
+    const response = await fetch('/api/taste-profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ss: appState.tierList.SS.map(a => a.title).join(', '),
+        s: appState.tierList.S.map(a => a.title).join(', '),
+        a: appState.tierList.A.map(a => a.title).join(', '),
+        b: appState.tierList.B.map(a => a.title).join(', '),
+        c: appState.tierList.C.map(a => a.title).join(', '),
+        d: appState.tierList.D.map(a => a.title).join(', '),
+        preferenceInsights
+      })
+    });
 
-const result = await response.json();
-appState.tasteProfile = result;
-await saveUserMetaToDB();
-renderTasteProfile();
-showToast('취향 분석 완료!');
-} catch (err) {
-console.error("Taste Profile Error:", err);
-if (err.message === "429") {
-showToast('현재 AI 요청 한도에 도달했습니다. 잠시 후 다시 시도해주세요.', true);
-} else {
-showToast('현재 사용 가능한 AI 모델 한도에 도달했습니다. 잠시 후 다시 시도해주세요.', true);
-}
-document.getElementById('taste-profile-title').innerText = "분석 실패";
-document.getElementById('taste-profile-desc').innerText = "나중에 다시 시도해주세요.";
-} finally {
-btn.classList.remove('animate-spin', 'pointer-events-none');
-}
+    if (!response.ok) {
+      if (response.status === 429) throw new Error("429");
+      throw new Error("API_ERROR");
+    }
+
+    const result = await response.json();
+    appState.tasteProfile = result;
+    await saveUserMetaToDB();
+    renderTasteProfile();
+    showToast('취향 분석 완료!');
+  } catch (err) {
+    console.error("Taste Profile Error:", err);
+    if (err.message === "429") {
+      showToast('현재 AI 요청 한도에 도달했습니다. 잠시 후 다시 시도해주세요.', true);
+    } else {
+      showToast('현재 사용 가능한 AI 모델 한도에 도달했습니다. 잠시 후 다시 시도해주세요.', true);
+    }
+    document.getElementById('taste-profile-title').innerText = "분석 실패";
+    document.getElementById('taste-profile-desc').innerText = "나중에 다시 시도해주세요.";
+  } finally {
+    btn.classList.remove('animate-spin', 'pointer-events-none');
+  }
 }
 
 let isRecOnCooldown = false;
 async function generateRecommendations(btn) {
-if (isRecOnCooldown) return showToast('잠시 후 다시 시도해주세요 (약 20초 쿨타임).', true);
+  if (isRecOnCooldown) return showToast('잠시 후 다시 시도해주세요 (약 20초 쿨타임).', true);
 
-const allItems = [
-  ...appState.tierList.SS,
-  ...appState.tierList.S,
-  ...appState.tierList.A,
-  ...appState.tierList.B,
-  ...appState.tierList.C,
-  ...appState.tierList.D
-];
-if (allItems.length < 2) return showToast('기존 작품이 부족하여 추천할 수 없습니다.', true);
+  const allItems = [
+    ...appState.tierList.SS,
+    ...appState.tierList.S,
+    ...appState.tierList.A,
+    ...appState.tierList.B,
+    ...appState.tierList.C,
+    ...appState.tierList.D
+  ];
+  if (allItems.length < 2) return showToast('기존 작품이 부족하여 추천할 수 없습니다.', true);
 
-isRecOnCooldown = true;
-setTimeout(() => { isRecOnCooldown = false; }, 20000);
+  isRecOnCooldown = true;
+  setTimeout(() => { isRecOnCooldown = false; }, 20000);
 
-btn.classList.add('opacity-50', 'pointer-events-none');
-document.getElementById('rec-loading').classList.remove('hidden');
-document.getElementById('grid-tier-recommended').innerHTML = '';
+  btn.classList.add('opacity-50', 'pointer-events-none');
+  document.getElementById('rec-loading').classList.remove('hidden');
+  document.getElementById('grid-tier-recommended').innerHTML = '';
 
-try {
-const response = await fetch('/api/recommend', {
-method: 'POST',
-headers: { 'Content-Type': 'application/json' },
-body: JSON.stringify({
-titles: allItems.map(a=>a.title).join(', ')
-})
-});
+  try {
+    const preferenceInsights = buildPreferenceInsights();
 
-if (!response.ok) {
-if (response.status === 429) throw new Error("429");
-throw new Error("API_ERROR");
-}
+    const response = await fetch('/api/recommend', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        titles: allItems.map(a => a.title).join(', '),
+        preferenceInsights
+      })
+    });
 
-const recs = await response.json();
+    if (!response.ok) {
+      if (response.status === 429) throw new Error("429");
+      throw new Error("API_ERROR");
+    }
 
-appState.recommendedItems = recs.map((rec, index) => ({
-id: generateId(),
-rank: index + 1,
-title: rec.title,
-originalTitle: rec.originalTitle || '',
-imgSrc: rec.posterUrl || getPlaceholderUrl(rec.title),
-genres: rec.genres || [],
-overview: rec.overview || '',
-rating: rec.rating || 0,
-releaseDate: rec.releaseDate || '',
-tier: 'RECOMMENDED',
-recommendationReason: rec.reason
-}));
+    const recs = await response.json();
 
-await saveUserMetaToDB();
-renderRecommendations();
-updateRecButtonUI();
-showToast('추천 작품 로드 완료!');
+    appState.recommendedItems = recs.map((rec, index) => ({
+      id: generateId(),
+      rank: index + 1,
+      title: rec.title,
+      originalTitle: rec.originalTitle || '',
+      imgSrc: rec.posterUrl || getPlaceholderUrl(rec.title),
+      genres: rec.genres || [],
+      overview: rec.overview || '',
+      rating: rec.rating || 0,
+      releaseDate: rec.releaseDate || '',
+      tier: 'RECOMMENDED',
+      recommendationReason: rec.reason
+    }));
 
-} catch (err) {
-console.error("Recommendations Error:", err);
-if (err.message === "429") {
-showToast('현재 AI 요청 한도에 도달했습니다. 잠시 후 다시 시도해주세요.', true);
-} else {
-showToast('현재 사용 가능한 AI 모델 한도에 도달했습니다. 잠시 후 다시 시도해주세요.', true);
-}
-renderRecommendations(); 
-} finally {
-btn.classList.remove('opacity-50', 'pointer-events-none');
-document.getElementById('rec-loading').classList.add('hidden');
-}
+    await saveUserMetaToDB();
+    renderRecommendations();
+    updateRecButtonUI();
+    showToast('추천 작품 로드 완료!');
+
+  } catch (err) {
+    console.error("Recommendations Error:", err);
+    if (err.message === "429") {
+      showToast('현재 AI 요청 한도에 도달했습니다. 잠시 후 다시 시도해주세요.', true);
+    } else {
+      showToast('현재 사용 가능한 AI 모델 한도에 도달했습니다. 잠시 후 다시 시도해주세요.', true);
+    }
+    renderRecommendations();
+  } finally {
+    btn.classList.remove('opacity-50', 'pointer-events-none');
+    document.getElementById('rec-loading').classList.add('hidden');
+  }
 }
 
         // ==========================================
