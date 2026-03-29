@@ -19,11 +19,7 @@ color: #e5e7eb;
 ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
 
 .anime-card-container {
-  transition:
-    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 0.18s ease,
-    box-shadow 0.18s ease,
-    filter 0.18s ease;
+  transition: transform 0.25s ease, opacity 0.2s ease;
   will-change: transform;
 }
 .anime-card-container:hover {
@@ -107,22 +103,6 @@ animation: spin 1s linear infinite;
 
   transition: all 0.2s ease;
 }
-
-.pc-dragging-card {
-  opacity: 0.72 !important;
-  transform: scale(0.97);
-  box-shadow: 0 22px 50px rgba(0, 0, 0, 0.35);
-  filter: saturate(1.08);
-}
-
-.pc-drop-target-before {
-  box-shadow: inset 0 4px 0 0 rgba(255, 255, 255, 0.45);
-}
-
-.pc-drop-target-after {
-  box-shadow: inset 0 -4px 0 0 rgba(255, 255, 255, 0.45);
-}
-
 </style>
 </head>
 <body id="main-body" class="p-4 md:p-8 min-h-screen overflow-hidden">
@@ -1830,101 +1810,55 @@ autoScrollAnimationFrame = null;
 }
 
 function handleDragStart(e) {
-  isDragging = true;
-  draggedCard = e.currentTarget;
-  e.dataTransfer.effectAllowed = 'move';
-  
-
-  // 기본 브라우저 미리보기 이미지 대신 현재 카드 자체를 끄는 느낌만 남김
-  const transparentImg = new Image();
-  transparentImg.src =
-    'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxIiBoZWlnaHQ9IjEiPjwvc3ZnPg==';
-  e.dataTransfer.setDragImage(transparentImg, 0, 0);
-
-  setTimeout(() => {
-    draggedCard.classList.add('pc-dragging-card');
-  }, 0);
+isDragging = true;
+draggedCard = e.currentTarget;
+e.dataTransfer.effectAllowed = 'move';
+setTimeout(() => draggedCard.classList.add('opacity-50', 'scale-95'), 0);
 }
 
 function handleDragEnd(e) {
-  
-
-  if (draggedCard) {
-    draggedCard.classList.remove('pc-dragging-card');
-    document.querySelectorAll('.pc-drop-target-before, .pc-drop-target-after').forEach(el => {
-        el.classList.remove('pc-drop-target-before', 'pc-drop-target-after');
-});
-  }
-
-  draggedCard = null;
-  stopAutoScroll();
-
-  setTimeout(() => {
-    isDragging = false;
-  }, 120);
+if (draggedCard) draggedCard.classList.remove('opacity-50', 'scale-95');
+draggedCard = null;
+stopAutoScroll();
+setTimeout(() => { isDragging = false; }, 200);
 }
 
 function handleDragOver(e) {
-  e.preventDefault();
-  e.dataTransfer.dropEffect = 'move';
+e.preventDefault();
+e.dataTransfer.dropEffect = 'move';
+const grid = e.currentTarget;
+if (grid.id === 'grid-tier-recommended') return;
 
-  const grid = e.currentTarget;
-  if (grid.id === 'grid-tier-recommended') return;
-  if (!draggedCard) return;
+const targetCard = e.target.closest('.anime-card-container');
+const addButton = grid.querySelector('button[onclick^="openAddModal"]');
 
-  document.querySelectorAll('.pc-drop-target-before, .pc-drop-target-after').forEach(el => {
-    el.classList.remove('pc-drop-target-before', 'pc-drop-target-after');
-  });
+if (targetCard && targetCard !== draggedCard) {
+const rect = targetCard.getBoundingClientRect();
+const draggedParent = draggedCard.parentNode;
+const yCenter = rect.top + rect.height / 2;
+const xCenter = rect.left + rect.width / 2;
+let isAfter;
 
-  const targetCard = e.target.closest('.anime-card-container');
-  const addButton = grid.querySelector('button[onclick^="openAddModal"]');
+if (Math.abs(e.clientY - yCenter) > rect.height / 2) {
+isAfter = e.clientY > yCenter;
+} else {
+isAfter = e.clientX > xCenter;
+}
 
-  if (targetCard && targetCard !== draggedCard) {
-    const rect = targetCard.getBoundingClientRect();
-    const draggedParent = draggedCard.parentNode;
-    const yCenter = rect.top + rect.height / 2;
-    const xCenter = rect.left + rect.width / 2;
+if (draggedParent === grid) {
+const draggedIndex = Array.from(grid.children).indexOf(draggedCard);
+const targetIndex = Array.from(grid.children).indexOf(targetCard);
 
-    let isAfter;
-    if (Math.abs(e.clientY - yCenter) > rect.height / 2) {
-      isAfter = e.clientY > yCenter;
-    } else {
-      isAfter = e.clientX > xCenter;
-    }
-
-    if (isAfter) {
-      targetCard.classList.add('pc-drop-target-after');
-    } else {
-      targetCard.classList.add('pc-drop-target-before');
-    }
-
-    if (draggedParent === grid) {
-      const draggedIndex = Array.from(grid.children).indexOf(draggedCard);
-      const targetIndex = Array.from(grid.children).indexOf(targetCard);
-
-      if (draggedIndex < targetIndex && isAfter) {
-        targetCard.after(draggedCard);
-      } else if (draggedIndex > targetIndex && !isAfter) {
-        targetCard.before(draggedCard);
-      } else if (draggedIndex < targetIndex && !isAfter) {
-        targetCard.before(draggedCard);
-      } else if (draggedIndex > targetIndex && isAfter) {
-        targetCard.after(draggedCard);
-      }
-    } else {
-      if (isAfter) {
-        targetCard.after(draggedCard);
-      } else {
-        targetCard.before(draggedCard);
-      }
-    }
-  } else if (!targetCard && e.target === grid) {
-    if (addButton) {
-      grid.insertBefore(draggedCard, addButton);
-    } else {
-      grid.appendChild(draggedCard);
-    }
-  }
+if (draggedIndex < targetIndex && isAfter) targetCard.after(draggedCard);
+else if (draggedIndex > targetIndex && !isAfter) targetCard.before(draggedCard);
+} else {
+if (isAfter) targetCard.after(draggedCard);
+else targetCard.before(draggedCard);
+}
+} else if (!targetCard && e.target === grid) {
+if (addButton) grid.insertBefore(draggedCard, addButton);
+else grid.appendChild(draggedCard);
+}
 }
 
 async function handleDrop(e) {
