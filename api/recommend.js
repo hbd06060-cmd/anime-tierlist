@@ -36,7 +36,7 @@ ${titles || '없음'}
 ${insightText}
 
 할 일:
-- 이 사용자가 좋아할 만한 애니메이션 4개를 추천하라.
+- 이 사용자가 좋아할 만한 애니메이션을 반드시 정확히 4개 추천하라.
 - 이미 본 작품은 절대 추천하지 말 것.
 - 단순히 장르만 비슷한 작품을 추천하지 말 것.
 - preferenceInsights를 가장 중요한 근거로 사용하라.
@@ -49,17 +49,13 @@ ${insightText}
   5. 결말과 시즌별 완성도
 - 추천 이유는 반드시 이 사용자의 취향 특징과 연결해서 구체적으로 작성하라.
 - 너무 뻔한 국민작만 고르지 말고, 취향 적합도를 우선하라.
+- 포스터 URL, 평점, 줄거리, 장르, 개봉일은 작성하지 말고 제목과 원제, 추천 이유만 반환하라.
 - 반드시 아래 JSON 배열 형식으로만 응답하라.
 
 각 항목 형식:
 {
   "title": "작품명",
   "originalTitle": "원제",
-  "posterUrl": "https://...",
-  "genres": ["장르1", "장르2"],
-  "overview": "줄거리",
-  "rating": 8.3,
-  "releaseDate": "2021-01-01",
   "reason": "이 사용자는 ...을 좋아하고 ...에는 민감하기 때문에 이 작품이 잘 맞을 가능성이 높다."
 }`
             }]
@@ -73,24 +69,16 @@ ${insightText}
                     properties: {
                         title: { type: "STRING" },
                         originalTitle: { type: "STRING" },
-                        posterUrl: { type: "STRING" },
-                        genres: {
-                            type: "ARRAY",
-                            items: { type: "STRING" }
-                        },
-                        overview: { type: "STRING" },
-                        rating: { type: "NUMBER" },
-                        releaseDate: { type: "STRING" },
                         reason: { type: "STRING" }
                     },
-                    required: ["title", "originalTitle", "posterUrl", "genres", "overview", "rating", "releaseDate", "reason"]
+                    required: ["title", "originalTitle", "reason"]
                 }
             }
         }
     };
 
     let result = null;
-    const models = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-3-flash', 'gemini-3.1-flash-lite'];
+    const models = ['gemini-2.5-flash', 'gemini-2.5-flash-lite'];
 
     for (const model of models) {
         try {
