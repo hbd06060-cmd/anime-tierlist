@@ -469,6 +469,7 @@ let mobileSuppressClick = false;
 let mobileGhostEl = null;
 let mobilePlaceholderEl = null;
 let mobileDragArmed = false;
+let mobileOriginalGrid = null;
 
 const supabaseClient = (SUPABASE_DB_URL && SUPABASE_ANON_KEY && typeof supabase !== 'undefined') 
 ? supabase.createClient(SUPABASE_DB_URL, SUPABASE_ANON_KEY) 
@@ -1267,6 +1268,7 @@ function handleMobileTouchStart(e) {
   mobileDropPosition = null;
   mobileDropTargetTier = null;
   mobileDragArmed = false;
+  mobileOriginalGrid = null;
 
   if (mobilePressTimer) {
     clearTimeout(mobilePressTimer);
@@ -1279,25 +1281,29 @@ function handleMobileTouchStart(e) {
     mobileDraggedCard = card;
     mobileSuppressClick = true;
 
-    card.classList.add('mobile-drag-ready', 'mobile-dragging-original');
+    const rect = card.getBoundingClientRect();
+    mobileOriginalGrid = card.parentNode;
 
+    // 원래 카드 자리를 플레이스홀더로 대체
+    mobilePlaceholderEl = document.createElement('div');
+    mobilePlaceholderEl.className = 'mobile-drop-placeholder';
+    mobilePlaceholderEl.style.height = `${rect.height}px`;
+
+    card.parentNode.insertBefore(mobilePlaceholderEl, card);
+    card.style.display = 'none';
+
+    // 손가락 따라다니는 고스트 카드
     mobileGhostEl = card.cloneNode(true);
     mobileGhostEl.classList.add('mobile-drag-ghost');
     mobileGhostEl.style.left = `${touch.clientX}px`;
     mobileGhostEl.style.top = `${touch.clientY}px`;
     document.body.appendChild(mobileGhostEl);
 
-    const rect = card.getBoundingClientRect();
-    mobilePlaceholderEl = document.createElement('div');
-    mobilePlaceholderEl.className = 'mobile-drop-placeholder';
-    mobilePlaceholderEl.style.height = `${rect.height}px`;
-
-    card.parentNode.insertBefore(mobilePlaceholderEl, card.nextSibling);
-
     if (navigator.vibrate) {
       navigator.vibrate(50);
     }
 
+    // 롱프레스 직후 너무 급하게 끌리지 않게 잠깐 완충
     setTimeout(() => {
       mobileDragArmed = true;
     }, 120);
@@ -1317,6 +1323,7 @@ function handleMobileTouchMove(e) {
     mobileTouchMoved = true;
   }
 
+  // 롱프레스 전엔 스크롤 허용
   if (mobilePressTimer && !mobileLongPressTriggered && (deltaX > 8 || deltaY > 8)) {
     clearTimeout(mobilePressTimer);
     mobilePressTimer = null;
@@ -1340,6 +1347,7 @@ function handleMobileTouchMove(e) {
 
   let grid = getTierGridFromPoint(x, y);
 
+  // 손가락이 살짝 빗나가도 마지막 유효 티어 유지
   if (!grid && mobileDropTargetTier) {
     grid = document.getElementById(
       mobileDropTargetTier === 'RECOMMENDED'
@@ -1348,27 +1356,26 @@ function handleMobileTouchMove(e) {
     );
   }
 
-  if (!grid) {
-    return;
+  // 그래도 못 찾으면 원래 그리드 유지
+  if (!grid && mobileOriginalGrid) {
+    grid = mobileOriginalGrid;
   }
+
+  if (!grid) return;
 
   const targetTier = getTierNameFromGrid(grid);
   mobileDropTargetTier = targetTier;
 
   const closestResult = getClosestCardInGrid(grid, x, y);
 
+  // 비어 있는 티어거나 카드 끝 영역이면 맨 끝 슬롯
   if (!closestResult || !closestResult.card) {
-    mobileDropTargetCard = null;
-    mobileDropPosition = 'append';
     movePlaceholderToGridEnd(grid);
     return;
   }
 
   const closestCard = closestResult.card;
   const position = closestResult.position;
-
-  mobileDropTargetCard = closestCard;
-  mobileDropPosition = position;
 
   if (position === 'before') {
     closestCard.classList.add('mobile-drop-target-before');
@@ -1475,11 +1482,15 @@ function movePlaceholderToGridEnd(grid) {
   if (!mobilePlaceholderEl || !grid) return;
 
   const addBtn = grid.querySelector('button[onclick^="openAddModal"]');
+
   if (addBtn) {
     grid.insertBefore(mobilePlaceholderEl, addBtn);
   } else {
     grid.appendChild(mobilePlaceholderEl);
   }
+
+  mobileDropTargetCard = null;
+  mobileDropPosition = 'append';
 }
 
 function movePlaceholderBeforeTarget(targetCard, position) {
@@ -1490,6 +1501,9 @@ function movePlaceholderBeforeTarget(targetCard, position) {
   } else {
     targetCard.parentNode.insertBefore(mobilePlaceholderEl, targetCard.nextSibling);
   }
+
+  mobileDropTargetCard = targetCard;
+  mobileDropPosition = position;
 }
 
 function getCardAfterPlaceholder(grid) {
@@ -1516,12 +1530,16 @@ function getClosestCardInGrid(grid, x, y) {
 
   cards.forEach(card => {
     const rect = card.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
-    const distance = Math.abs(y - centerY);
+
+    const distance = Math.hypot(x - centerX, y - centerY);
 
     if (distance < closestDistance) {
       closestDistance = distance;
       closestCard = card;
+
+      // 세로 그리드에서 위/아래 판정
       closestPosition = y < centerY ? 'before' : 'after';
     }
   });
@@ -1534,7 +1552,7 @@ function getClosestCardInGrid(grid, x, y) {
 
 function resetMobileTouchState() {
   if (mobileDraggedCard) {
-    mobileDraggedCard.classList.remove('mobile-drag-ready', 'mobile-dragging-original');
+    mobileDraggedCard.style.display = '';
   }
 
   if (mobileGhostEl) {
@@ -1558,18 +1576,11 @@ function resetMobileTouchState() {
   mobileDropPosition = null;
   mobileDropTargetTier = null;
   mobileDragArmed = false;
+  mobileOriginalGrid = null;
 
   setTimeout(() => {
     mobileSuppressClick = false;
   }, 250);
-}
-function handleMobileTouchCancel() {
-  if (mobilePressTimer) {
-    clearTimeout(mobilePressTimer);
-    mobilePressTimer = null;
-  }
-
-  resetMobileTouchState();
 }
 
 async function handleMobileTouchEnd(e) {
@@ -1597,6 +1608,7 @@ async function handleMobileTouchEnd(e) {
 
       const nextCard = getCardAfterPlaceholder(targetGrid);
 
+      // 같은 티어 안 재정렬
       if (originTier === targetTier && originTier !== 'RECOMMENDED') {
         if (nextCard) {
           appState.tierList[originTier] = reorderTierItems(
@@ -1616,7 +1628,10 @@ async function handleMobileTouchEnd(e) {
         }
 
         await persistTierOrder(originTier);
-      } else if (originTier !== 'RECOMMENDED' && targetTier !== 'RECOMMENDED') {
+      }
+
+      // 일반 티어 -> 다른 일반 티어
+      else if (originTier !== 'RECOMMENDED' && targetTier !== 'RECOMMENDED') {
         const fromList = appState.tierList[originTier];
         const fromIndex = fromList.findIndex(item => String(item.id) === String(draggedId));
 
@@ -1640,7 +1655,10 @@ async function handleMobileTouchEnd(e) {
           await persistTierOrder(originTier);
           await persistTierOrder(targetTier);
         }
-      } else if (originTier === 'RECOMMENDED' && targetTier !== 'RECOMMENDED') {
+      }
+
+      // 추천 -> 일반 티어
+      else if (originTier === 'RECOMMENDED' && targetTier !== 'RECOMMENDED') {
         const recIndex = appState.recommendedItems.findIndex(item => String(item.id) === String(draggedId));
 
         if (recIndex !== -1) {
@@ -1684,6 +1702,15 @@ async function handleMobileTouchEnd(e) {
     mobileTouchMoved = false;
     return;
   }
+}
+
+function handleMobileTouchCancel() {
+  if (mobilePressTimer) {
+    clearTimeout(mobilePressTimer);
+    mobilePressTimer = null;
+  }
+
+  resetMobileTouchState();
 }
 
 function handleGlobalAutoScroll(e) {
