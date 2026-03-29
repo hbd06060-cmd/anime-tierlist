@@ -23,11 +23,12 @@ color: #e5e7eb;
 transform: translateY(-5px);
 box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
 }
-
+.tier-ss:hover { box-shadow: 0 0 15px rgba(253, 224, 71, 0.5); border-color: rgba(253, 224, 71, 0.9); }
 .tier-s:hover { box-shadow: 0 0 15px rgba(234, 179, 8, 0.4); border-color: rgba(234, 179, 8, 0.8); }
 .tier-a:hover { box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); border-color: rgba(239, 68, 68, 0.8); }
 .tier-b:hover { box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); border-color: rgba(59, 130, 246, 0.8); }
 .tier-c:hover { box-shadow: 0 0 15px rgba(107, 114, 128, 0.4); border-color: rgba(107, 114, 128, 0.8); }
+.tier-d:hover { box-shadow: 0 0 15px rgba(75, 85, 99, 0.4); border-color: rgba(107, 114, 128, 0.8); }
 .tier-recommended:hover { box-shadow: 0 0 15px rgba(168, 85, 247, 0.4); border-color: rgba(168, 85, 247, 0.8); }
 
 .rec-card { background: linear-gradient(145deg, #1f2937, #111827); }
@@ -110,6 +111,21 @@ animation: spin 1s linear infinite;
 <main class="max-w-7xl mx-auto space-y-16">
 <section>
 <div class="flex flex-col gap-10">
+<div class="bg-gray-800/50 rounded-xl p-6 border border-yellow-300/40">
+  <div class="flex items-center mb-6">
+    <span class="text-4xl font-black text-yellow-300 mr-4 drop-shadow-md">SS</span>
+    <div class="h-1 flex-grow bg-gradient-to-r from-yellow-300/50 to-transparent rounded"></div>
+    <span id="tier-desc-ss" class="text-yellow-300 font-bold ml-4 text-sm md:text-base">최애 인생작 (0작품)</span>
+  </div>
+  <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6" id="grid-tier-ss">
+    <button onclick="openAddModal('SS', this)" class="flex flex-col items-center justify-center bg-gray-800/30 rounded-lg border-2 border-dashed border-gray-600 hover:border-yellow-300 hover:bg-gray-800 transition-all group cursor-pointer min-h-[300px]">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-500 group-hover:text-yellow-300 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+      <span class="mt-2 text-sm text-gray-500 group-hover:text-yellow-300 font-bold transition-colors">새 작품 추가</span>
+    </button>
+  </div>
+</div>    
 <div class="bg-gray-800/50 rounded-xl p-6 border border-yellow-500/30">
 <div class="flex items-center mb-6">
 <span class="text-4xl font-black text-yellow-500 mr-4 drop-shadow-md">S</span>
@@ -164,6 +180,19 @@ animation: spin 1s linear infinite;
 <span class="mt-1 text-[9px] text-gray-500 group-hover:text-gray-400 font-bold transition-colors">새 작품 추가</span>
 </button>
 </div>
+</div>
+<div class="bg-gray-800/50 rounded-xl p-6 border border-gray-500/40">
+  <div class="flex items-center mb-6">
+    <span class="text-4xl font-black text-gray-400 mr-4 drop-shadow-md">D</span>
+    <div class="h-1 flex-grow bg-gradient-to-r from-gray-500/50 to-transparent rounded"></div>
+    <span id="tier-desc-d" class="text-gray-400 font-bold ml-4 text-sm md:text-base">거의 안 맞는 작품 (0작품)</span>
+  </div>
+  <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3" id="grid-tier-d">
+    <button onclick="openAddModal('D', this)" class="flex flex-col items-center justify-center bg-gray-800/30 rounded-lg border-2 border-dashed border-gray-600 hover:border-gray-400 hover:bg-gray-800 transition-all group cursor-pointer min-h-[140px]">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-500 group-hover:text-gray-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+      <span class="mt-1 text-[9px] text-gray-500 group-hover:text-gray-400 font-bold transition-colors">새 작품 추가</span>
+    </button>
+  </div>
 </div>
 </div>
 </section>
@@ -345,23 +374,27 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 // 고정 데이터 및 상태 관리
 // ==========================================
 const TIER_LABELS = {
+'SS': '최애 인생작',
 'S': '취향의 기준작',
 'A': '강력 추천작',
 'B': '인정하지만 아쉬운 작품',
-'C': '취향과 어긋난 작품'
+'C': '취향과 어긋난 작품',
+'D': '거의 안 맞는 작품'
 };
 
 const tierThemes = {
+'SS': { color: 'text-yellow-300', bg: 'bg-yellow-300/20' },
 'S': { color: 'text-yellow-500', bg: 'bg-yellow-500/20' },
 'A': { color: 'text-red-500', bg: 'bg-red-500/20' },
 'B': { color: 'text-blue-400', bg: 'bg-blue-400/20' },
 'C': { color: 'text-gray-400', bg: 'bg-gray-400/20' },
+'D': { color: 'text-gray-500', bg: 'bg-gray-500/20' },
 'RECOMMENDED': { color: 'text-purple-400', bg: 'bg-purple-500/20' }
 };
 
 const appState = {
 user: { name: null, isLoggedIn: false },
-tierList: { S: [], A: [], B: [], C: [] },
+tierList: { SS: [], S: [], A: [], B: [], C: [], D: [] },
 tasteProfile: {
 titleKo: "아직 분석되지 않음",
 titleEn: "Not Analyzed",
@@ -518,13 +551,19 @@ renderTasteProfile();
 }
 
 function updateTotalCount() {
-const total = appState.tierList.S.length + appState.tierList.A.length + appState.tierList.B.length + appState.tierList.C.length;
+const total =
+appState.tierList.SS.length +
+appState.tierList.S.length +
+appState.tierList.A.length +
+appState.tierList.B.length +
+appState.tierList.C.length +
+appState.tierList.D.length;
 document.getElementById('total-count').innerText = total;
 renderTierHeaders();
 }
 
 function renderTierHeaders() {
-const tiers = ['S', 'A', 'B', 'C'];
+const tiers = ['SS', 'S', 'A', 'B', 'C', 'D'];
 tiers.forEach(tier => {
 const count = appState.tierList[tier].length;
 const spanId = `tier-desc-${tier.toLowerCase()}`;
@@ -547,7 +586,7 @@ descEl.innerText = "티어리스트를 채우고 분석해보세요.";
 }
 
 function renderTierList() {
-const tiers = ['S', 'A', 'B', 'C'];
+const tiers = ['SS', 'S', 'A', 'B', 'C', 'D'];
 tiers.forEach(tier => {
 const grid = document.getElementById(`grid-tier-${tier.toLowerCase()}`);
 grid.querySelectorAll('.anime-card-container').forEach(c => c.remove());
@@ -627,7 +666,7 @@ const ratingNum = Number(rating);
 const ratingDisplay = ratingNum ? `⭐ ${ratingNum.toFixed(1)}` : '';
 
 let innerHtml = '';
-if (isRecommended || tier === 'S') {
+if (isRecommended || tier === 'SS' || tier === 'S') {
 innerHtml = `
                    ${deleteBtn}
                    ${rankBadge}
@@ -692,6 +731,16 @@ innerHtml = `
                        <span class="text-xs text-gray-400 w-full line-clamp-1">${safeTitle}</span>
                        <p class="text-[9px] text-gray-600 mt-1 w-full line-clamp-1">${safeReview}</p>
                    </div>`;
+} else if (tier === 'D') {
+innerHtml = `
+                   ${deleteBtn}
+                   <div class="relative h-24 flex-shrink-0">
+                       <img ${imgTagAttr} class="w-full h-full object-cover opacity-50 grayscale pointer-events-none">
+                   </div>
+                   <div class="p-2 text-center pointer-events-none flex flex-col flex-grow justify-center items-center">
+                       <span class="text-xs text-gray-500 w-full line-clamp-1">${safeTitle}</span>
+                       <p class="text-[9px] text-gray-600 mt-1 w-full line-clamp-1">${safeReview}</p>
+                   </div>`;
 }
 
 return `<div class="${baseClass}" ${dataAttrs}>${innerHtml}</div>`;
@@ -709,7 +758,7 @@ const { data, error } = await supabaseClient
 .order('sort_order', { ascending: true });
 
 if (!error && data) {
-appState.tierList = { S: [], A: [], B: [], C: [] };
+appState.tierList = { SS: [], S: [], A: [], B: [], C: [], D: [] };
 data.forEach(row => {
 if (appState.tierList[row.tier]) {
 appState.tierList[row.tier].push({
@@ -786,7 +835,7 @@ saveCurrentUser(userName);
 renderUserInfo();
 closeNamePopup();
 
-appState.tierList = { S: [], A: [], B: [], C: [] };
+appState.tierList = { SS: [], S: [], A: [], B: [], C: [], D: [] };
 renderTierList();
 
 loadUserMetaFromDB().then(() => {
@@ -797,7 +846,7 @@ loadTierListFromDB();
 function handleLogout() {
 clearCurrentUser();
 document.getElementById('userNameInput').value = '';
-appState.tierList = { S: [], A: [], B: [], C: [] };
+appState.tierList = { SS: [], S: [], A: [], B: [], C: [], D: [] };
 appState.recommendedItems = [];
 appState.tasteProfile = { titleKo: "아직 분석되지 않음", titleEn: "Not Analyzed", description: "티어리스트를 채우고 분석해보세요." };
 renderTierList();
@@ -1068,7 +1117,15 @@ showToast('작품이 삭제되었습니다.', true);
 // 드래그 앤 드롭
 // ==========================================
 function setupDragAndDrop() {
-const grids = ['grid-tier-s', 'grid-tier-a', 'grid-tier-b', 'grid-tier-c', 'grid-tier-recommended'];
+const grids = [
+  'grid-tier-ss',
+  'grid-tier-s',
+  'grid-tier-a',
+  'grid-tier-b',
+  'grid-tier-c',
+  'grid-tier-d',
+  'grid-tier-recommended'
+];
 grids.forEach(id => {
 const grid = document.getElementById(id);
 if(grid) {
@@ -1422,10 +1479,12 @@ const response = await fetch('/api/taste-profile', {
 method: 'POST',
 headers: { 'Content-Type': 'application/json' },
 body: JSON.stringify({
-s: appState.tierList.S.map(a=>a.title).join(', '),
-a: appState.tierList.A.map(a=>a.title).join(', '),
-b: appState.tierList.B.map(a=>a.title).join(', '),
-c: appState.tierList.C.map(a=>a.title).join(', ')
+ss: appState.tierList.SS.map(a => a.title).join(', '),
+s: appState.tierList.S.map(a => a.title).join(', '),
+a: appState.tierList.A.map(a => a.title).join(', '),
+b: appState.tierList.B.map(a => a.title).join(', '),
+c: appState.tierList.C.map(a => a.title).join(', '),
+d: appState.tierList.D.map(a => a.title).join(', ')
 })
 });
 
