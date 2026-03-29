@@ -1523,7 +1523,14 @@ let isRecOnCooldown = false;
 async function generateRecommendations(btn) {
 if (isRecOnCooldown) return showToast('잠시 후 다시 시도해주세요 (약 20초 쿨타임).', true);
 
-const allItems = [...appState.tierList.S, ...appState.tierList.A, ...appState.tierList.B, ...appState.tierList.C];
+const allItems = [
+  ...appState.tierList.SS,
+  ...appState.tierList.S,
+  ...appState.tierList.A,
+  ...appState.tierList.B,
+  ...appState.tierList.C,
+  ...appState.tierList.D
+];
 if (allItems.length < 2) return showToast('기존 작품이 부족하여 추천할 수 없습니다.', true);
 
 isRecOnCooldown = true;
