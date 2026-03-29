@@ -1389,7 +1389,6 @@ function handleMobileTouchEnd(e) {
     }
 
     card.classList.remove('mobile-drag-ready');
-
     card.style.position = '';
     card.style.left = '';
     card.style.top = '';
@@ -1413,32 +1412,6 @@ function handleMobileTouchEnd(e) {
   if (mobileTouchMoved) {
     mobileTouchMoved = false;
     clearMobileDropTargetStyles();
-    return;
-  }
-
-  // long press도 아니고, 스크롤도 아니면 탭으로 처리
-  const id = card.getAttribute('data-id');
-  const isRecommended = card.getAttribute('data-tier') === 'RECOMMENDED';
-  openDetailModal(id, isRecommended);
-}
-// 🔥 이동 스타일 초기화
-card.style.position = '';
-card.style.left = '';
-card.style.top = '';
-card.style.zIndex = '';
-card.style.pointerEvents = '';
-      mobileDragMode = false;
-      mobileDraggedCard = null;
-      mobileLongPressTriggered = false;
-      mobileTouchMoved = false;
-    }, 250);
-
-    return;
-  }
-
-  // 손가락 이동이 있었으면 스크롤로 간주하고 클릭 처리 안 함
-  if (mobileTouchMoved) {
-    mobileTouchMoved = false;
     return;
   }
 
