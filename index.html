@@ -468,6 +468,7 @@ let mobileDropTargetTier = null;
 let mobileSuppressClick = false;
 let mobileGhostEl = null;
 let mobilePlaceholderEl = null;
+let mobileDragArmed = false;
 
 const supabaseClient = (SUPABASE_DB_URL && SUPABASE_ANON_KEY && typeof supabase !== 'undefined') 
 ? supabase.createClient(SUPABASE_DB_URL, SUPABASE_ANON_KEY) 
@@ -1265,6 +1266,7 @@ function handleMobileTouchStart(e) {
   mobileDropTargetCard = null;
   mobileDropPosition = null;
   mobileDropTargetTier = null;
+  mobileDragArmed = false;
 
   if (mobilePressTimer) {
     clearTimeout(mobilePressTimer);
@@ -1279,14 +1281,12 @@ function handleMobileTouchStart(e) {
 
     card.classList.add('mobile-drag-ready', 'mobile-dragging-original');
 
-    // 고스트 카드 생성
     mobileGhostEl = card.cloneNode(true);
     mobileGhostEl.classList.add('mobile-drag-ghost');
     mobileGhostEl.style.left = `${touch.clientX}px`;
     mobileGhostEl.style.top = `${touch.clientY}px`;
     document.body.appendChild(mobileGhostEl);
 
-    // 플레이스홀더 생성
     const rect = card.getBoundingClientRect();
     mobilePlaceholderEl = document.createElement('div');
     mobilePlaceholderEl.className = 'mobile-drop-placeholder';
@@ -1297,6 +1297,10 @@ function handleMobileTouchStart(e) {
     if (navigator.vibrate) {
       navigator.vibrate(50);
     }
+
+    setTimeout(() => {
+      mobileDragArmed = true;
+    }, 120);
   }, 350);
 }
 
@@ -1313,7 +1317,6 @@ function handleMobileTouchMove(e) {
     mobileTouchMoved = true;
   }
 
-  // long press 전에는 스크롤 허용
   if (mobilePressTimer && !mobileLongPressTriggered && (deltaX > 8 || deltaY > 8)) {
     clearTimeout(mobilePressTimer);
     mobilePressTimer = null;
@@ -1321,13 +1324,13 @@ function handleMobileTouchMove(e) {
   }
 
   if (!mobileDragMode || !mobileDraggedCard) return;
+  if (!mobileDragArmed) return;
 
   e.preventDefault();
 
   const x = touch.clientX;
   const y = touch.clientY;
 
-  // 고스트 카드 이동
   if (mobileGhostEl) {
     mobileGhostEl.style.left = `${x}px`;
     mobileGhostEl.style.top = `${y}px`;
@@ -1337,7 +1340,6 @@ function handleMobileTouchMove(e) {
 
   let grid = getTierGridFromPoint(x, y);
 
-  // grid를 못 찾았으면, 마지막으로 유효했던 tier의 grid를 계속 사용
   if (!grid && mobileDropTargetTier) {
     grid = document.getElementById(
       mobileDropTargetTier === 'RECOMMENDED'
@@ -1346,7 +1348,6 @@ function handleMobileTouchMove(e) {
     );
   }
 
-  // 그래도 없으면 그냥 placeholder 현재 위치 유지
   if (!grid) {
     return;
   }
@@ -1356,7 +1357,6 @@ function handleMobileTouchMove(e) {
 
   const closestResult = getClosestCardInGrid(grid, x, y);
 
-  // 카드가 하나도 없는 빈 tier
   if (!closestResult || !closestResult.card) {
     mobileDropTargetCard = null;
     mobileDropPosition = 'append';
@@ -1428,8 +1428,6 @@ function getTierGridFromPoint(x, y) {
   const directGrid = el ? el.closest(selectors.join(', ')) : null;
   if (directGrid) return directGrid;
 
-  // 손가락이 gap 위나 살짝 바깥에 있어도
-  // 가장 가까운 grid를 fallback으로 잡아준다
   let closestGrid = null;
   let closestDistance = Infinity;
 
@@ -1457,7 +1455,6 @@ function getTierGridFromPoint(x, y) {
     }
   });
 
-  // 너무 멀리 벗어나지 않았으면 마지막 가까운 tier로 간주
   return closestDistance < 80 ? closestGrid : null;
 }
 
@@ -1560,12 +1557,12 @@ function resetMobileTouchState() {
   mobileDropTargetCard = null;
   mobileDropPosition = null;
   mobileDropTargetTier = null;
+  mobileDragArmed = false;
 
   setTimeout(() => {
     mobileSuppressClick = false;
   }, 250);
 }
-
 function handleMobileTouchCancel() {
   if (mobilePressTimer) {
     clearTimeout(mobilePressTimer);
@@ -1600,7 +1597,6 @@ async function handleMobileTouchEnd(e) {
 
       const nextCard = getCardAfterPlaceholder(targetGrid);
 
-      // 1) 같은 티어 안 재정렬
       if (originTier === targetTier && originTier !== 'RECOMMENDED') {
         if (nextCard) {
           appState.tierList[originTier] = reorderTierItems(
@@ -1620,10 +1616,7 @@ async function handleMobileTouchEnd(e) {
         }
 
         await persistTierOrder(originTier);
-      }
-
-      // 2) 일반 티어 -> 다른 일반 티어
-      else if (originTier !== 'RECOMMENDED' && targetTier !== 'RECOMMENDED') {
+      } else if (originTier !== 'RECOMMENDED' && targetTier !== 'RECOMMENDED') {
         const fromList = appState.tierList[originTier];
         const fromIndex = fromList.findIndex(item => String(item.id) === String(draggedId));
 
@@ -1647,10 +1640,7 @@ async function handleMobileTouchEnd(e) {
           await persistTierOrder(originTier);
           await persistTierOrder(targetTier);
         }
-      }
-
-      // 3) 추천 티어 -> 일반 티어
-      else if (originTier === 'RECOMMENDED' && targetTier !== 'RECOMMENDED') {
+      } else if (originTier === 'RECOMMENDED' && targetTier !== 'RECOMMENDED') {
         const recIndex = appState.recommendedItems.findIndex(item => String(item.id) === String(draggedId));
 
         if (recIndex !== -1) {
