@@ -1,9 +1,25 @@
 export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
     
-    const { ss, s, a, b, c, d } = req.body;
+    const { ss, s, a, b, c, d, preferenceInsights } = req.body;
     const apiKey = process.env.GEMINI_API_KEY;
+const insightText = preferenceInsights ? `
+[사용자 취향 요약]
+상위 선호작:
+${(preferenceInsights.topFavorites || []).map(x => `- ${x.title} (${x.tier}) : ${x.review || '리뷰 없음'}`).join('\n')}
 
+비선호작:
+${(preferenceInsights.dislikedTitles || []).map(x => `- ${x.title} (${x.tier}) : ${x.review || '리뷰 없음'}`).join('\n')}
+
+좋아하는 평가 요소:
+${(preferenceInsights.likedFeatures || []).map(x => `- ${x.feature} / 평균 ${x.average} / 신뢰도 ${x.confidence}`).join('\n')}
+
+민감하게 싫어하는 평가 요소:
+${(preferenceInsights.dislikedFeatures || []).map(x => `- ${x.feature} / 평균 ${x.average} / 신뢰도 ${x.confidence}`).join('\n')}
+
+장르 참고:
+${(preferenceInsights.genrePreferences || []).map(x => `- ${x.genre} / 평균 ${x.average} / count ${x.count}`).join('\n')}
+` : '';
     const payload = {
         contents: [{
             parts: [{ text: `사용자의 티어리스트는 다음과 같습니다.
@@ -14,9 +30,15 @@ B: ${b || '없음'}
 C: ${c || '없음'}
 D: ${d || '없음'}
 
+${insightText}
+
 이 데이터를 바탕으로 사용자의 애니메이션 취향을 나타내는 별명을 만들고 짧게 설명해.
 SS는 '최애 인생작', D는 '거의 안 맞는 작품'이므로 분석에서 중요하게 반영해.
 특히 SS에 있는 작품들은 사용자의 핵심 취향으로, D에 있는 작품들은 강한 비선호 경향으로 판단해 분석해.
+장르만으로 단정하지 말고, 한줄평에 드러난 취향 포인트를 우선 반영해.
+특히 서사, 캐릭터, 주인공 성격, 감성, 작화/연출, 음악, 결말, 시즌별 편차를 고려해서 분석해.
+분석 시 preferenceInsights를 가장 중요한 근거로 사용하고,
+단순 장르 분포보다 사용자 리뷰에서 드러난 취향을 우선 반영하라.
 반드시 아래 형식의 JSON 객체로만 응답해.` }]
         }],
         generationConfig: {
