@@ -137,11 +137,11 @@ animation: spin 1s linear infinite;
 </div>
 <div class="flex-shrink-0 w-full md:w-auto text-right flex flex-col items-end gap-2">
 <div class="flex gap-2 mb-1">
-<button onclick="exportUserData()" class="text-xs px-3 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white transition-colors">
-기록 내보내기
+<button onclick="openExportCodeModal()" class="text-xs px-3 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white transition-colors">
+백업 코드 생성
 </button>
-<button onclick="triggerImportFile()" class="text-xs px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-colors">
-기록 불러오기
+<button onclick="openImportCodeModal()" class="text-xs px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-colors">
+백업 코드 불러오기
 </button>
 </div>
 <button onclick="handleLogout()" class="text-xs text-gray-400 hover:text-white transition-colors underline mb-1">
@@ -410,13 +410,48 @@ AI 추천 이유
 </div>
 </div>
 
-<input
-  type="file"
-  id="importFileInput"
-  accept="application/json,.json"
-  class="hidden"
-  onchange="handleImportFileChange(event)"
->
+
+<!-- 백업 코드 내보내기 모달 -->
+<div id="exportCodeModal" onclick="if(event.target === this) closeExportCodeModal()" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-[160] p-4 transition-opacity">
+  <div class="bg-gray-800 rounded-2xl border border-gray-600 w-full max-w-2xl shadow-2xl p-6 md:p-8" onclick="event.stopPropagation()">
+    <div class="flex items-start justify-between gap-4 mb-4">
+      <div>
+        <h3 class="text-2xl font-bold text-white">백업 코드</h3>
+        <p class="text-sm text-gray-400 mt-1">이 코드를 복사해두면 다른 이름으로 로그인한 뒤 그대로 불러올 수 있습니다.</p>
+      </div>
+      <button onclick="closeExportCodeModal()" class="text-gray-400 hover:text-white bg-gray-700/80 hover:bg-gray-600 p-2 rounded-full transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+      </button>
+    </div>
+    <textarea id="exportCodeOutput" readonly class="w-full h-56 bg-gray-900 border border-gray-700 text-gray-200 rounded-xl p-4 text-sm leading-relaxed focus:outline-none"></textarea>
+    <p class="text-xs text-gray-500 mt-3">백업 코드는 현재 로그인한 계정의 티어리스트, 성향 분석, 추천 목록을 모두 포함합니다.</p>
+    <div class="flex justify-end gap-3 mt-6">
+      <button onclick="closeExportCodeModal()" class="px-5 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-gray-700 transition-colors">닫기</button>
+      <button onclick="copyExportCode()" class="px-5 py-2.5 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors">코드 복사</button>
+    </div>
+  </div>
+</div>
+
+<!-- 백업 코드 불러오기 모달 -->
+<div id="importCodeModal" onclick="if(event.target === this) closeImportCodeModal()" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-[160] p-4 transition-opacity">
+  <div class="bg-gray-800 rounded-2xl border border-gray-600 w-full max-w-2xl shadow-2xl p-6 md:p-8" onclick="event.stopPropagation()">
+    <div class="flex items-start justify-between gap-4 mb-4">
+      <div>
+        <h3 class="text-2xl font-bold text-white">백업 코드 불러오기</h3>
+        <p class="text-sm text-gray-400 mt-1">복사해둔 코드를 붙여넣으면 현재 로그인한 계정에 그대로 적용됩니다.</p>
+      </div>
+      <button onclick="closeImportCodeModal()" class="text-gray-400 hover:text-white bg-gray-700/80 hover:bg-gray-600 p-2 rounded-full transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+      </button>
+    </div>
+    <textarea id="importCodeInput" placeholder="여기에 백업 코드를 붙여넣어주세요." class="w-full h-56 bg-gray-900 border border-gray-700 text-white rounded-xl p-4 text-sm leading-relaxed focus:outline-none focus:border-blue-500 transition-colors"></textarea>
+    <p class="text-xs text-gray-500 mt-3">현재 계정의 기존 기록은 이 코드의 내용으로 덮어써집니다.</p>
+    <div class="flex justify-end gap-3 mt-6">
+      <button onclick="closeImportCodeModal()" class="px-5 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-gray-700 transition-colors">취소</button>
+      <button onclick="applyImportCode()" class="px-5 py-2.5 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 transition-colors">적용하기</button>
+    </div>
+  </div>
+</div>
 
 <script>
 // ==========================================
@@ -534,22 +569,35 @@ function getPlaceholderUrl(title) {
 return `https://placehold.co/300x450/1f2937/9ca3af?text=${encodeURIComponent(title || 'No Image')}&font=roboto`;
 }
 function escapeFileName(name) {
-  return (name || 'user')
-    .replace(/[<>:"/\\|?*\x00-\x1F]/g, '')
-    .replace(/\s+/g, '_')
-    .slice(0, 50);
+return (name || 'user')
+.replace(/[<>:"/\|?* -]/g, '')
+.replace(/\s+/g, '_')
+.slice(0, 50);
 }
 
-function downloadTextFile(filename, text, mimeType = 'application/json;charset=utf-8') {
-const blob = new Blob([text], { type: mimeType });
-const url = URL.createObjectURL(blob);
-const a = document.createElement('a');
-a.href = url;
-a.download = filename;
-document.body.appendChild(a);
-a.click();
-a.remove();
-URL.revokeObjectURL(url);
+function utf8ToBase64(value) {
+return btoa(unescape(encodeURIComponent(value)));
+}
+
+function base64ToUtf8(value) {
+return decodeURIComponent(escape(atob(value)));
+}
+
+function createBackupCodeFromPayload(payload) {
+const json = JSON.stringify(payload);
+return `ATL1.${utf8ToBase64(json)}`;
+}
+
+function parseBackupCode(code) {
+const trimmed = String(code || '').trim();
+if (!trimmed) throw new Error('EMPTY_CODE');
+if (!trimmed.startsWith('ATL1.')) throw new Error('INVALID_PREFIX');
+
+const encoded = trimmed.slice(5);
+if (!encoded) throw new Error('INVALID_CODE');
+
+const json = base64ToUtf8(encoded);
+return JSON.parse(json);
 }
 
 // ==========================================
@@ -1032,19 +1080,8 @@ updateRecButtonUI();
 openNamePopup();
 }
 
-function triggerImportFile() {
-if (!appState.user.isLoggedIn || !appState.user.name) {
-showToast('먼저 이름을 입력하고 시작해주세요.', true);
-return;
-}
 
-const input = document.getElementById('importFileInput');
-if (!input) return;
-input.value = '';
-input.click();
-}
-
-function exportUserData() {
+function openExportCodeModal() {
 if (!appState.user.isLoggedIn || !appState.user.name) {
 showToast('먼저 이름을 입력하고 시작해주세요.', true);
 return;
@@ -1070,24 +1107,75 @@ D: appState.tierList.D || []
 }
 };
 
-const fileName = `anime-tierlist-${escapeFileName(appState.user.name)}-${new Date().toISOString().slice(0, 10)}.json`;
-downloadTextFile(fileName, JSON.stringify(exportPayload, null, 2));
-showToast('기록을 JSON 파일로 내보냈습니다.');
+const backupCode = createBackupCodeFromPayload(exportPayload);
+document.getElementById('exportCodeOutput').value = backupCode;
+
+const modal = document.getElementById('exportCodeModal');
+modal.classList.remove('hidden');
+modal.classList.add('flex');
 }
 
-async function handleImportFileChange(event) {
-const file = event.target.files?.[0];
-if (!file) return;
+function closeExportCodeModal() {
+const modal = document.getElementById('exportCodeModal');
+modal.classList.add('hidden');
+modal.classList.remove('flex');
+}
+
+async function copyExportCode() {
+const textarea = document.getElementById('exportCodeOutput');
+const value = textarea.value.trim();
+if (!value) {
+showToast('복사할 백업 코드가 없습니다.', true);
+return;
+}
 
 try {
-const text = await file.text();
-const parsed = JSON.parse(text);
+if (navigator.clipboard && window.isSecureContext) {
+await navigator.clipboard.writeText(value);
+} else {
+textarea.focus();
+textarea.select();
+document.execCommand('copy');
+}
+showToast('백업 코드가 복사되었습니다.');
+} catch (err) {
+console.error('Copy backup code error:', err);
+showToast('복사에 실패했습니다. 코드를 직접 선택해서 복사해주세요.', true);
+}
+}
+
+function openImportCodeModal() {
+if (!appState.user.isLoggedIn || !appState.user.name) {
+showToast('먼저 이름을 입력하고 시작해주세요.', true);
+return;
+}
+
+document.getElementById('importCodeInput').value = '';
+const modal = document.getElementById('importCodeModal');
+modal.classList.remove('hidden');
+modal.classList.add('flex');
+}
+
+function closeImportCodeModal() {
+const modal = document.getElementById('importCodeModal');
+modal.classList.add('hidden');
+modal.classList.remove('flex');
+}
+
+async function applyImportCode() {
+const code = document.getElementById('importCodeInput').value.trim();
+
+if (!code) {
+showToast('백업 코드를 붙여넣어주세요.', true);
+return;
+}
+
+try {
+const parsed = parseBackupCode(code);
 await importUserData(parsed);
 } catch (err) {
-console.error('Import parse error:', err);
-showToast('불러오기 실패: 올바른 JSON 파일이 아닙니다.', true);
-} finally {
-event.target.value = '';
+console.error('Backup code parse error:', err);
+showToast('올바른 백업 코드가 아닙니다.', true);
 }
 }
 
@@ -1136,6 +1224,62 @@ if (!appState.user.isLoggedIn || !appState.user.name) {
 showToast('먼저 이름을 입력하고 시작해주세요.', true);
 return;
 }
+
+if (!data || typeof data !== 'object') {
+showToast('불러오기 실패: 코드 형식이 올바르지 않습니다.', true);
+return;
+}
+
+const importedTierList = data.tierList || {};
+const importedTasteProfile = data.tasteProfile || {};
+const importedRecommendedItems = Array.isArray(data.recommendedItems) ? data.recommendedItems : [];
+
+const nextTierList = {
+SS: Array.isArray(importedTierList.SS) ? importedTierList.SS.map(item => normalizeImportedAnime(item, 'SS')) : [],
+S: Array.isArray(importedTierList.S) ? importedTierList.S.map(item => normalizeImportedAnime(item, 'S')) : [],
+A: Array.isArray(importedTierList.A) ? importedTierList.A.map(item => normalizeImportedAnime(item, 'A')) : [],
+B: Array.isArray(importedTierList.B) ? importedTierList.B.map(item => normalizeImportedAnime(item, 'B')) : [],
+C: Array.isArray(importedTierList.C) ? importedTierList.C.map(item => normalizeImportedAnime(item, 'C')) : [],
+D: Array.isArray(importedTierList.D) ? importedTierList.D.map(item => normalizeImportedAnime(item, 'D')) : []
+};
+
+const nextTasteProfile = {
+titleKo: importedTasteProfile.titleKo || "아직 분석되지 않음",
+titleEn: importedTasteProfile.titleEn || "Not Analyzed",
+description: importedTasteProfile.description || "티어리스트를 채우고 분석해보세요."
+};
+
+const nextRecommendedItems = importedRecommendedItems.map((item, index) =>
+normalizeRecommendedAnime(item, index)
+);
+
+const ok = confirm(
+`현재 "${appState.user.name}" 계정의 기존 기록을 모두 덮어쓰고,
+입력한 백업 코드의 기록으로 교체할까요?`
+);
+if (!ok) return;
+
+try {
+appState.tierList = nextTierList;
+appState.tasteProfile = nextTasteProfile;
+appState.recommendedItems = nextRecommendedItems;
+
+await replaceTierListInDB();
+await saveUserMetaToDB();
+
+renderUserInfo();
+renderTierList();
+renderRecommendations();
+updateRecButtonUI();
+closeImportCodeModal();
+
+showToast('백업 코드 불러오기가 완료되었습니다.');
+} catch (err) {
+console.error('Import apply error:', err);
+showToast('불러오기 중 저장 오류가 발생했습니다.', true);
+}
+}
+
 
 if (!data || typeof data !== 'object') {
 showToast('불러오기 실패: 파일 형식이 올바르지 않습니다.', true);
@@ -2488,6 +2632,8 @@ document.getElementById('rec-loading').classList.add('hidden');
             if (event.key === 'Escape' || event.key === 'Esc') {
                 const detailModal = document.getElementById('detailModal');
                 const addModal = document.getElementById('addModal');
+                const exportCodeModal = document.getElementById('exportCodeModal');
+                const importCodeModal = document.getElementById('importCodeModal');
                 const aiSearchResults = document.getElementById('aiSearchResults');
 
                 // 1. 상세 모달이 열려있는 경우 (가장 우선)
@@ -2496,14 +2642,24 @@ document.getElementById('rec-loading').classList.add('hidden');
                     return;
                 }
 
-                // 2. 추가 모달이 열려있는 경우
+                // 2. 백업 코드 내보내기 모달
+                if (exportCodeModal && !exportCodeModal.classList.contains('hidden')) {
+                    closeExportCodeModal();
+                    return;
+                }
+
+                // 3. 백업 코드 불러오기 모달
+                if (importCodeModal && !importCodeModal.classList.contains('hidden')) {
+                    closeImportCodeModal();
+                    return;
+                }
+
+                // 4. 추가 모달이 열려있는 경우
                 if (addModal && !addModal.classList.contains('hidden')) {
-                    // 2-1. 검색 결과 리스트가 열려있는 경우 리스트 먼저 닫기
                     if (aiSearchResults && !aiSearchResults.classList.contains('hidden')) {
                         resetSearchUI();
                         return;
                     }
-                    // 2-2. 검색 결과 리스트가 없으면 모달 닫기
                     closeAddModal();
                     return;
                 }
