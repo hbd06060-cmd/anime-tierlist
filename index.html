@@ -72,6 +72,13 @@ animation: spin 1s linear infinite;
   box-shadow: 0 0 0 2px rgba(255,255,255,0.15), 0 12px 30px rgba(0,0,0,0.35);
   opacity: 0.95;
 }
+.mobile-drop-target-before {
+  box-shadow: inset 0 4px 0 0 #60a5fa;
+}
+
+.mobile-drop-target-after {
+  box-shadow: inset 0 -4px 0 0 #60a5fa;
+}
 </style>
 </head>
 <body id="main-body" class="p-4 md:p-8 min-h-screen overflow-hidden">
@@ -432,7 +439,9 @@ let mobileLongPressTriggered = false;
 let mobileTouchStartX = 0;
 let mobileTouchStartY = 0;
 let mobileTouchMoved = false;
-
+let mobileOriginTier = null;
+let mobileDropTargetCard = null;
+let mobileDropPosition = null;
 
 const supabaseClient = (SUPABASE_DB_URL && SUPABASE_ANON_KEY && typeof supabase !== 'undefined') 
 ? supabase.createClient(SUPABASE_DB_URL, SUPABASE_ANON_KEY) 
@@ -637,6 +646,10 @@ grid.insertAdjacentHTML('beforeend', cardHtml);
 });
 });
 updateTotalCount();
+
+if (isMobileLayout()) {
+  setupMobileTouchDnD();
+}
 }
 
 function renderRecommendations() {
@@ -1195,7 +1208,7 @@ function setupMobileTouchDnD() {
   cards.forEach(card => {
     card.addEventListener('touchstart', handleMobileTouchStart, { passive: true });
     card.addEventListener('touchend', handleMobileTouchEnd, { passive: true });
-    card.addEventListener('touchmove', handleMobileTouchMove, { passive: true });
+    card.addEventListener('touchmove', handleMobileTouchMove, { passive: false });
   });
 
   console.log('모바일 터치 드래그 초기화 완료');
@@ -1212,6 +1225,9 @@ function handleMobileTouchStart(e) {
   mobileTouchMoved = false;
   mobileTouchStartX = touch.clientX;
   mobileTouchStartY = touch.clientY;
+  mobileOriginTier = card.getAttribute('data-tier');
+  mobileDropTargetCard = null;
+  mobileDropPosition = null;
 
   mobilePressTimer = setTimeout(() => {
     mobileLongPressTriggered = true;
@@ -1243,30 +1259,104 @@ function handleMobileTouchMove(e) {
     mobileTouchMoved = true;
   }
 
-  // long press 타이머 취소
+  // 움직임이 생기면 long press 타이머 취소
   if (mobilePressTimer) {
     clearTimeout(mobilePressTimer);
     mobilePressTimer = null;
   }
 
-  // 🔥 드래그 모드일 때만 카드 따라 움직이기
-  if (mobileDragMode && mobileDraggedCard) {
-    e.preventDefault(); // 스크롤 막기
+  // long press 상태가 아니면 여기서 종료
+  if (!mobileDragMode || !mobileDraggedCard) return;
 
-    const x = touch.clientX;
-    const y = touch.clientY;
+  e.preventDefault();
 
-    mobileDraggedCard.style.position = 'fixed';
-    mobileDraggedCard.style.left = `${x - 60}px`;
-    mobileDraggedCard.style.top = `${y - 80}px`;
-    mobileDraggedCard.style.zIndex = '9999';
-    mobileDraggedCard.style.pointerEvents = 'none';
+  const x = touch.clientX;
+  const y = touch.clientY;
+
+  // 드래그 중 카드가 손가락 따라오도록
+  mobileDraggedCard.style.position = 'fixed';
+  mobileDraggedCard.style.left = `${x - 60}px`;
+  mobileDraggedCard.style.top = `${y - 80}px`;
+  mobileDraggedCard.style.zIndex = '9999';
+  mobileDraggedCard.style.pointerEvents = 'none';
+
+  // 기존 drop target 표시 제거
+  document.querySelectorAll('.mobile-drop-target-before, .mobile-drop-target-after').forEach(el => {
+    el.classList.remove('mobile-drop-target-before', 'mobile-drop-target-after');
+  });
+
+  const target = document.elementFromPoint(x, y)?.closest('.anime-card-container');
+
+  if (!target) {
+    mobileDropTargetCard = null;
+    mobileDropPosition = null;
+    return;
+  }
+
+  // 자기 자신이면 무시
+  if (target === mobileDraggedCard) {
+    mobileDropTargetCard = null;
+    mobileDropPosition = null;
+    return;
+  }
+
+  const targetTier = target.getAttribute('data-tier');
+
+  // 같은 티어 안에서만 정렬 허용
+  if (targetTier !== mobileOriginTier) {
+    mobileDropTargetCard = null;
+    mobileDropPosition = null;
+    return;
+  }
+
+  const rect = target.getBoundingClientRect();
+  const isBefore = y < rect.top + rect.height / 2;
+
+  mobileDropTargetCard = target;
+  mobileDropPosition = isBefore ? 'before' : 'after';
+
+  if (isBefore) {
+    target.classList.add('mobile-drop-target-before');
+  } else {
+    target.classList.add('mobile-drop-target-after');
   }
 }
 
 // ==========================================
 // 터치 종료
 // ==========================================
+function reorderTierItems(tier, draggedId, targetId, position) {
+  const items = [...appState.tierList[tier]];
+  const fromIndex = items.findIndex(item => String(item.id) === String(draggedId));
+  const targetIndex = items.findIndex(item => String(item.id) === String(targetId));
+
+  if (fromIndex === -1 || targetIndex === -1) return items;
+
+  const [movedItem] = items.splice(fromIndex, 1);
+
+  let insertIndex = targetIndex;
+  if (position === 'after' && fromIndex < targetIndex) {
+    insertIndex = targetIndex;
+  } else if (position === 'after' && fromIndex > targetIndex) {
+    insertIndex = targetIndex + 1;
+  } else if (position === 'before' && fromIndex < targetIndex) {
+    insertIndex = targetIndex - 1;
+  } else if (position === 'before' && fromIndex > targetIndex) {
+    insertIndex = targetIndex;
+  }
+
+  if (insertIndex < 0) insertIndex = 0;
+  if (insertIndex > items.length) insertIndex = items.length;
+
+  items.splice(insertIndex, 0, movedItem);
+  return items;
+}
+
+function clearMobileDropTargetStyles() {
+  document.querySelectorAll('.mobile-drop-target-before, .mobile-drop-target-after').forEach(el => {
+    el.classList.remove('mobile-drop-target-before', 'mobile-drop-target-after');
+  });
+}
 function handleMobileTouchEnd(e) {
   if (mobilePressTimer) {
     clearTimeout(mobilePressTimer);
@@ -1277,9 +1367,60 @@ function handleMobileTouchEnd(e) {
 
   // long press가 실제로 발동된 경우
   if (mobileLongPressTriggered) {
-    setTimeout(() => {
-      card.classList.remove('mobile-drag-ready');
+    const draggedId = card.getAttribute('data-id');
 
+    if (
+      mobileOriginTier &&
+      mobileOriginTier !== 'RECOMMENDED' &&
+      mobileDropTargetCard &&
+      mobileDropPosition
+    ) {
+      const targetId = mobileDropTargetCard.getAttribute('data-id');
+
+      appState.tierList[mobileOriginTier] = reorderTierItems(
+        mobileOriginTier,
+        draggedId,
+        targetId,
+        mobileDropPosition
+      );
+
+      persistTierOrder(mobileOriginTier);
+      renderTierList();
+    }
+
+    card.classList.remove('mobile-drag-ready');
+
+    card.style.position = '';
+    card.style.left = '';
+    card.style.top = '';
+    card.style.zIndex = '';
+    card.style.pointerEvents = '';
+
+    clearMobileDropTargetStyles();
+
+    mobileDragMode = false;
+    mobileDraggedCard = null;
+    mobileLongPressTriggered = false;
+    mobileTouchMoved = false;
+    mobileOriginTier = null;
+    mobileDropTargetCard = null;
+    mobileDropPosition = null;
+
+    return;
+  }
+
+  // 손가락 이동이 있었으면 스크롤로 간주하고 클릭 처리 안 함
+  if (mobileTouchMoved) {
+    mobileTouchMoved = false;
+    clearMobileDropTargetStyles();
+    return;
+  }
+
+  // long press도 아니고, 스크롤도 아니면 탭으로 처리
+  const id = card.getAttribute('data-id');
+  const isRecommended = card.getAttribute('data-tier') === 'RECOMMENDED';
+  openDetailModal(id, isRecommended);
+}
 // 🔥 이동 스타일 초기화
 card.style.position = '';
 card.style.left = '';
