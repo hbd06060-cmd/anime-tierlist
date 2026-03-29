@@ -186,6 +186,16 @@ export default async function handler(req, res) {
         return 0;
     }
 
+    function getMetadataScore(item) {
+        let score = 0;
+        if (item.poster_path) score += 3;
+        if (item.overview && item.overview.trim().length > 20) score += 3;
+        if (item.vote_average && item.vote_average > 0) score += 2;
+        if ((item.genre_ids || []).includes(16)) score += 2;
+        if (item.media_type === 'tv') score += 1;
+        return score;
+    }
+
     async function resolveAnimeFromTMDb(rawTitle) {
         const correctedTitle = await correctTitleForTMDb(rawTitle);
 
@@ -199,6 +209,7 @@ export default async function handler(req, res) {
             "기생수: 더 맥심": ["기생수", "기생수 세이의 격률", "Parasyte", "Parasyte -the maxim-"],
             "기생수 더 맥심": ["기생수", "기생수 세이의 격률", "Parasyte", "Parasyte -the maxim-"],
             "기생수": ["기생수 세이의 격률", "Parasyte", "Parasyte -the maxim-"],
+            "기생수: 세이의 격률": ["기생수", "Parasyte", "Parasyte -the maxim-"],
             "Parasyte": ["기생수", "기생수 세이의 격률", "Parasyte -the maxim-"],
             "Parasyte -the maxim-": ["기생수", "기생수 세이의 격률", "Parasyte"]
         };
@@ -245,6 +256,10 @@ export default async function handler(req, res) {
 
             if (simA !== simB) return simB - simA;
 
+            const metaA = getMetadataScore(a);
+            const metaB = getMetadataScore(b);
+            if (metaA !== metaB) return metaB - metaA;
+
             const animeA = (a.genre_ids || []).includes(16) ? 1 : 0;
             const animeB = (b.genre_ids || []).includes(16) ? 1 : 0;
             if (animeA !== animeB) return animeB - animeA;
@@ -260,7 +275,13 @@ export default async function handler(req, res) {
             return (b.popularity || 0) - (a.popularity || 0);
         });
 
-        return finalResults[0];
+        const usableResult = finalResults.find(item =>
+            item.poster_path ||
+            (item.overview && item.overview.trim().length > 20) ||
+            (item.vote_average && item.vote_average > 0)
+        );
+
+        return usableResult || finalResults[0];
     }
 
     const finalRecs = [];
