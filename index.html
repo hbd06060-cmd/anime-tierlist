@@ -1464,7 +1464,14 @@ let isTasteProfileOnCooldown = false;
 async function generateTasteProfile(btn) {
 if (isTasteProfileOnCooldown) return showToast('잠시 후 다시 시도해주세요 (약 15초 쿨타임).', true);
 
-const allItems = [...appState.tierList.S, ...appState.tierList.A, ...appState.tierList.B, ...appState.tierList.C];
+const allItems = [
+  ...appState.tierList.SS,
+  ...appState.tierList.S,
+  ...appState.tierList.A,
+  ...appState.tierList.B,
+  ...appState.tierList.C,
+  ...appState.tierList.D
+];
 if (allItems.length < 3) return showToast('최소 3개 이상의 작품을 티어리스트에 추가해야 취향을 분석할 수 있습니다.', true);
 
 isTasteProfileOnCooldown = true;
