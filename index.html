@@ -423,12 +423,16 @@ let draggedCard = null;
 let autoScrollAnimationFrame = null;
 
 // ==========================================
-// 모바일 long press 드래그용 상태값
+// 모바일 long press / 터치 이동 상태값
 // ==========================================
 let mobilePressTimer = null;
 let mobileDragMode = false;
 let mobileDraggedCard = null;
 let mobileLongPressTriggered = false;
+let mobileTouchStartX = 0;
+let mobileTouchStartY = 0;
+let mobileTouchMoved = false;
+
 
 const supabaseClient = (SUPABASE_DB_URL && SUPABASE_ANON_KEY && typeof supabase !== 'undefined') 
 ? supabase.createClient(SUPABASE_DB_URL, SUPABASE_ANON_KEY) 
@@ -1202,8 +1206,12 @@ function setupMobileTouchDnD() {
 // ==========================================
 function handleMobileTouchStart(e) {
   const card = e.currentTarget;
+  const touch = e.touches[0];
 
   mobileLongPressTriggered = false;
+  mobileTouchMoved = false;
+  mobileTouchStartX = touch.clientX;
+  mobileTouchStartY = touch.clientY;
 
   mobilePressTimer = setTimeout(() => {
     mobileLongPressTriggered = true;
@@ -1225,7 +1233,18 @@ function handleMobileTouchStart(e) {
 // 손가락이 움직이면 long press 취소
 // (스크롤과 충돌 방지)
 // ==========================================
-function handleMobileTouchMove() {
+function handleMobileTouchMove(e) {
+  const touch = e.touches[0];
+  const deltaX = Math.abs(touch.clientX - mobileTouchStartX);
+  const deltaY = Math.abs(touch.clientY - mobileTouchStartY);
+
+  // 손가락이 조금이라도 의미 있게 움직였으면
+  // 스크롤/이동으로 판단
+  if (deltaX > 8 || deltaY > 8) {
+    mobileTouchMoved = true;
+  }
+
+  // 움직임이 생기면 long press 타이머 취소
   if (mobilePressTimer) {
     clearTimeout(mobilePressTimer);
     mobilePressTimer = null;
@@ -1245,18 +1264,24 @@ function handleMobileTouchEnd(e) {
 
   // long press가 실제로 발동된 경우
   if (mobileLongPressTriggered) {
-    // 일단 이번 단계에서는 "선택 상태 표시 후 해제"까지만
     setTimeout(() => {
       card.classList.remove('mobile-drag-ready');
       mobileDragMode = false;
       mobileDraggedCard = null;
       mobileLongPressTriggered = false;
+      mobileTouchMoved = false;
     }, 250);
 
     return;
   }
 
-  // long press가 아니면 기존처럼 카드 클릭(상세 모달)
+  // 손가락 이동이 있었으면 스크롤로 간주하고 클릭 처리 안 함
+  if (mobileTouchMoved) {
+    mobileTouchMoved = false;
+    return;
+  }
+
+  // long press도 아니고, 스크롤도 아니면 탭으로 처리
   const id = card.getAttribute('data-id');
   const isRecommended = card.getAttribute('data-tier') === 'RECOMMENDED';
   openDetailModal(id, isRecommended);
