@@ -1327,29 +1327,36 @@ function handleMobileTouchMove(e) {
   const x = touch.clientX;
   const y = touch.clientY;
 
-  // 고스트 카드가 손가락 따라다님
+  // 고스트 카드 이동
   if (mobileGhostEl) {
     mobileGhostEl.style.left = `${x}px`;
     mobileGhostEl.style.top = `${y}px`;
   }
 
-  const grid = getTierGridFromPoint(x, y);
+  clearMobileDropTargetStyles();
+
+  let grid = getTierGridFromPoint(x, y);
+
+  // grid를 못 찾았으면, 마지막으로 유효했던 tier의 grid를 계속 사용
+  if (!grid && mobileDropTargetTier) {
+    grid = document.getElementById(
+      mobileDropTargetTier === 'RECOMMENDED'
+        ? 'grid-tier-recommended'
+        : `grid-tier-${mobileDropTargetTier.toLowerCase()}`
+    );
+  }
+
+  // 그래도 없으면 그냥 placeholder 현재 위치 유지
   if (!grid) {
-    mobileDropTargetCard = null;
-    mobileDropPosition = null;
-    mobileDropTargetTier = null;
-    clearMobileDropTargetStyles();
     return;
   }
 
   const targetTier = getTierNameFromGrid(grid);
   mobileDropTargetTier = targetTier;
 
-  clearMobileDropTargetStyles();
-
   const closestResult = getClosestCardInGrid(grid, x, y);
 
-  // 빈 티어면 placeholder를 그리드 끝으로
+  // 카드가 하나도 없는 빈 tier
   if (!closestResult || !closestResult.card) {
     mobileDropTargetCard = null;
     mobileDropPosition = 'append';
@@ -1407,12 +1414,51 @@ function clearMobileDropTargetStyles() {
   });
 }
 function getTierGridFromPoint(x, y) {
-  const el = document.elementFromPoint(x, y);
-  if (!el) return null;
+  const selectors = [
+    '#grid-tier-ss',
+    '#grid-tier-s',
+    '#grid-tier-a',
+    '#grid-tier-b',
+    '#grid-tier-c',
+    '#grid-tier-d',
+    '#grid-tier-recommended'
+  ];
 
-  return el.closest(
-    '#grid-tier-ss, #grid-tier-s, #grid-tier-a, #grid-tier-b, #grid-tier-c, #grid-tier-d, #grid-tier-recommended'
-  );
+  const el = document.elementFromPoint(x, y);
+  const directGrid = el ? el.closest(selectors.join(', ')) : null;
+  if (directGrid) return directGrid;
+
+  // 손가락이 gap 위나 살짝 바깥에 있어도
+  // 가장 가까운 grid를 fallback으로 잡아준다
+  let closestGrid = null;
+  let closestDistance = Infinity;
+
+  selectors.forEach(selector => {
+    const grid = document.querySelector(selector);
+    if (!grid) return;
+
+    const rect = grid.getBoundingClientRect();
+
+    const dx =
+      x < rect.left ? rect.left - x :
+      x > rect.right ? x - rect.right :
+      0;
+
+    const dy =
+      y < rect.top ? rect.top - y :
+      y > rect.bottom ? y - rect.bottom :
+      0;
+
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance < closestDistance) {
+      closestDistance = distance;
+      closestGrid = grid;
+    }
+  });
+
+  // 너무 멀리 벗어나지 않았으면 마지막 가까운 tier로 간주
+  return closestDistance < 80 ? closestGrid : null;
 }
 
 function getTierNameFromGrid(grid) {
