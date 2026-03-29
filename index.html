@@ -1280,61 +1280,6 @@ showToast('불러오기 중 저장 오류가 발생했습니다.', true);
 }
 }
 
-
-if (!data || typeof data !== 'object') {
-showToast('불러오기 실패: 파일 형식이 올바르지 않습니다.', true);
-return;
-}
-
-const importedTierList = data.tierList || {};
-const importedTasteProfile = data.tasteProfile || {};
-const importedRecommendedItems = Array.isArray(data.recommendedItems) ? data.recommendedItems : [];
-
-const nextTierList = {
-SS: Array.isArray(importedTierList.SS) ? importedTierList.SS.map(item => normalizeImportedAnime(item, 'SS')) : [],
-S: Array.isArray(importedTierList.S) ? importedTierList.S.map(item => normalizeImportedAnime(item, 'S')) : [],
-A: Array.isArray(importedTierList.A) ? importedTierList.A.map(item => normalizeImportedAnime(item, 'A')) : [],
-B: Array.isArray(importedTierList.B) ? importedTierList.B.map(item => normalizeImportedAnime(item, 'B')) : [],
-C: Array.isArray(importedTierList.C) ? importedTierList.C.map(item => normalizeImportedAnime(item, 'C')) : [],
-D: Array.isArray(importedTierList.D) ? importedTierList.D.map(item => normalizeImportedAnime(item, 'D')) : []
-};
-
-const nextTasteProfile = {
-titleKo: importedTasteProfile.titleKo || "아직 분석되지 않음",
-titleEn: importedTasteProfile.titleEn || "Not Analyzed",
-description: importedTasteProfile.description || "티어리스트를 채우고 분석해보세요."
-};
-
-const nextRecommendedItems = importedRecommendedItems.map((item, index) =>
-normalizeRecommendedAnime(item, index)
-);
-
-const ok = confirm(
-`현재 "${appState.user.name}" 계정의 기존 기록을 모두 덮어쓰고,
-선택한 파일의 기록으로 교체할까요?`
-);
-if (!ok) return;
-
-try {
-appState.tierList = nextTierList;
-appState.tasteProfile = nextTasteProfile;
-appState.recommendedItems = nextRecommendedItems;
-
-await replaceTierListInDB();
-await saveUserMetaToDB();
-
-renderUserInfo();
-renderTierList();
-renderRecommendations();
-updateRecButtonUI();
-
-showToast('기록 불러오기가 완료되었습니다.');
-} catch (err) {
-console.error('Import apply error:', err);
-showToast('불러오기 중 저장 오류가 발생했습니다.', true);
-}
-
-
 function openNamePopup() {
 document.getElementById('main-body').classList.add('overflow-hidden');
 const popup = document.getElementById('name-popup');
