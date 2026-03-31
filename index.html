@@ -2031,14 +2031,23 @@ async function generateRecommendations(btn) {
     const enriched = await Promise.all(
       firstPass.map(async (r, i) => {
         try {
-          const res = await fetch('/api/search-anime', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query: r.title })
-          });
+          const queries = [r.title, r.originalTitle].filter(Boolean);
+          let best = null;
 
-          const data = await res.json();
-          const best = data?.results?.[0];
+          for (const q of queries) {
+            const res = await fetch('/api/search-anime', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ query: q })
+            });
+
+            const data = await res.json();
+
+            if (data?.results?.[0]) {
+              best = data.results[0];
+              break;
+            }
+          }
 
           return {
             id: generateId(),
