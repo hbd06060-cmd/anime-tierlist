@@ -3,7 +3,7 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
-    const { titles, preferenceInsights } = req.body;
+    const { titles, ss, s, a, b, c, d, preferenceInsights } = req.body;
     const apiKey = process.env.GEMINI_API_KEY;
 
     const insightText = preferenceInsights ? `
@@ -33,13 +33,28 @@ ${(preferenceInsights.reviewEvidence || []).slice(0, 12).map(x => `- ${x.title} 
                 text: `사용자가 이미 본 작품 목록:
 ${titles || '없음'}
 
+등급별 티어리스트:
+SS: ${ss || '없음'}
+S: ${s || '없음'}
+A: ${a || '없음'}
+B: ${b || '없음'}
+C: ${c || '없음'}
+D: ${d || '없음'}
+
 ${insightText}
 
 할 일:
 - 이 사용자가 좋아할 만한 애니메이션을 반드시 정확히 4개 추천하라.
 - 이미 본 작품은 절대 추천하지 말 것.
 - 단순히 장르만 비슷한 작품을 추천하지 말 것.
-- preferenceInsights를 가장 중요한 근거로 사용하라.
+- 반드시 등급을 강하게 반영하라.
+- SS와 S는 핵심 선호작이다. 추천 이유에서 가장 우선적으로 참고하라.
+- A는 긍정 참고 가능하다.
+- B는 일부 요소만 참고 가능하지만, 강한 추천 근거로 쓰지 말라.
+- C와 D는 비선호작이다. 추천 이유에서 긍정 근거로 사용하지 말라.
+- 특히 C와 D 작품을 "사용자가 좋아한 작품"처럼 쓰지 말라.
+- 추천 이유를 설명할 때는 SS, S, A에 있는 작품과 사용자의 리뷰를 우선 인용하라.
+- preferenceInsights가 있으면 그것을 가장 중요한 근거로 사용하라.
 - 단순 장르 분포보다 사용자 리뷰에서 드러난 취향을 우선 반영하라.
 - 특히 아래 요소를 중요하게 고려하라:
   1. 서사/전개
