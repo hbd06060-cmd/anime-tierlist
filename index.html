@@ -808,12 +808,16 @@ function scrollToSocialLoginGuide() {
 }
 
 function normalizeAnimeTitle(title = '') {
-  return title
+  return String(title || '')
     .toLowerCase()
-    .replace(/fullmetal alchemist/gi, '강철의 연금술사')
+    .replace(/fullmetal alchemist/gi, '강철의연금술사')
     .replace(/brotherhood/gi, '')
-    .replace(/:/g, ' ')
-    .replace(/-/g, ' ')
+    .replace(/season\s*\d+/gi, '')
+    .replace(/part\s*\d+/gi, '')
+    .replace(/\b(tv|movie|the movie|ova|ona|special)\b/gi, '')
+    .replace(/[：:]/g, ' ')
+    .replace(/[-‐-‒–—―]/g, ' ')
+    .replace(/[()［\]【】\[\]]/g, ' ')
     .replace(/\s+/g, '')
     .trim();
 }
@@ -1977,7 +1981,10 @@ async function generateTasteProfile(btn) {
 
 async function generateRecommendations(btn) {
   const allItems = Object.values(appState.tierList).flat();
-  if (allItems.length < 2) return;
+  if (allItems.length < 2) {
+    showToast('작품을 2개 이상 추가해주세요.', true);
+    return;
+  }
 
   btn.disabled = true;
   btn.classList.add('opacity-50');
@@ -1987,25 +1994,41 @@ async function generateRecommendations(btn) {
     const response = await fetch('/api/recommend', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ titles: allItems.map(a => a.title).join(',') })
+      body: JSON.stringify({
+        titles: allItems.map(a => a.title).join(',')
+      })
     });
 
-    if (!response.ok) throw new Error(`recommend failed: ${response.status}`);
+    if (!response.ok) {
+      throw new Error(`recommend failed: ${response.status}`);
+    }
 
     const recs = await response.json();
 
-    const watchedSet = new Set(
-      allItems.map(a => normalizeAnimeTitle(a.title))
-    );
-
-    const filteredRecs = recs.filter(r => {
-      const k1 = normalizeAnimeTitle(r.title);
-      const k2 = normalizeAnimeTitle(r.originalTitle || '');
-      return !watchedSet.has(k1) && !watchedSet.has(k2);
+    // 1차: 내가 이미 본 작품 제목 모으기
+    const watchedSet = new Set();
+    allItems.forEach(a => {
+      if (a.title) watchedSet.add(normalizeAnimeTitle(a.title));
+      if (a.originalTitle) watchedSet.add(normalizeAnimeTitle(a.originalTitle));
+      if (a.original_title) watchedSet.add(normalizeAnimeTitle(a.original_title));
     });
 
+    // 2차: AI가 준 제목 기준으로 먼저 거르기
+    const firstPass = recs.filter(r => {
+      const candidates = [
+        r.title,
+        r.originalTitle,
+        r.original_title
+      ]
+        .filter(Boolean)
+        .map(normalizeAnimeTitle);
+
+      return !candidates.some(t => watchedSet.has(t));
+    });
+
+    // 3차: TMDb 정보 보강
     const enriched = await Promise.all(
-      filteredRecs.map(async (r, i) => {
+      firstPass.map(async (r, i) => {
         try {
           const res = await fetch('/api/search-anime', {
             method: 'POST',
@@ -2047,10 +2070,40 @@ async function generateRecommendations(btn) {
       })
     );
 
-    appState.recommendedItems = enriched;
+    // 4차: TMDb 보정 후 다시 한 번 중복 제거
+    const secondPass = enriched.filter(rec => {
+      const candidates = [
+        rec.title,
+        rec.originalTitle,
+        rec.original_title
+      ]
+        .filter(Boolean)
+        .map(normalizeAnimeTitle);
+
+      return !candidates.some(t => watchedSet.has(t));
+    });
+
+    // 5차: 추천끼리도 중복 제거
+    const seen = new Set();
+    const finalRecs = secondPass.filter(rec => {
+      const key = normalizeAnimeTitle(rec.title || rec.originalTitle || '');
+      if (!key) return false;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    appState.recommendedItems = finalRecs.slice(0, 4);
+
     await saveUserMetaToDB();
     renderRecommendations();
     updateRecButtonUI();
+
+    if (appState.recommendedItems.length === 0) {
+      showToast('기존 작품과 겹치지 않는 추천을 찾지 못했습니다. 다시 시도해주세요.', true);
+    } else {
+      showToast('AI 추천이 완료되었습니다.');
+    }
   } catch (err) {
     console.error(err);
     showToast('AI 추천에 실패했습니다.', true);
