@@ -137,9 +137,6 @@ animation: spin 1s linear infinite;
     카카오로 로그인
   </button>
 
-  <button onclick="signInWithNaver()" class="w-full py-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl transition-colors shadow-lg text-lg">
-    네이버로 로그인
-  </button>
 </div>
 </div>
 </div>
@@ -191,10 +188,6 @@ animation: spin 1s linear infinite;
       <span id="kakao-link-status" class="text-xs text-gray-400">확인 중...</span>
     </div>
 
-    <div class="flex items-center justify-between gap-3">
-      <span class="text-gray-200">Naver</span>
-      <span id="naver-link-status" class="text-xs text-gray-400">확인 중...</span>
-    </div>
   </div>
 
   <p class="text-[11px] text-gray-500 mt-3 leading-relaxed">
@@ -706,7 +699,6 @@ function renderAccountLinkUI() {
 
   renderProviderStatus('google', 'google-link-status', 'linkGoogleIdentity');
   renderProviderStatus('kakao', 'kakao-link-status', 'linkKakaoIdentity');
-  renderProviderStatus('custom:naver', 'naver-link-status', 'linkNaverIdentity');
 }
 
 function generateId() { return Math.random().toString(36).substr(2, 9); }
@@ -781,7 +773,7 @@ function renderMigrationBanner() {
 
   if (isLegacyLogin()) {
     titleEl.innerText = '소셜 계정 연결 추천';
-    descEl.innerText = '이름 로그인 상태에서는 계정 연결이 되지 않습니다. 백업 코드를 만든 뒤 Google, Kakao, Naver로 로그인해서 기존 기록을 가져오세요.';
+    descEl.innerText = '이름 로그인 상태에서는 계정 연결이 되지 않습니다. 백업 코드를 만든 뒤 Google, Kakao로 로그인해서 기존 기록을 가져오세요.';
     actionsEl.innerHTML = `
       <button onclick="openExportCodeModal()" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg">
         백업 코드 생성
@@ -812,7 +804,7 @@ function dismissMigrationBanner() {
   renderMigrationBanner();
 }
 function scrollToSocialLoginGuide() {
-  showToast('로그아웃 후 Google / Kakao / Naver 버튼으로 로그인하면 됩니다.');
+  showToast('로그아웃 후 Google / Kakao 버튼으로 로그인하면 됩니다.');
 }
 // ==========================================
 // DB 및 Local Storage 로직
@@ -1453,21 +1445,6 @@ redirectTo: window.location.origin
 if (error) showToast('카카오 로그인에 실패했습니다.', true);
 }
 
-async function signInWithNaver() {
-if (!supabaseClient) {
-showToast('Supabase 연결이 필요합니다.', true);
-return;
-}
-
-const { error } = await supabaseClient.auth.signInWithOAuth({
-provider: 'custom:naver',
-options: {
-redirectTo: window.location.origin
-}
-});
-
-if (error) showToast('네이버 로그인에 실패했습니다.', true);
-}
 
 async function linkGoogleIdentity() {
   if (!supabaseClient || !isSocialLogin()) {
@@ -1517,29 +1494,6 @@ async function linkKakaoIdentity() {
   }
 }
 
-async function linkNaverIdentity() {
-  if (!supabaseClient || !isSocialLogin()) {
-    showToast('소셜 로그인 상태에서만 연결할 수 있습니다.', true);
-    return;
-  }
-
-  if (hasLinkedProvider('custom:naver')) {
-    showToast('이미 네이버 계정이 연결되어 있습니다.');
-    return;
-  }
-
-  const { error } = await supabaseClient.auth.linkIdentity({
-    provider: 'custom:naver',
-    options: {
-      redirectTo: window.location.origin
-    }
-  });
-
-  if (error) {
-    console.error('Link Naver error:', error);
-    showToast('네이버 계정 연결에 실패했습니다.', true);
-  }
-}
 
 function openExportCodeModal() {
 if (!appState.user.isLoggedIn) {
