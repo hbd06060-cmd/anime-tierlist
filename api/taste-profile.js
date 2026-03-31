@@ -55,7 +55,7 @@ SS는 '최애 인생작', D는 '거의 안 맞는 작품'이므로 분석에서 
     };
 
     let result = null;
-    const models = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-3-flash', 'gemini-3.1-flash-lite'];
+    const models = ['gemini-2.5-flash-lite','gemini-2.5-flash', 'gemini-3-flash', 'gemini-3.1-flash-lite'];
     
     for (const model of models) {
         try {

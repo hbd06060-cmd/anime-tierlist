@@ -78,7 +78,7 @@ ${insightText}
     };
 
     let result = null;
-    const models = ['gemini-2.5-flash', 'gemini-2.5-flash-lite'];
+    const models = ['gemini-2.5-flash-lite', 'gemini-2.5-flash'];
 
     for (const model of models) {
         try {
