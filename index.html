@@ -1916,44 +1916,146 @@ updatePreviewReview();
 }
 
 async function generateTasteProfile(btn) {
-const allItems = Object.values(appState.tierList).flat();
-if (allItems.length < 3) return showToast('작품을 더 추가해주세요.', true);
+  const allItems = Object.values(appState.tierList).flat();
+  if (allItems.length < 3) {
+    return showToast('작품을 더 추가해주세요.', true);
+  }
 
-btn.classList.add('animate-spin');
-try {
-const response = await fetch('/api/taste-profile', {
-method: 'POST',
-headers: { 'Content-Type': 'application/json' },
-body: JSON.stringify(appState.tierList)
-});
-appState.tasteProfile = await response.json();
-await saveUserMetaToDB();
-renderTasteProfile();
-} catch (err) { console.error(err); }
-btn.classList.remove('animate-spin');
+  btn.classList.add('animate-spin');
+
+  try {
+    const response = await fetch('/api/taste-profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ss: appState.tierList.SS.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
+        s: appState.tierList.S.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
+        a: appState.tierList.A.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
+        b: appState.tierList.B.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
+        c: appState.tierList.C.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
+        d: appState.tierList.D.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', ')
+      })
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      console.error('taste-profile error:', err);
+      throw new Error(`taste-profile failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (!data?.titleKo) {
+      console.error('Invalid taste-profile response:', data);
+      throw new Error('invalid taste-profile response');
+    }
+
+    appState.tasteProfile = data;
+    await saveUserMetaToDB();
+    renderTasteProfile();
+    showToast('성향 분석이 완료되었습니다.');
+  } catch (err) {
+    console.error(err);
+    showToast('성향 분석에 실패했습니다.', true);
+  } finally {
+    btn.classList.remove('animate-spin');
+  }
 }
 
 async function generateRecommendations(btn) {
-const allItems = Object.values(appState.tierList).flat();
-if (allItems.length < 2) return;
+  const allItems = Object.values(appState.tierList).flat();
+  if (allItems.length < 2) {
+    return showToast('작품을 2개 이상 추가해주세요.', true);
+  }
 
-btn.classList.add('opacity-50');
-document.getElementById('rec-loading').classList.remove('hidden');
+  btn.disabled = true;
+  btn.classList.add('opacity-50');
+  document.getElementById('rec-loading').classList.remove('hidden');
 
-try {
-const response = await fetch('/api/recommend', {
-method: 'POST',
-headers: { 'Content-Type': 'application/json' },
-body: JSON.stringify({ titles: allItems.map(a => a.title).join(',') })
-});
-const recs = await response.json();
-appState.recommendedItems = recs.map((r, i) => ({ ...r, id: generateId(), rank: i+1, imgSrc: r.poster_url, tier: 'RECOMMENDED', recommendationReason: r.reason }));
-await saveUserMetaToDB();
-renderRecommendations();
-updateRecButtonUI();
-} catch (err) { console.error(err); }
-btn.classList.remove('opacity-50');
-document.getElementById('rec-loading').classList.add('hidden');
+  try {
+    const response = await fetch('/api/recommend', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        titles: allItems.map(a => a.title).join(',')
+      })
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      console.error('recommend error:', err);
+      throw new Error(`recommend failed: ${response.status}`);
+    }
+
+    const recs = await response.json();
+
+    if (!Array.isArray(recs)) {
+      console.error('Invalid recommend response:', recs);
+      throw new Error('invalid recommend response');
+    }
+
+    // 1차: 일단 바로 보여주기
+    appState.recommendedItems = recs.map((r, i) => ({
+      ...r,
+      id: generateId(),
+      rank: i + 1,
+      imgSrc: getPlaceholderUrl(r.title),
+      genres: [],
+      overview: '',
+      rating: 0,
+      releaseDate: '',
+      tier: 'RECOMMENDED',
+      recommendationReason: r.reason
+    }));
+
+    renderRecommendations();
+    updateRecButtonUI();
+    await saveUserMetaToDB();
+
+    // 2차: TMDb 정보 보강
+    const enriched = await Promise.all(
+      appState.recommendedItems.map(async (rec) => {
+        try {
+          const res = await fetch('/api/search-anime', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: rec.title })
+          });
+
+          if (!res.ok) return rec;
+
+          const data = await res.json();
+          const best = data?.results?.[0];
+          if (!best) return rec;
+
+          return {
+            ...rec,
+            imgSrc: best.poster_url || rec.imgSrc,
+            originalTitle: best.original_title || rec.originalTitle || '',
+            genres: best.genres || [],
+            overview: best.overview || '',
+            rating: best.vote_average || 0,
+            releaseDate: best.release_date || ''
+          };
+        } catch (e) {
+          console.error('recommend enrich error:', e);
+          return rec;
+        }
+      })
+    );
+
+    appState.recommendedItems = enriched;
+    renderRecommendations();
+    await saveUserMetaToDB();
+    showToast('AI 추천이 완료되었습니다.');
+  } catch (err) {
+    console.error(err);
+    showToast('AI 추천에 실패했습니다.', true);
+  } finally {
+    btn.disabled = false;
+    btn.classList.remove('opacity-50');
+    document.getElementById('rec-loading').classList.add('hidden');
+  }
 }
 
 document.addEventListener('keydown', (e) => {
