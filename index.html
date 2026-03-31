@@ -810,14 +810,15 @@ function scrollToSocialLoginGuide() {
 function normalizeAnimeTitle(title = '') {
   return String(title || '')
     .toLowerCase()
-    .replace(/fullmetal alchemist/gi, '강철의연금술사')
-    .replace(/brotherhood/gi, '')
-    .replace(/season\s*\d+/gi, '')
-    .replace(/part\s*\d+/gi, '')
-    .replace(/\b(tv|movie|the movie|ova|ona|special)\b/gi, '')
+    .normalize('NFKC')
     .replace(/[：:]/g, ' ')
-    .replace(/[-‐-‒–—―]/g, ' ')
-    .replace(/[()［\]【】\[\]]/g, ' ')
+    .replace(/[-‐-‒–—―~]/g, ' ')
+    .replace(/[()\[\]{}【】「」『』<>〈〉]/g, ' ')
+    .replace(/\b(tv|movie|the movie|ova|ona|special|edition|ver)\b/gi, '')
+    .replace(/\bseason\s*\d+\b/gi, '')
+    .replace(/\bpart\s*\d+\b/gi, '')
+    .replace(/\bchapter\s*\d+\b/gi, '')
+    .replace(/\b\d+(st|nd|rd|th)\s+season\b/gi, '')
     .replace(/\s+/g, '')
     .trim();
 }
