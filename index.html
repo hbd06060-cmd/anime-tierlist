@@ -111,8 +111,35 @@ animation: spin 1s linear infinite;
 <h2 class="text-3xl text-white font-black mb-2">나만의 티어리스트</h2>
 <p class="text-gray-400 text-sm mb-8">티어리스트의 주인공은 누구인가요?</p>
 <div class="space-y-4">
-<input type="text" id="userNameInput" placeholder="이름을 입력해주세요 (예: 홍길동)" class="w-full bg-gray-900 border border-gray-600 text-white rounded-xl p-4 text-center text-lg focus:outline-none focus:border-blue-500 transition-colors" onkeypress="if(event.key === 'Enter') handleLogin()">
-<button onclick="handleLogin()" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors shadow-lg text-lg">시작하기</button>
+  <input
+    type="text"
+    id="userNameInput"
+    placeholder="기존 사용자는 이름으로 계속 로그인 가능"
+    class="w-full bg-gray-900 border border-gray-600 text-white rounded-xl p-4 text-center text-lg focus:outline-none focus:border-blue-500 transition-colors"
+    onkeypress="if(event.key === 'Enter') handleLogin()"
+  >
+
+  <button onclick="handleLogin()" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors shadow-lg text-lg">
+    이름으로 시작하기
+  </button>
+
+  <div class="flex items-center gap-3 py-1">
+    <div class="h-px flex-1 bg-gray-700"></div>
+    <span class="text-xs text-gray-400 font-bold">또는 소셜 로그인</span>
+    <div class="h-px flex-1 bg-gray-700"></div>
+  </div>
+
+  <button onclick="signInWithGoogle()" class="w-full py-4 bg-white hover:bg-gray-100 text-black font-bold rounded-xl transition-colors shadow-lg text-lg">
+    Google로 로그인
+  </button>
+
+  <button onclick="signInWithKakao()" class="w-full py-4 bg-yellow-300 hover:bg-yellow-400 text-black font-bold rounded-xl transition-colors shadow-lg text-lg">
+    카카오로 로그인
+  </button>
+
+  <button onclick="signInWithNaver()" class="w-full py-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl transition-colors shadow-lg text-lg">
+    네이버로 로그인
+  </button>
 </div>
 </div>
 </div>
@@ -150,10 +177,50 @@ animation: spin 1s linear infinite;
 <p class="text-sm text-blue-400 font-black mb-1">🎯 총 등록된 작품</p>
 <p class="text-white text-2xl font-bold"><span id="total-count">0</span><span class="text-base text-gray-400 ml-1">편</span></p>
 </div>
+<div id="account-link-box" class="hidden bg-gray-800 rounded-lg p-4 px-5 text-sm text-gray-300 shadow-lg border border-gray-700 min-w-[260px] text-left">
+  <p class="text-sm text-purple-400 font-black mb-3">🔗 계정 연결</p>
+
+  <div class="space-y-2">
+    <div class="flex items-center justify-between gap-3">
+      <span class="text-gray-200">Google</span>
+      <span id="google-link-status" class="text-xs text-gray-400">확인 중...</span>
+    </div>
+
+    <div class="flex items-center justify-between gap-3">
+      <span class="text-gray-200">Kakao</span>
+      <span id="kakao-link-status" class="text-xs text-gray-400">확인 중...</span>
+    </div>
+
+    <div class="flex items-center justify-between gap-3">
+      <span class="text-gray-200">Naver</span>
+      <span id="naver-link-status" class="text-xs text-gray-400">확인 중...</span>
+    </div>
+  </div>
+
+  <p class="text-[11px] text-gray-500 mt-3 leading-relaxed">
+    현재 로그인된 계정에 다른 로그인 수단을 연결할 수 있습니다.
+  </p>
+</div>
+
 </div>
 </div>
 </header>
+<div id="migration-banner" class="hidden max-w-7xl mx-auto mb-6">
+  <div class="bg-indigo-900/40 border border-indigo-500/40 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+    
+    <div class="text-sm text-gray-200">
+      <span id="migration-banner-title" class="font-bold text-indigo-300">기존 기록 가져오기</span>
+      <p id="migration-banner-desc" class="mt-1 text-gray-200">
+        예전에 이름 로그인으로 저장한 데이터를 이 계정으로 가져올 수 있습니다.
+      </p>
+    </div>
 
+    <div id="migration-banner-actions" class="flex gap-2 flex-shrink-0">
+      <!-- JS로 버튼 렌더링 -->
+    </div>
+
+  </div>
+</div>
 <main class="max-w-7xl mx-auto space-y-16">
 <section>
 <div class="flex flex-col gap-10">
@@ -482,7 +549,7 @@ const tierThemes = {
 };
 
 const appState = {
-user: { name: null, isLoggedIn: false },
+user: { id: null, name: null, email: null, isLoggedIn: false, loginType: null, identities: [] },
 tierList: { SS: [], S: [], A: [], B: [], C: [], D: [] },
 tasteProfile: {
 titleKo: "아직 분석되지 않음",
@@ -508,17 +575,140 @@ const supabaseClient = (SUPABASE_DB_URL && SUPABASE_ANON_KEY && typeof supabase 
 // ==========================================
 // 유틸리티 함수
 // ==========================================
-function getCurrentUser() { return localStorage.getItem('anime_username'); }
+function getCurrentUser() {
+  return localStorage.getItem('anime_username');
+}
+
 function saveCurrentUser(name) {
-localStorage.setItem('anime_username', name);
-appState.user.name = name;
-appState.user.isLoggedIn = true;
+  localStorage.setItem('anime_username', name);
+  appState.user.id = null;
+  appState.user.name = name;
+  appState.user.email = null;
+  appState.user.isLoggedIn = true;
+  appState.user.loginType = 'legacy';
 }
+
 function clearCurrentUser() {
-localStorage.removeItem('anime_username');
-appState.user.name = null;
-appState.user.isLoggedIn = false;
+  localStorage.removeItem('anime_username');
 }
+
+function getDisplayNameFromUser(user) {
+  if (!user) return null;
+  return (
+    user.user_metadata?.full_name ||
+    user.user_metadata?.name ||
+    user.user_metadata?.nickname ||
+    user.email ||
+    '사용자'
+  );
+}
+
+function applySocialUser(user) {
+  appState.user.id = user.id;
+  appState.user.name = getDisplayNameFromUser(user);
+  appState.user.email = user.email || null;
+  appState.user.isLoggedIn = true;
+  appState.user.loginType = 'social';
+}
+
+function clearUserState() {
+  appState.user = {
+    id: null,
+    name: null,
+    email: null,
+    isLoggedIn: false,
+    loginType: null,
+    identities: []
+  };
+}
+
+function isSocialLogin() {
+  return appState.user.loginType === 'social' && !!appState.user.id;
+}
+
+function isLegacyLogin() {
+  return appState.user.loginType === 'legacy' && !!appState.user.name;
+}
+
+function getLocalExtrasKey() {
+  if (isSocialLogin()) return `anime_extras_social_${appState.user.id}`;
+  if (isLegacyLogin()) return `anime_extras_legacy_${appState.user.name}`;
+  return null;
+}
+
+function getLinkedProviders() {
+  const identities = appState.user.identities || [];
+  return identities.map(i => i.provider);
+}
+
+function hasLinkedProvider(provider) {
+  return getLinkedProviders().includes(provider);
+}
+
+async function refreshLinkedIdentities() {
+  if (!supabaseClient || !isSocialLogin()) {
+    appState.user.identities = [];
+    renderAccountLinkUI();
+    return;
+  }
+
+  try {
+    const { data, error } = await supabaseClient.auth.getUserIdentities();
+
+    if (error) {
+      console.error('Get identities error:', error);
+      appState.user.identities = [];
+    } else {
+      appState.user.identities = data?.identities || [];
+    }
+  } catch (err) {
+    console.error('Refresh identities error:', err);
+    appState.user.identities = [];
+  }
+
+  renderAccountLinkUI();
+}
+
+function renderProviderStatus(provider, elementId, connectFnName) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+
+  if (!isSocialLogin()) {
+    el.innerHTML = `<span class="text-gray-500">소셜 로그인 전용</span>`;
+    return;
+  }
+
+  if (hasLinkedProvider(provider)) {
+    el.innerHTML = `
+      <span class="px-2 py-1 rounded-md bg-green-600/20 text-green-400 text-xs font-bold">
+        연결됨 ✓
+      </span>
+    `;
+  } else {
+    el.innerHTML = `
+      <button onclick="${connectFnName}()" class="px-2 py-1 rounded-md bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-colors">
+        연결하기
+      </button>
+    `;
+  }
+}
+
+function renderAccountLinkUI() {
+  const box = document.getElementById('account-link-box');
+  if (!box) return;
+
+  if (isSocialLogin()) {
+    box.classList.remove('hidden');
+  } else {
+    box.classList.add('hidden');
+    return;
+  }
+
+  renderProviderStatus('google', 'google-link-status', 'linkGoogleIdentity');
+  renderProviderStatus('kakao', 'kakao-link-status', 'linkKakaoIdentity');
+  renderProviderStatus('custom:naver', 'naver-link-status', 'linkNaverIdentity');
+}
+
 function generateId() { return Math.random().toString(36).substr(2, 9); }
 function getPlaceholderUrl(title) {
 return `https://placehold.co/300x450/1f2937/9ca3af?text=${encodeURIComponent(title || 'No Image')}&font=roboto`;
@@ -549,21 +739,100 @@ const json = base64ToUtf8(encoded);
 return JSON.parse(json);
 }
 
+function shouldShowMigrationBanner() {
+  if (!appState.user.isLoggedIn) return false;
+
+  const total =
+    appState.tierList.SS.length +
+    appState.tierList.S.length +
+    appState.tierList.A.length +
+    appState.tierList.B.length +
+    appState.tierList.C.length +
+    appState.tierList.D.length;
+
+  // legacy 로그인: 항상 전환 유도 배너 표시
+  if (isLegacyLogin()) {
+    return true;
+  }
+
+  // social 로그인: 데이터 없고, 닫은 적 없을 때만 표시
+  if (isSocialLogin()) {
+    if (localStorage.getItem('migration_banner_dismissed') === 'true') return false;
+    return total === 0;
+  }
+
+  return false;
+}
+
+function renderMigrationBanner() {
+  const el = document.getElementById('migration-banner');
+  const titleEl = document.getElementById('migration-banner-title');
+  const descEl = document.getElementById('migration-banner-desc');
+  const actionsEl = document.getElementById('migration-banner-actions');
+
+  if (!el || !titleEl || !descEl || !actionsEl) return;
+
+  if (!shouldShowMigrationBanner()) {
+    el.classList.add('hidden');
+    return;
+  }
+
+  el.classList.remove('hidden');
+
+  if (isLegacyLogin()) {
+    titleEl.innerText = '소셜 계정 연결 추천';
+    descEl.innerText = '이름 로그인 상태에서는 계정 연결이 되지 않습니다. 백업 코드를 만든 뒤 Google, Kakao, Naver로 로그인해서 기존 기록을 가져오세요.';
+    actionsEl.innerHTML = `
+      <button onclick="openExportCodeModal()" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg">
+        백업 코드 생성
+      </button>
+      <button onclick="scrollToSocialLoginGuide()" class="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 text-xs font-bold rounded-lg">
+        소셜 로그인 안내
+      </button>
+    `;
+    return;
+  }
+
+  if (isSocialLogin()) {
+    titleEl.innerText = '기존 기록 가져오기';
+    descEl.innerText = '예전에 이름 로그인으로 저장한 데이터를 이 계정으로 가져올 수 있습니다.';
+    actionsEl.innerHTML = `
+      <button onclick="openImportCodeModal()" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg">
+        불러오기
+      </button>
+      <button onclick="dismissMigrationBanner()" class="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 text-xs font-bold rounded-lg">
+        닫기
+      </button>
+    `;
+  }
+}
+
+function dismissMigrationBanner() {
+  localStorage.setItem('migration_banner_dismissed', 'true');
+  renderMigrationBanner();
+}
+function scrollToSocialLoginGuide() {
+  showToast('로그아웃 후 Google / Kakao / Naver 버튼으로 로그인하면 됩니다.');
+}
 // ==========================================
 // DB 및 Local Storage 로직
 // ==========================================
 function saveLocalExtras() {
-if (!appState.user.name) return;
+const key = getLocalExtrasKey();
+if (!key) return;
+
 const data = {
 tasteProfile: appState.tasteProfile,
 recommendedItems: appState.recommendedItems
 };
-localStorage.setItem(`anime_extras_${appState.user.name}`, JSON.stringify(data));
+localStorage.setItem(key, JSON.stringify(data));
 }
 
 function loadLocalExtras() {
-if (!appState.user.name) return;
-const dataStr = localStorage.getItem(`anime_extras_${appState.user.name}`);
+const key = getLocalExtrasKey();
+if (!key) return;
+
+const dataStr = localStorage.getItem(key);
 if (dataStr) {
 try {
 const data = JSON.parse(dataStr);
@@ -577,26 +846,31 @@ updateRecButtonUI();
 }
 
 async function loadUserMetaFromDB() {
-if (!supabaseClient || !appState.user.name) {
+if (!supabaseClient || (!appState.user.id && !appState.user.name)) {
 loadLocalExtras();
 return;
 }
+
 try {
-const { data, error } = await supabaseClient
-.from('user_meta')
-.select('*')
-.eq('username', appState.user.name);
+let query = supabaseClient.from('user_meta').select('*');
+
+if (isSocialLogin()) {
+query = query.eq('user_id', appState.user.id);
+} else {
+query = query.eq('username', appState.user.name).is('user_id', null);
+}
+
+const { data, error } = await query.maybeSingle();
 
 if (error) throw error;
 
-if (data && data.length > 0) {
-const meta = data[0];
+if (data) {
 appState.tasteProfile = {
-titleKo: meta.taste_profile_title_ko || "아직 분석되지 않음",
-titleEn: meta.taste_profile_title_en || "Not Analyzed",
-description: meta.taste_profile_description || "티어리스트를 채우고 분석해보세요."
+titleKo: data.taste_profile_title_ko || "아직 분석되지 않음",
+titleEn: data.taste_profile_title_en || "Not Analyzed",
+description: data.taste_profile_description || "티어리스트를 채우고 분석해보세요."
 };
-appState.recommendedItems = meta.recommended_items || [];
+appState.recommendedItems = data.recommended_items || [];
 
 renderTasteProfile();
 renderRecommendations();
@@ -611,12 +885,13 @@ loadLocalExtras();
 }
 
 async function saveUserMetaToDB() {
-saveLocalExtras(); 
+saveLocalExtras();
 
-if (!supabaseClient || !appState.user.name) return;
+if (!supabaseClient || (!appState.user.id && !appState.user.name)) return;
 
 try {
 const payload = {
+user_id: isSocialLogin() ? appState.user.id : null,
 username: appState.user.name,
 taste_profile_title_ko: appState.tasteProfile.titleKo,
 taste_profile_title_en: appState.tasteProfile.titleEn,
@@ -625,11 +900,18 @@ recommended_items: appState.recommendedItems,
 updated_at: new Date().toISOString()
 };
 
-const { error } = await supabaseClient
+let result;
+if (isSocialLogin()) {
+result = await supabaseClient
+.from('user_meta')
+.upsert(payload, { onConflict: 'user_id' });
+} else {
+result = await supabaseClient
 .from('user_meta')
 .upsert(payload, { onConflict: 'username' });
+}
 
-if (error) console.error("Save User Meta Error:", error);
+if (result.error) console.error("Save User Meta Error:", result.error);
 } catch (err) {
 console.error("Save User Meta Catch Error:", err);
 }
@@ -641,25 +923,105 @@ console.error("Save User Meta Catch Error:", err);
 document.addEventListener('DOMContentLoaded', () => { initializeApp(); });
 
 async function initializeApp() {
+setupDragAndDrop();
+
 const savedName = getCurrentUser();
+
+if (!supabaseClient) {
 if (savedName) {
 saveCurrentUser(savedName);
 closeNamePopup();
 renderUserInfo();
-await loadUserMetaFromDB(); 
+await loadUserMetaFromDB();
 await loadTierListFromDB();
 } else {
 openNamePopup();
 }
-setupDragAndDrop();
+return;
+}
+
+try {
+const { data, error } = await supabaseClient.auth.getSession();
+
+if (error) {
+console.error('Get session error:', error);
+}
+
+const session = data?.session;
+
+if (session?.user) {
+applySocialUser(session.user);
+closeNamePopup();
+renderUserInfo();
+await refreshLinkedIdentities();
+await loadUserMetaFromDB();
+await loadTierListFromDB();
+} else if (savedName) {
+saveCurrentUser(savedName);
+closeNamePopup();
+renderUserInfo();
+await loadUserMetaFromDB();
+await loadTierListFromDB();
+} else {
+openNamePopup();
+}
+
+supabaseClient.auth.onAuthStateChange(async (_event, session) => {
+if (session?.user) {
+applySocialUser(session.user);
+closeNamePopup();
+renderUserInfo();
+await refreshLinkedIdentities();
+await loadUserMetaFromDB();
+await loadTierListFromDB();
+} else {
+const savedName = getCurrentUser();
+
+if (savedName) {
+saveCurrentUser(savedName);
+closeNamePopup();
+renderUserInfo();
+await loadUserMetaFromDB();
+await loadTierListFromDB();
+} else {
+clearUserState();
+appState.tierList = { SS: [], S: [], A: [], B: [], C: [], D: [] };
+appState.recommendedItems = [];
+appState.tasteProfile = {
+titleKo: "아직 분석되지 않음",
+titleEn: "Not Analyzed",
+description: "티어리스트를 채우고 분석해보세요."
+};
+renderTierList();
+renderRecommendations();
+updateRecButtonUI();
+openNamePopup();
+}
+}
+});
+} catch (err) {
+console.error('Initialize app error:', err);
+if (savedName) {
+saveCurrentUser(savedName);
+closeNamePopup();
+renderUserInfo();
+await loadUserMetaFromDB();
+await loadTierListFromDB();
+} else {
+openNamePopup();
+}
+}
 }
 
 function renderUserInfo() {
 if (!appState.user.isLoggedIn) return;
-document.getElementById('report-title').innerText = appState.user.name + '님의 티어리스트';
-document.title = appState.user.name + '님의 티어리스트';
-document.getElementById('footer-text').innerText = 'Tier List created by ' + appState.user.name;
+const displayName = appState.user.name || '사용자';
+document.getElementById('report-title').innerText = displayName + '님의 티어리스트';
+document.title = displayName + '님의 티어리스트';
+document.getElementById('footer-text').innerText = 'Tier List created by ' + displayName;
 renderTasteProfile();
+renderAccountLinkUI();
+renderMigrationBanner();
 }
 
 function updateTotalCount() {
@@ -851,12 +1213,19 @@ return `<div class="${baseClass}" ${dataAttrs}>${innerHtml}</div>`;
 // Supabase 데이터 통신
 // ==========================================
 async function loadTierListFromDB() {
-if (supabaseClient && appState.user.name) {
-const { data, error } = await supabaseClient
+if (supabaseClient && (appState.user.id || appState.user.name)) {
+let query = supabaseClient
 .from('tier_items')
 .select('*')
-.eq('username', appState.user.name)
 .order('sort_order', { ascending: true });
+
+if (isSocialLogin()) {
+query = query.eq('user_id', appState.user.id);
+} else {
+query = query.eq('username', appState.user.name).is('user_id', null);
+}
+
+const { data, error } = await query;
 
 if (!error && data) {
 appState.tierList = { SS: [], S: [], A: [], B: [], C: [], D: [] };
@@ -880,11 +1249,13 @@ userReview: row.user_review
 }
 }
 renderTierList();
+renderMigrationBanner();
 }
 
 async function saveAnimeToDB(anime, sortOrder) {
-if (supabaseClient && appState.user.name) {
+if (supabaseClient && (appState.user.id || appState.user.name)) {
 const { data, error } = await supabaseClient.from('tier_items').insert({
+user_id: isSocialLogin() ? appState.user.id : null,
 username: appState.user.name,
 title: anime.title,
 original_title: anime.originalTitle,
@@ -898,7 +1269,9 @@ ai_review: anime.aiReview,
 user_review: anime.userReview,
 sort_order: sortOrder
 }).select();
+
 if (!error && data && data.length > 0) return data;
+if (error) console.error('Save anime error:', error);
 }
 return null;
 }
@@ -927,12 +1300,17 @@ await Promise.all(promises);
 }
 
 async function clearAllTierItemsFromDB() {
-if (!supabaseClient || !appState.user.name) return;
+if (!supabaseClient || (!appState.user.id && !appState.user.name)) return;
 
-const { error } = await supabaseClient
-.from('tier_items')
-.delete()
-.eq('username', appState.user.name);
+let query = supabaseClient.from('tier_items').delete();
+
+if (isSocialLogin()) {
+query = query.eq('user_id', appState.user.id);
+} else {
+query = query.eq('username', appState.user.name).is('user_id', null);
+}
+
+const { error } = await query;
 
 if (error) {
 console.error('Clear tier items error:', error);
@@ -941,7 +1319,7 @@ throw error;
 }
 
 async function replaceTierListInDB() {
-if (!supabaseClient || !appState.user.name) return;
+if (!supabaseClient || (!appState.user.id && !appState.user.name)) return;
 
 await clearAllTierItemsFromDB();
 
@@ -954,6 +1332,7 @@ for (let i = 0; i < items.length; i++) {
 const anime = items[i];
 
 const payload = {
+user_id: isSocialLogin() ? appState.user.id : null,
 username: appState.user.name,
 title: anime.title || '',
 original_title: anime.originalTitle || '',
@@ -991,33 +1370,180 @@ anime.id = data[0].id;
 function handleLogin() {
 const nameInput = document.getElementById('userNameInput').value.trim();
 const userName = nameInput || '익명';
+
 saveCurrentUser(userName);
 renderUserInfo();
+renderAccountLinkUI();
 closeNamePopup();
 
 appState.tierList = { SS: [], S: [], A: [], B: [], C: [], D: [] };
-renderTierList();
+appState.recommendedItems = [];
+appState.tasteProfile = {
+titleKo: "아직 분석되지 않음",
+titleEn: "Not Analyzed",
+description: "티어리스트를 채우고 분석해보세요."
+};
 
+renderTierList();
+renderRecommendations();
+updateRecButtonUI();
+renderMigrationBanner();
 loadUserMetaFromDB().then(() => {
 loadTierListFromDB();
 });
 }
 
-function handleLogout() {
+async function handleLogout() {
+if (isSocialLogin() && supabaseClient) {
+const { error } = await supabaseClient.auth.signOut();
+if (error) {
+showToast('로그아웃에 실패했습니다.', true);
+return;
+}
+}
+
+if (isLegacyLogin()) {
 clearCurrentUser();
+}
+
+clearUserState();
 document.getElementById('userNameInput').value = '';
 appState.tierList = { SS: [], S: [], A: [], B: [], C: [], D: [] };
 appState.recommendedItems = [];
-appState.tasteProfile = { titleKo: "아직 분석되지 않음", titleEn: "Not Analyzed", description: "티어리스트를 채우고 분석해보세요." };
+appState.tasteProfile = {
+titleKo: "아직 분석되지 않음",
+titleEn: "Not Analyzed",
+description: "티어리스트를 채우고 분석해보세요."
+};
 renderTierList();
 renderRecommendations();
 updateRecButtonUI();
 openNamePopup();
+renderAccountLinkUI();
+}
+async function signInWithGoogle() {
+if (!supabaseClient) {
+showToast('Supabase 연결이 필요합니다.', true);
+return;
+}
+
+const { error } = await supabaseClient.auth.signInWithOAuth({
+provider: 'google',
+options: {
+redirectTo: window.location.origin
+}
+});
+
+if (error) showToast('구글 로그인에 실패했습니다.', true);
+}
+
+async function signInWithKakao() {
+if (!supabaseClient) {
+showToast('Supabase 연결이 필요합니다.', true);
+return;
+}
+
+const { error } = await supabaseClient.auth.signInWithOAuth({
+provider: 'kakao',
+options: {
+redirectTo: window.location.origin
+}
+});
+
+if (error) showToast('카카오 로그인에 실패했습니다.', true);
+}
+
+async function signInWithNaver() {
+if (!supabaseClient) {
+showToast('Supabase 연결이 필요합니다.', true);
+return;
+}
+
+const { error } = await supabaseClient.auth.signInWithOAuth({
+provider: 'custom:naver',
+options: {
+redirectTo: window.location.origin
+}
+});
+
+if (error) showToast('네이버 로그인에 실패했습니다.', true);
+}
+
+async function linkGoogleIdentity() {
+  if (!supabaseClient || !isSocialLogin()) {
+    showToast('소셜 로그인 상태에서만 연결할 수 있습니다.', true);
+    return;
+  }
+
+  if (hasLinkedProvider('google')) {
+    showToast('이미 Google 계정이 연결되어 있습니다.');
+    return;
+  }
+
+  const { error } = await supabaseClient.auth.linkIdentity({
+    provider: 'google',
+    options: {
+      redirectTo: window.location.origin
+    }
+  });
+
+  if (error) {
+    console.error('Link Google error:', error);
+    showToast('Google 계정 연결에 실패했습니다.', true);
+  }
+}
+
+async function linkKakaoIdentity() {
+  if (!supabaseClient || !isSocialLogin()) {
+    showToast('소셜 로그인 상태에서만 연결할 수 있습니다.', true);
+    return;
+  }
+
+  if (hasLinkedProvider('kakao')) {
+    showToast('이미 Kakao 계정이 연결되어 있습니다.');
+    return;
+  }
+
+  const { error } = await supabaseClient.auth.linkIdentity({
+    provider: 'kakao',
+    options: {
+      redirectTo: window.location.origin
+    }
+  });
+
+  if (error) {
+    console.error('Link Kakao error:', error);
+    showToast('카카오 계정 연결에 실패했습니다.', true);
+  }
+}
+
+async function linkNaverIdentity() {
+  if (!supabaseClient || !isSocialLogin()) {
+    showToast('소셜 로그인 상태에서만 연결할 수 있습니다.', true);
+    return;
+  }
+
+  if (hasLinkedProvider('custom:naver')) {
+    showToast('이미 네이버 계정이 연결되어 있습니다.');
+    return;
+  }
+
+  const { error } = await supabaseClient.auth.linkIdentity({
+    provider: 'custom:naver',
+    options: {
+      redirectTo: window.location.origin
+    }
+  });
+
+  if (error) {
+    console.error('Link Naver error:', error);
+    showToast('네이버 계정 연결에 실패했습니다.', true);
+  }
 }
 
 function openExportCodeModal() {
-if (!appState.user.isLoggedIn || !appState.user.name) {
-showToast('먼저 이름을 입력하고 시작해주세요.', true);
+if (!appState.user.isLoggedIn) {
+showToast('먼저 로그인해주세요.', true);
 return;
 }
 
@@ -1108,7 +1634,8 @@ appState.recommendedItems = data.recommendedItems || [];
 
 await replaceTierListInDB();
 await saveUserMetaToDB();
-
+localStorage.setItem('migration_banner_dismissed', 'true'); 
+renderMigrationBanner(); 
 renderUserInfo();
 renderTierList();
 renderRecommendations();
