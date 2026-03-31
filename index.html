@@ -1823,55 +1823,97 @@ renderTierList();
 // ==========================================
 function setupDragAndDrop() {
     const grids = ['grid-tier-ss','grid-tier-s','grid-tier-a','grid-tier-b','grid-tier-c','grid-tier-d','grid-tier-recommended'];
+
     grids.forEach(id => {
         const grid = document.getElementById(id);
-        if (grid) {
-            new Sortable(grid, {
-                group: 'tierList',
-                animation: 300,
-                delay: 150,
-                delayOnTouchOnly: true,
-                ghostClass: 'sortable-ghost',
-                dragClass: 'sortable-drag',
-                forceFallback: true,
-                fallbackOnBody: true,
-                filter: 'button, #rec-empty-state',
-                onStart: () => { isDragging = true; },
-                onEnd: async (evt) => {
-                    setTimeout(() => { isDragging = false; }, 50);
-                    const id = evt.item.getAttribute('data-id');
-                    const fromTier = evt.from.id.split('-').pop().toUpperCase();
-                    const toTier = evt.to.id.split('-').pop().toUpperCase();
-                    if (toTier === 'RECOMMENDED' && fromTier !== 'RECOMMENDED') { renderTierList(); return; }
-                    
+        if (!grid) return;
+
+        new Sortable(grid, {
+            group: 'tierList',
+            animation: 300,
+            delay: 150,
+            delayOnTouchOnly: true,
+            ghostClass: 'sortable-ghost',
+            dragClass: 'sortable-drag',
+            forceFallback: true,
+            fallbackOnBody: true,
+            filter: 'button, #rec-empty-state',
+
+            onStart: () => {
+                isDragging = true;
+            },
+
+            onEnd: async (evt) => {
+                const movedId = evt.item.getAttribute('data-id');
+                const fromTier = evt.from.id.split('-').pop().toUpperCase();
+                const toTier = evt.to.id.split('-').pop().toUpperCase();
+
+                try {
+                    // 추천 영역 안에서 추천끼리 순서만 바꾼 경우
+                    if (fromTier === 'RECOMMENDED' && toTier === 'RECOMMENDED') {
+                        const movedIndex = appState.recommendedItems.findIndex(a => String(a.id) === String(movedId));
+                        if (movedIndex > -1) {
+                            const [movedAnime] = appState.recommendedItems.splice(movedIndex, 1);
+                            appState.recommendedItems.splice(evt.newIndex, 0, movedAnime);
+                            await saveUserMetaToDB();
+                            renderRecommendations();
+                            updateRecButtonUI();
+                        }
+                        return;
+                    }
+
+                    // 일반 작품을 추천 영역으로 드롭하는 건 막기
+                    if (toTier === 'RECOMMENDED' && fromTier !== 'RECOMMENDED') {
+                        renderTierList();
+                        renderRecommendations();
+                        return;
+                    }
+
                     let movedAnime = null;
+
                     if (fromTier === 'RECOMMENDED') {
-                        const idx = appState.recommendedItems.findIndex(a => String(a.id) === String(id));
+                        const idx = appState.recommendedItems.findIndex(a => String(a.id) === String(movedId));
                         if (idx > -1) movedAnime = appState.recommendedItems.splice(idx, 1)[0];
                     } else {
-                        const idx = appState.tierList[fromTier].findIndex(a => String(a.id) === String(id));
+                        const idx = appState.tierList[fromTier].findIndex(a => String(a.id) === String(movedId));
                         if (idx > -1) movedAnime = appState.tierList[fromTier].splice(idx, 1)[0];
                     }
 
                     if (!movedAnime) return;
+
                     movedAnime.tier = toTier;
 
+                    // 추천작을 실제 티어로 넣는 경우
                     if (fromTier === 'RECOMMENDED') {
                         movedAnime.aiReview = movedAnime.recommendationReason;
-                        await saveAnimeToDB(movedAnime, evt.newIndex);
+                        const savedData = await saveAnimeToDB(movedAnime, evt.newIndex);
+                        if (savedData?.[0]?.id) {
+                            movedAnime.id = savedData[0].id;
+                        }
                     } else {
-                        await updateAnimeTierInDB(id, toTier);
+                        await updateAnimeTierInDB(movedId, toTier);
                     }
-                    
+
                     appState.tierList[toTier].splice(evt.newIndex, 0, movedAnime);
-                    persistTierOrder(toTier);
-                    if (fromTier !== toTier && fromTier !== 'RECOMMENDED') persistTierOrder(fromTier);
-                    
+
+                    await persistTierOrder(toTier);
+                    if (fromTier !== toTier && fromTier !== 'RECOMMENDED') {
+                        await persistTierOrder(fromTier);
+                    }
+
                     renderTierList();
-                    if (fromTier === 'RECOMMENDED') { renderRecommendations(); updateRecButtonUI(); }
+                    renderRecommendations();
+                    updateRecButtonUI();
+                } catch (e) {
+                    console.error('Drag end error:', e);
+                    renderTierList();
+                    renderRecommendations();
+                    updateRecButtonUI();
+                } finally {
+                    setTimeout(() => { isDragging = false; }, 0);
                 }
-            });
-        }
+            }
+        });
     });
 }
 
@@ -1996,7 +2038,13 @@ async function generateRecommendations(btn) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        titles: allItems.map(a => a.title).join(',')
+        titles: allItems.map(a => a.title).join(','),
+        ss: appState.tierList.SS.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
+        s: appState.tierList.S.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
+        a: appState.tierList.A.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
+        b: appState.tierList.B.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
+        c: appState.tierList.C.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
+        d: appState.tierList.D.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', ')
       })
     });
 
