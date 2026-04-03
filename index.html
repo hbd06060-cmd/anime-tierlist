@@ -563,6 +563,41 @@ let currentDetailIsRecommended = false;
 
 let aiAbortController = null;
 let isDragging = false;
+let dragJustEnded = false;
+let dragUnlockTimer = null;
+
+function resetDragState() {
+  isDragging = false;
+  dragJustEnded = false;
+
+  document.querySelectorAll('.sortable-drag').forEach(el => {
+    el.classList.remove('sortable-drag');
+  });
+
+  document.querySelectorAll('.sortable-ghost').forEach(el => {
+    el.classList.remove('sortable-ghost');
+  });
+}
+['pointerup', 'mouseup', 'touchend', 'dragend', 'blur'].forEach(evt => {
+  window.addEventListener(evt, () => {
+    setTimeout(resetDragState, 0);
+  }, true);
+});
+
+async function fetchWithTimeout(url, options = {}, timeout = 15000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeout);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+    return response;
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 const supabaseClient = (SUPABASE_DB_URL && SUPABASE_ANON_KEY && typeof supabase !== 'undefined') 
 ? supabase.createClient(SUPABASE_DB_URL, SUPABASE_ANON_KEY) 
@@ -1937,8 +1972,8 @@ currentDetailId = null;
 }
 
 function handleCardClick(event, id, isRecommended = false) {
-if (isDragging) return;
-openDetailModal(id, isRecommended);
+  if (isDragging || dragJustEnded) return;
+  openDetailModal(id, isRecommended);
 }
 
 async function saveEditedReview() {
@@ -2050,11 +2085,11 @@ async function refreshMissingAnimeMetadata(btn) {
 
       for (const q of refreshQueries) {
         try {
-          const res = await fetch('/api/search-anime', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query: q })
-          });
+          const res = await fetchWithTimeout('/api/search-anime', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ query: q })
+}, 15000);
 
           const json = await res.json();
           const results = json?.results || [];
@@ -2118,11 +2153,11 @@ async function refreshMissingAnimeMetadata(btn) {
 
         if (hasEnoughReviewSource) {
           try {
-            const reviewRes = await fetch('/api/generate-review', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(reviewSource)
-            });
+            const reviewRes = await fetchWithTimeout('/api/generate-review', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(reviewSource)
+}, 15000);
 
             const reviewJson = await reviewRes.json();
 
@@ -2163,99 +2198,104 @@ async function refreshMissingAnimeMetadata(btn) {
 // SortableJS 기반 드래그 앤 드롭
 // ==========================================
 function setupDragAndDrop() {
-    const grids = ['grid-tier-ss','grid-tier-s','grid-tier-a','grid-tier-b','grid-tier-c','grid-tier-d','grid-tier-recommended'];
+  const grids = ['grid-tier-ss','grid-tier-s','grid-tier-a','grid-tier-b','grid-tier-c','grid-tier-d','grid-tier-recommended'];
 
-    grids.forEach(id => {
-        const grid = document.getElementById(id);
-        if (!grid) return;
+  grids.forEach(id => {
+    const grid = document.getElementById(id);
+    if (!grid) return;
 
-        new Sortable(grid, {
-            group: 'tierList',
-            animation: 300,
-            delay: 150,
-            delayOnTouchOnly: true,
-            ghostClass: 'sortable-ghost',
-            dragClass: 'sortable-drag',
-            forceFallback: true,
-            fallbackOnBody: true,
-            filter: 'button, #rec-empty-state',
+    new Sortable(grid, {
+      group: 'tierList',
+      animation: 220,
+      delay: 0,
+      delayOnTouchOnly: true,
+      ghostClass: 'sortable-ghost',
+      dragClass: 'sortable-drag',
+      forceFallback: false,
+      fallbackOnBody: false,
+      fallbackTolerance: 6,
+      filter: 'button, #rec-empty-state',
+      preventOnFilter: false,
 
-            onStart: () => {
-                isDragging = true;
-            },
+      onStart: () => {
+        isDragging = true;
+        dragJustEnded = false;
+        clearTimeout(dragUnlockTimer);
+      },
 
-            onEnd: async (evt) => {
-                const movedId = evt.item.getAttribute('data-id');
-                const fromTier = evt.from.id.split('-').pop().toUpperCase();
-                const toTier = evt.to.id.split('-').pop().toUpperCase();
+      onEnd: async (evt) => {
+        const movedId = evt.item.getAttribute('data-id');
+        const fromTier = evt.from.id.split('-').pop().toUpperCase();
+        const toTier = evt.to.id.split('-').pop().toUpperCase();
 
-                try {
-                    // 추천 영역 안에서 추천끼리 순서만 바꾼 경우
-                    if (fromTier === 'RECOMMENDED' && toTier === 'RECOMMENDED') {
-                        const movedIndex = appState.recommendedItems.findIndex(a => String(a.id) === String(movedId));
-                        if (movedIndex > -1) {
-                            const [movedAnime] = appState.recommendedItems.splice(movedIndex, 1);
-                            appState.recommendedItems.splice(evt.newIndex, 0, movedAnime);
-                            await saveUserMetaToDB();
-                            renderRecommendations();
-                            updateRecButtonUI();
-                        }
-                        return;
-                    }
-
-                    // 일반 작품을 추천 영역으로 드롭하는 건 막기
-                    if (toTier === 'RECOMMENDED' && fromTier !== 'RECOMMENDED') {
-                        renderTierList();
-                        renderRecommendations();
-                        return;
-                    }
-
-                    let movedAnime = null;
-
-                    if (fromTier === 'RECOMMENDED') {
-                        const idx = appState.recommendedItems.findIndex(a => String(a.id) === String(movedId));
-                        if (idx > -1) movedAnime = appState.recommendedItems.splice(idx, 1)[0];
-                    } else {
-                        const idx = appState.tierList[fromTier].findIndex(a => String(a.id) === String(movedId));
-                        if (idx > -1) movedAnime = appState.tierList[fromTier].splice(idx, 1)[0];
-                    }
-
-                    if (!movedAnime) return;
-
-                    movedAnime.tier = toTier;
-
-                    // 추천작을 실제 티어로 넣는 경우
-                    if (fromTier === 'RECOMMENDED') {
-                        movedAnime.aiReview = movedAnime.recommendationReason;
-                        const savedData = await saveAnimeToDB(movedAnime, evt.newIndex);
-                        if (savedData?.[0]?.id) {
-                            movedAnime.id = savedData[0].id;
-                        }
-                    } else {
-                        await updateAnimeTierInDB(movedId, toTier);
-                    }
-
-                    appState.tierList[toTier].splice(evt.newIndex, 0, movedAnime);
-
-                    await persistTierOrder(toTier);
-                    if (fromTier !== toTier && fromTier !== 'RECOMMENDED') {
-                        await persistTierOrder(fromTier);
-                    }
-
-                    renderTierList();
-                    renderRecommendations();
-                    updateRecButtonUI();
-                } catch (e) {
-                    console.error('Drag end error:', e);
-                    renderTierList();
-                    renderRecommendations();
-                    updateRecButtonUI();
-                } finally {
-                    setTimeout(() => { isDragging = false; }, 0);
-                }
+        try {
+          if (fromTier === 'RECOMMENDED' && toTier === 'RECOMMENDED') {
+            const movedIndex = appState.recommendedItems.findIndex(a => String(a.id) === String(movedId));
+            if (movedIndex > -1) {
+              const [movedAnime] = appState.recommendedItems.splice(movedIndex, 1);
+              appState.recommendedItems.splice(evt.newIndex, 0, movedAnime);
+              await saveUserMetaToDB();
+              renderRecommendations();
+              updateRecButtonUI();
             }
-        });
+            return;
+          }
+
+          if (toTier === 'RECOMMENDED' && fromTier !== 'RECOMMENDED') {
+            renderTierList();
+            renderRecommendations();
+            return;
+          }
+
+          let movedAnime = null;
+
+          if (fromTier === 'RECOMMENDED') {
+            const idx = appState.recommendedItems.findIndex(a => String(a.id) === String(movedId));
+            if (idx > -1) movedAnime = appState.recommendedItems.splice(idx, 1)[0];
+          } else {
+            const idx = appState.tierList[fromTier].findIndex(a => String(a.id) === String(movedId));
+            if (idx > -1) movedAnime = appState.tierList[fromTier].splice(idx, 1)[0];
+          }
+
+          if (!movedAnime) return;
+
+          movedAnime.tier = toTier;
+
+          if (fromTier === 'RECOMMENDED') {
+            movedAnime.aiReview = movedAnime.recommendationReason;
+            const savedData = await saveAnimeToDB(movedAnime, evt.newIndex);
+            if (savedData?.[0]?.id) {
+              movedAnime.id = savedData[0].id;
+            }
+          } else {
+            await updateAnimeTierInDB(movedId, toTier);
+          }
+
+          appState.tierList[toTier].splice(evt.newIndex, 0, movedAnime);
+
+          await persistTierOrder(toTier);
+          if (fromTier !== toTier && fromTier !== 'RECOMMENDED') {
+            await persistTierOrder(fromTier);
+          }
+
+          renderTierList();
+          renderRecommendations();
+          updateRecButtonUI();
+        } catch (e) {
+          console.error('Drag end error:', e);
+          renderTierList();
+          renderRecommendations();
+          updateRecButtonUI();
+        } finally {
+          dragJustEnded = true;
+          clearTimeout(dragUnlockTimer);
+          dragUnlockTimer = setTimeout(() => {
+            resetDragState();
+          }, 120);
+        }
+      }
     });
+  });
 }
 
 // ==========================================
@@ -2264,7 +2304,7 @@ function setupDragAndDrop() {
 async function searchAnimeAI(btn) {
   const titleInput = document.getElementById('animeTitle');
   const query = titleInput.value.trim();
-  if (!query || isDragging) return;
+  if (!query) return;
 
   resetSearchUI({ keepTitle: true });
   aiAbortController = new AbortController();
@@ -2280,12 +2320,12 @@ async function searchAnimeAI(btn) {
   }
 
   try {
-    const response = await fetch('/api/search-anime', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query }),
-      signal: aiAbortController.signal
-    });
+    const response = await fetchWithTimeout('/api/search-anime', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ query }),
+  signal: aiAbortController.signal
+}, 15000);
 
     const data = await response.json();
     const results = data?.results || [];
@@ -2403,18 +2443,18 @@ async function selectCandidate(item, element = null, options = {}) {
   updatePreviewReview();
 
   try {
-    const res = await fetch('/api/generate-review', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: tempAnimeData.title,
-        originalTitle: tempAnimeData.originalTitle,
-        overview: tempAnimeData.overview,
-        genres: tempAnimeData.genres,
-        releaseDate: tempAnimeData.releaseDate,
-        voteAverage: tempAnimeData.rating
-      })
-    });
+    const res = await fetchWithTimeout('/api/generate-review', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    title: tempAnimeData.title,
+    originalTitle: tempAnimeData.originalTitle,
+    overview: tempAnimeData.overview,
+    genres: tempAnimeData.genres,
+    releaseDate: tempAnimeData.releaseDate,
+    voteAverage: tempAnimeData.rating
+  })
+}, 15000);
 
     const reviewData = await res.json();
     tempAnimeData.aiReview = reviewData.shortReview || '';
@@ -2490,19 +2530,19 @@ async function generateRecommendations(btn) {
   document.getElementById('rec-loading').classList.remove('hidden');
 
   try {
-    const response = await fetch('/api/recommend', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        titles: allItems.map(a => a.title).join(','),
-        ss: appState.tierList.SS.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
-        s: appState.tierList.S.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
-        a: appState.tierList.A.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
-        b: appState.tierList.B.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
-        c: appState.tierList.C.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
-        d: appState.tierList.D.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', ')
-      })
-    });
+    const response = await fetchWithTimeout('/api/recommend', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    titles: allItems.map(a => a.title).join(','),
+    ss: appState.tierList.SS.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
+    s: appState.tierList.S.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
+    a: appState.tierList.A.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
+    b: appState.tierList.B.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
+    c: appState.tierList.C.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
+    d: appState.tierList.D.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', ')
+  })
+}, 20000);
 
     if (!response.ok) {
       throw new Error(`recommend failed: ${response.status}`);
@@ -2539,11 +2579,11 @@ async function generateRecommendations(btn) {
           let best = null;
 
           for (const q of queries) {
-            const res = await fetch('/api/search-anime', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ query: q })
-            });
+            const res = await fetchWithTimeout('/api/search-anime', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ query: q })
+}, 15000);
 
             const data = await res.json();
 
