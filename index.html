@@ -709,6 +709,18 @@ function getPlaceholderUrl(title) {
 return `https://placehold.co/300x450/1f2937/9ca3af?text=${encodeURIComponent(title || 'No Image')}&font=roboto`;
 }
 
+function isMissingPosterUrl(url) {
+  const value = String(url || '').trim();
+  if (!value) return true;
+
+  return (
+    value.includes('placehold.co') ||
+    value.includes('No+Image') ||
+    value.includes('text=No%20Image') ||
+    value.includes('text=No+Image')
+  );
+}
+
 function utf8ToBase64(value) {
 return btoa(unescape(encodeURIComponent(value)));
 }
@@ -2022,12 +2034,12 @@ async function refreshMissingAnimeMetadata(btn) {
 
     for (const item of items) {
       const needsMeta =
-        isBlankValue(item.original_title) ||
-        isBlankValue(item.poster_url) ||
-        isBlankValue(item.release_date) ||
-        isBlankValue(item.overview) ||
-        isBlankValue(item.genres) ||
-        isMissingRating(item.vote_average);
+  isBlankValue(item.original_title) ||
+  isMissingPosterUrl(item.poster_url) ||
+  isBlankValue(item.release_date) ||
+  isBlankValue(item.overview) ||
+  isBlankValue(item.genres) ||
+  isMissingRating(item.vote_average);
 
       const needsAiReview = isBlankValue(item.ai_review);
 
@@ -2064,9 +2076,9 @@ async function refreshMissingAnimeMetadata(btn) {
           updatePayload.original_title = best.original_title;
         }
 
-        if (isBlankValue(item.poster_url) && !isBlankValue(best.poster_url)) {
-          updatePayload.poster_url = best.poster_url;
-        }
+        if (isMissingPosterUrl(item.poster_url) && !isBlankValue(best.poster_url)) {
+  updatePayload.poster_url = best.poster_url;
+}
 
         if (isBlankValue(item.release_date) && !isBlankValue(best.release_date)) {
           updatePayload.release_date = best.release_date;
@@ -2287,7 +2299,6 @@ async function searchAnimeAI(btn) {
         resultsBox.classList.remove('hidden');
       }
 
-      showToast('첫 번째 검색 결과를 자동 적용했습니다.');
     } else {
       tempAnimeData = null;
       document.getElementById('animeOriginalTitle').value = '';
