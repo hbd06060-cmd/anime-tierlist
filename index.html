@@ -1791,6 +1791,7 @@ const reviewInput = document.getElementById('animeReview').value.trim();
 if (!title || !reviewInput) return;
 
 const newAnime = {
+id: generateId(),
 title: title,
 originalTitle: tempAnimeData?.originalTitle || '',
 imgSrc: document.getElementById('imgUrl').value.trim() || getPlaceholderUrl(title),
@@ -1805,6 +1806,7 @@ userReview: reviewInput
 
 const savedData = await saveAnimeToDB(newAnime, appState.tierList[currentTier].length);
 if (savedData?.[0]) newAnime.id = savedData[0].id;
+
 appState.tierList[currentTier].push(newAnime);
 renderTierList();
 closeAddModal();
@@ -1950,29 +1952,63 @@ results?.forEach(item => {
 const div = document.createElement('div');
 div.className = "flex bg-gray-900 border border-gray-700 rounded-lg p-3 cursor-pointer hover:border-purple-500 gap-3 items-center";
 div.onclick = () => selectCandidate(item, div);
-div.innerHTML = `<img src="${item.poster_url}" class="w-12 h-16 object-cover rounded"><div class="text-white font-bold text-sm truncate">${item.title}</div>`;
+div.innerHTML = `
+  <img src="${item.poster_url || getPlaceholderUrl(item.title)}" class="w-12 h-16 object-cover rounded">
+  <div class="text-white font-bold text-sm truncate">${item.title}</div>
+`;
 container.appendChild(div);
 });
 }
 
 async function selectCandidate(item, element) {
-tempAnimeData = { ...item, imgSrc: item.poster_url };
-document.getElementById('animeTitle').value = item.title;
-document.getElementById('animeOriginalTitle').value = item.original_title;
-document.getElementById('animeRating').value = item.vote_average;
-document.getElementById('imgUrl').value = item.poster_url;
+tempAnimeData = {
+  id: item.id,
+  mediaType: item.media_type,
+  title: item.title || '',
+  originalTitle: item.original_title || '',
+  imgSrc: item.poster_url || '',
+  genres: item.genres || [],
+  overview: item.overview || '',
+  rating: item.vote_average || 0,
+  releaseDate: item.release_date || '',
+  aiReview: ''
+};
+
+document.getElementById('animeTitle').value = tempAnimeData.title;
+document.getElementById('animeOriginalTitle').value = tempAnimeData.originalTitle;
+document.getElementById('animeRating').value = tempAnimeData.rating ? Number(tempAnimeData.rating).toFixed(1) : '-';
+document.getElementById('imgUrl').value = tempAnimeData.imgSrc;
 updatePreviewImage();
+
+document.getElementById('addPreviewTitle').innerText = tempAnimeData.title || '작품 제목';
+document.getElementById('addPreviewGenres').innerText =
+  (tempAnimeData.genres && tempAnimeData.genres.length > 0)
+    ? tempAnimeData.genres.slice(0, 2).join(', ')
+    : '-';
+document.getElementById('addPreviewRating').innerText =
+  tempAnimeData.rating ? Number(tempAnimeData.rating).toFixed(1) : '0.0';
 
 try {
 const res = await fetch('/api/generate-review', {
 method: 'POST',
 headers: { 'Content-Type': 'application/json' },
-body: JSON.stringify(item)
+body: JSON.stringify({
+  title: tempAnimeData.title,
+  originalTitle: tempAnimeData.originalTitle,
+  overview: tempAnimeData.overview,
+  genres: tempAnimeData.genres,
+  releaseDate: tempAnimeData.releaseDate,
+  voteAverage: tempAnimeData.rating
+})
 });
+
 const reviewData = await res.json();
-document.getElementById('animeReview').value = reviewData.shortReview;
+tempAnimeData.aiReview = reviewData.shortReview || '';
+document.getElementById('animeReview').value = tempAnimeData.aiReview;
 updatePreviewReview();
-} catch(err) { console.error(err); }
+} catch(err) {
+console.error(err);
+}
 }
 
 async function generateTasteProfile(btn) {
