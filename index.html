@@ -159,12 +159,15 @@ animation: spin 1s linear infinite;
 </div>
 </div>
 <div class="flex-shrink-0 w-full md:w-auto text-right flex flex-col items-end gap-2">
-<div class="flex gap-2 mb-1">
+<div class="flex gap-2 mb-1 flex-wrap justify-end">
 <button onclick="openExportCodeModal()" class="text-xs px-3 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white transition-colors">
 백업 코드 생성
 </button>
 <button onclick="openImportCodeModal()" class="text-xs px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-colors">
 백업 코드 불러오기
+</button>
+<button id="refreshMissingBtn" onclick="refreshMissingAnimeMetadata(this)" class="text-xs px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition-colors">
+작품 정보 보정
 </button>
 </div>
 <button onclick="handleLogout()" class="text-xs text-gray-400 hover:text-white transition-colors underline mb-1">
@@ -823,6 +826,22 @@ function normalizeAnimeTitle(title = '') {
     .trim();
 }
 
+function isBlankValue(value) {
+  return value == null || String(value).trim() === '';
+}
+
+function isMissingRating(value) {
+  return value == null || Number(value) === 0 || Number.isNaN(Number(value));
+}
+
+function parseGenresField(genres) {
+  if (Array.isArray(genres)) return genres.filter(Boolean);
+  if (!genres) return [];
+  return String(genres)
+    .split(',')
+    .map(v => v.trim())
+    .filter(Boolean);
+}
 
 // ==========================================
 // DB 및 Local Storage 로직
@@ -1292,6 +1311,15 @@ if (supabaseClient) await supabaseClient.from('tier_items').update({ tier: newTi
 
 async function updateAnimeReviewInDB(id, review) {
 if (supabaseClient) await supabaseClient.from('tier_items').update({ user_review: review }).eq('id', id);
+}
+
+async function updateAnimeFieldsInDB(id, payload) {
+if (!supabaseClient || !id || !payload || Object.keys(payload).length === 0) return;
+const { error } = await supabaseClient.from('tier_items').update(payload).eq('id', id);
+if (error) {
+  console.error('Update anime fields error:', error);
+  throw error;
+}
 }
 
 async function deleteAnimeFromDB(id) {
@@ -1818,6 +1846,188 @@ if(!confirm('삭제하시겠습니까?')) return;
 appState.tierList[tier] = appState.tierList[tier].filter(a => String(a.id) !== String(id));
 await deleteAnimeFromDB(id);
 renderTierList();
+}
+
+async function refreshMissingAnimeMetadata(btn) {
+  if (!appState.user.isLoggedIn) {
+    showToast('먼저 로그인해주세요.', true);
+    return;
+  }
+
+  if (!supabaseClient) {
+    showToast('Supabase 연결이 필요합니다.', true);
+    return;
+  }
+
+  const originalText = btn?.innerText || '작품 정보 보정';
+  if (btn) {
+    btn.disabled = true;
+    btn.classList.add('opacity-50');
+    btn.innerText = '보정 중...';
+  }
+
+  try {
+    let query = supabaseClient
+      .from('tier_items')
+      .select('*')
+      .order('sort_order', { ascending: true });
+
+    if (isSocialLogin()) {
+      query = query.eq('user_id', appState.user.id);
+    } else {
+      query = query.eq('username', appState.user.name).is('user_id', null);
+    }
+
+    const { data: items, error } = await query;
+
+    if (error) {
+      console.error('Refresh load items error:', error);
+      throw error;
+    }
+
+    if (!items || items.length === 0) {
+      showToast('보정할 작품이 없습니다.');
+      return;
+    }
+
+    let checkedCount = 0;
+    let updatedCount = 0;
+
+    for (const item of items) {
+      checkedCount++;
+
+      const needsMeta =
+        isBlankValue(item.original_title) ||
+        isBlankValue(item.poster_url) ||
+        isBlankValue(item.release_date) ||
+        isBlankValue(item.overview) ||
+        isBlankValue(item.genres) ||
+        isMissingRating(item.vote_average);
+
+      const needsAiReview = isBlankValue(item.ai_review);
+
+      if (!needsMeta && !needsAiReview) {
+        continue;
+      }
+
+      let best = null;
+
+      if (needsMeta || needsAiReview) {
+        const searchQueries = [
+          item.title,
+          item.original_title
+        ].filter(v => !isBlankValue(v));
+
+        for (const q of searchQueries) {
+          try {
+            const res = await fetch('/api/search-anime', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ query: q })
+            });
+
+            const json = await res.json();
+            const candidate = json?.results?.[0];
+
+            if (candidate) {
+              best = candidate;
+              break;
+            }
+          } catch (err) {
+            console.error('Metadata refresh search error:', err);
+          }
+        }
+      }
+
+      const updatePayload = {};
+
+      if (best) {
+        if (isBlankValue(item.original_title) && !isBlankValue(best.original_title)) {
+          updatePayload.original_title = best.original_title;
+        }
+
+        if (isBlankValue(item.poster_url) && !isBlankValue(best.poster_url)) {
+          updatePayload.poster_url = best.poster_url;
+        }
+
+        if (isBlankValue(item.release_date) && !isBlankValue(best.release_date)) {
+          updatePayload.release_date = best.release_date;
+        }
+
+        if (isBlankValue(item.overview) && !isBlankValue(best.overview)) {
+          updatePayload.overview = best.overview;
+        }
+
+        if (isBlankValue(item.genres) && Array.isArray(best.genres) && best.genres.length > 0) {
+          updatePayload.genres = best.genres.join(', ');
+        }
+
+        if (isMissingRating(item.vote_average) && !isMissingRating(best.vote_average)) {
+          updatePayload.vote_average = best.vote_average;
+        }
+      }
+
+      if (needsAiReview) {
+        const reviewSource = {
+          title: best?.title || item.title || '',
+          originalTitle: best?.original_title || item.original_title || '',
+          overview: best?.overview || item.overview || '',
+          genres: best?.genres || parseGenresField(item.genres),
+          releaseDate: best?.release_date || item.release_date || '',
+          voteAverage: best?.vote_average || item.vote_average || 0
+        };
+
+        const hasEnoughReviewSource =
+          !isBlankValue(reviewSource.title) &&
+          (
+            !isBlankValue(reviewSource.overview) ||
+            (Array.isArray(reviewSource.genres) && reviewSource.genres.length > 0) ||
+            !isMissingRating(reviewSource.voteAverage) ||
+            !isBlankValue(reviewSource.releaseDate)
+          );
+
+        if (hasEnoughReviewSource) {
+          try {
+            const reviewRes = await fetch('/api/generate-review', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(reviewSource)
+            });
+
+            const reviewJson = await reviewRes.json();
+
+            if (isBlankValue(item.ai_review) && !isBlankValue(reviewJson?.shortReview)) {
+              updatePayload.ai_review = reviewJson.shortReview;
+            }
+          } catch (err) {
+            console.error('Metadata refresh review error:', err);
+          }
+        }
+      }
+
+      if (Object.keys(updatePayload).length > 0) {
+        try {
+          await updateAnimeFieldsInDB(item.id, updatePayload);
+          updatedCount++;
+        } catch (err) {
+          console.error(`Failed to update item ${item.id}:`, err);
+        }
+      }
+    }
+
+    await loadTierListFromDB();
+    showToast(`${updatedCount}개 작품의 누락 정보를 보정했습니다.`);
+    console.log(`metadata refresh checked=${checkedCount}, updated=${updatedCount}`);
+  } catch (err) {
+    console.error('refreshMissingAnimeMetadata error:', err);
+    showToast('작품 정보 보정 중 오류가 발생했습니다.', true);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.classList.remove('opacity-50');
+      btn.innerText = originalText;
+    }
+  }
 }
 
 // ==========================================
