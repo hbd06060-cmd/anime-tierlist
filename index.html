@@ -843,6 +843,114 @@ function parseGenresField(genres) {
     .filter(Boolean);
 }
 
+function buildRefreshSearchQueries(title = '', originalTitle = '') {
+  const base = [title, originalTitle].filter(Boolean).map(v => String(v).trim());
+  const queries = new Set();
+
+  const replacements = [
+    [/러브코미디/g, '럽코'],
+    [/럽코/g, '러브코미디'],
+    [/러브코미디/g, '러브코메디'],
+    [/러브코메디/g, '러브코미디'],
+    [/청춘러브코미디/g, '청춘 러브코미디'],
+    [/청춘 러브코미디/g, '청춘러브코미디'],
+    [/청춘럽코/g, '청춘 럽코'],
+    [/청춘 럽코/g, '청춘럽코']
+  ];
+
+  base.forEach(q => {
+    const trimmed = q.trim();
+    if (!trimmed) return;
+
+    queries.add(trimmed);
+    queries.add(trimmed.replace(/\s+/g, ''));
+    queries.add(trimmed.replace(/[:：].*$/, '').trim());
+
+    replacements.forEach(([pattern, replacement]) => {
+      if (pattern.test(trimmed)) {
+        queries.add(trimmed.replace(pattern, replacement));
+      }
+    });
+
+    if (trimmed.startsWith('역시 ')) {
+      queries.add(trimmed.replace(/^역시\s*/, '').trim());
+    }
+
+    if (trimmed.includes('내 청춘')) {
+      queries.add(trimmed.replace(/내 청춘/g, '역시 내 청춘'));
+    }
+  });
+
+  return [...queries].filter(Boolean);
+}
+
+function getMetadataCompletenessScore(item) {
+  let score = 0;
+  if (!isBlankValue(item?.poster_url)) score += 5;
+  if (!isBlankValue(item?.original_title)) score += 2;
+  if (!isBlankValue(item?.overview)) score += 2;
+  if (!isBlankValue(item?.release_date)) score += 2;
+  if (!isMissingRating(item?.vote_average)) score += 1;
+  if (Array.isArray(item?.genres) && item.genres.length > 0) score += 2;
+  if (Array.isArray(item?.genres) && item.genres.includes('애니메이션')) score += 2;
+  return score;
+}
+
+function getTitleSimilarityScore(item, sourceTitle = '', sourceOriginalTitle = '') {
+  const q1 = normalizeAnimeTitle(sourceTitle);
+  const q2 = normalizeAnimeTitle(sourceOriginalTitle);
+  const t1 = normalizeAnimeTitle(item?.title || '');
+  const t2 = normalizeAnimeTitle(item?.original_title || '');
+
+  let score = 0;
+  [q1, q2].filter(Boolean).forEach(q => {
+    [t1, t2].filter(Boolean).forEach(t => {
+      if (t === q) score += 10;
+      else if (t.includes(q) || q.includes(t)) score += 6;
+      else {
+        const qMain = q.replace(/잘못됐다/g, '').trim();
+        const tMain = t.replace(/잘못됐다/g, '').trim();
+        if (qMain && tMain && (tMain.includes(qMain) || qMain.includes(tMain))) {
+          score += 4;
+        }
+      }
+    });
+  });
+
+  return score;
+}
+
+function pickBestRefreshCandidate(results, sourceTitle = '', sourceOriginalTitle = '') {
+  if (!Array.isArray(results) || results.length === 0) return null;
+
+  const scored = results.map(item => ({
+    item,
+    score:
+      getMetadataCompletenessScore(item) +
+      getTitleSimilarityScore(item, sourceTitle, sourceOriginalTitle)
+  }));
+
+  scored.sort((a, b) => b.score - a.score);
+  return scored[0]?.item || null;
+}
+
+function isBlankValue(value) {
+  return value == null || String(value).trim() === '';
+}
+
+function isMissingRating(value) {
+  return value == null || Number(value) === 0 || Number.isNaN(Number(value));
+}
+
+function parseGenresField(genres) {
+  if (Array.isArray(genres)) return genres.filter(Boolean);
+  if (!genres) return [];
+  return String(genres)
+    .split(',')
+    .map(v => v.trim())
+    .filter(Boolean);
+}
+
 // ==========================================
 // DB 및 Local Storage 로직
 // ==========================================
@@ -1890,12 +1998,9 @@ async function refreshMissingAnimeMetadata(btn) {
       return;
     }
 
-    let checkedCount = 0;
     let updatedCount = 0;
 
     for (const item of items) {
-      checkedCount++;
-
       const needsMeta =
         isBlankValue(item.original_title) ||
         isBlankValue(item.poster_url) ||
@@ -1906,36 +2011,29 @@ async function refreshMissingAnimeMetadata(btn) {
 
       const needsAiReview = isBlankValue(item.ai_review);
 
-      if (!needsMeta && !needsAiReview) {
-        continue;
-      }
+      if (!needsMeta && !needsAiReview) continue;
 
       let best = null;
+      const refreshQueries = buildRefreshSearchQueries(item.title, item.original_title);
 
-      if (needsMeta || needsAiReview) {
-        const searchQueries = [
-          item.title,
-          item.original_title
-        ].filter(v => !isBlankValue(v));
+      for (const q of refreshQueries) {
+        try {
+          const res = await fetch('/api/search-anime', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: q })
+          });
 
-        for (const q of searchQueries) {
-          try {
-            const res = await fetch('/api/search-anime', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ query: q })
-            });
+          const json = await res.json();
+          const results = json?.results || [];
+          const picked = pickBestRefreshCandidate(results, item.title, item.original_title);
 
-            const json = await res.json();
-            const candidate = json?.results?.[0];
-
-            if (candidate) {
-              best = candidate;
-              break;
-            }
-          } catch (err) {
-            console.error('Metadata refresh search error:', err);
+          if (picked) {
+            best = picked;
+            if (!isBlankValue(best.poster_url)) break;
           }
+        } catch (err) {
+          console.error('Metadata refresh search error:', err);
         }
       }
 
@@ -2017,7 +2115,6 @@ async function refreshMissingAnimeMetadata(btn) {
 
     await loadTierListFromDB();
     showToast(`${updatedCount}개 작품의 누락 정보를 보정했습니다.`);
-    console.log(`metadata refresh checked=${checkedCount}, updated=${updatedCount}`);
   } catch (err) {
     console.error('refreshMissingAnimeMetadata error:', err);
     showToast('작품 정보 보정 중 오류가 발생했습니다.', true);
@@ -2133,92 +2230,172 @@ function setupDragAndDrop() {
 // AI 및 분석 로직
 // ==========================================
 async function searchAnimeAI(btn) {
-const titleInput = document.getElementById('animeTitle');
-const query = titleInput.value.trim();
-if (!query || isDragging) return;
+  const titleInput = document.getElementById('animeTitle');
+  const query = titleInput.value.trim();
+  if (!query || isDragging) return;
 
-resetSearchUI();
-aiAbortController = new AbortController();
-const loadingText = document.getElementById('aiLoadingText');
-loadingText.classList.remove('hidden');
+  resetSearchUI();
+  aiAbortController = new AbortController();
 
-try {
-const response = await fetch('/api/search-anime', {
-method: 'POST',
-headers: { 'Content-Type': 'application/json' },
-body: JSON.stringify({ query }),
-signal: aiAbortController.signal
-});
-const data = await response.json();
-renderSearchResults(data.results);
-} catch (error) { console.error(error); }
+  const loadingText = document.getElementById('aiLoadingText');
+  const searchBtn = document.getElementById('aiSearchBtn');
+  const resultsBox = document.getElementById('aiSearchResults');
+
+  loadingText.classList.remove('hidden');
+  if (searchBtn) {
+    searchBtn.disabled = true;
+    searchBtn.classList.add('opacity-50');
+  }
+
+  try {
+    const response = await fetch('/api/search-anime', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query }),
+      signal: aiAbortController.signal
+    });
+
+    const data = await response.json();
+    const results = data?.results || [];
+
+    renderSearchResults(results);
+
+    if (results.length > 0) {
+      await selectCandidate(results[0], null, { silent: true });
+
+      if (resultsBox) {
+        resultsBox.classList.remove('hidden');
+      }
+
+      showToast('첫 번째 검색 결과를 자동 적용했습니다.');
+    } else {
+      tempAnimeData = null;
+      document.getElementById('animeOriginalTitle').value = '';
+      document.getElementById('animeRating').value = '';
+      showToast('검색 결과를 찾지 못했습니다.', true);
+    }
+  } catch (error) {
+    if (error.name !== 'AbortError') {
+      console.error(error);
+      showToast('작품 검색 중 오류가 발생했습니다.', true);
+    }
+  } finally {
+    loadingText.classList.add('hidden');
+    if (searchBtn) {
+      searchBtn.disabled = false;
+      searchBtn.classList.remove('opacity-50');
+    }
+  }
 }
 
 function renderSearchResults(results) {
-const container = document.getElementById('aiSearchResults');
-container.innerHTML = '';
-container.classList.remove('hidden');
-results?.forEach(item => {
-const div = document.createElement('div');
-div.className = "flex bg-gray-900 border border-gray-700 rounded-lg p-3 cursor-pointer hover:border-purple-500 gap-3 items-center";
-div.onclick = () => selectCandidate(item, div);
-div.innerHTML = `
-  <img src="${item.poster_url || getPlaceholderUrl(item.title)}" class="w-12 h-16 object-cover rounded">
-  <div class="text-white font-bold text-sm truncate">${item.title}</div>
-`;
-container.appendChild(div);
-});
+  const container = document.getElementById('aiSearchResults');
+  container.innerHTML = '';
+
+  if (!results || results.length === 0) {
+    container.classList.add('hidden');
+    return;
+  }
+
+  container.classList.remove('hidden');
+
+  results.forEach((item, index) => {
+    const div = document.createElement('div');
+    div.className = `flex bg-gray-900 border rounded-lg p-3 cursor-pointer gap-3 items-center transition-colors ${
+      index === 0
+        ? 'border-purple-500 ring-1 ring-purple-500/40'
+        : 'border-gray-700 hover:border-purple-500'
+    }`;
+
+    div.onclick = async () => {
+      container.querySelectorAll('.search-candidate-item').forEach(el => {
+        el.classList.remove('border-purple-500', 'ring-1', 'ring-purple-500/40');
+        el.classList.add('border-gray-700');
+      });
+
+      div.classList.remove('border-gray-700');
+      div.classList.add('border-purple-500', 'ring-1', 'ring-purple-500/40');
+
+      await selectCandidate(item, div);
+    };
+
+    div.classList.add('search-candidate-item');
+
+    div.innerHTML = `
+      <img src="${item.poster_url || getPlaceholderUrl(item.title)}" class="w-12 h-16 object-cover rounded flex-shrink-0">
+      <div class="min-w-0 flex-1">
+        <div class="text-white font-bold text-sm truncate">${item.title}</div>
+        <div class="text-xs text-gray-400 truncate">${item.original_title || ''}</div>
+      </div>
+      ${index === 0 ? `<span class="text-[10px] text-purple-300 font-bold flex-shrink-0">자동선택</span>` : ''}
+    `;
+
+    container.appendChild(div);
+  });
 }
 
-async function selectCandidate(item, element) {
-tempAnimeData = {
-  id: item.id,
-  mediaType: item.media_type,
-  title: item.title || '',
-  originalTitle: item.original_title || '',
-  imgSrc: item.poster_url || '',
-  genres: item.genres || [],
-  overview: item.overview || '',
-  rating: item.vote_average || 0,
-  releaseDate: item.release_date || '',
-  aiReview: ''
-};
+async function selectCandidate(item, element = null, options = {}) {
+  const { silent = false } = options || {};
 
-document.getElementById('animeTitle').value = tempAnimeData.title;
-document.getElementById('animeOriginalTitle').value = tempAnimeData.originalTitle;
-document.getElementById('animeRating').value = tempAnimeData.rating ? Number(tempAnimeData.rating).toFixed(1) : '-';
-document.getElementById('imgUrl').value = tempAnimeData.imgSrc;
-updatePreviewImage();
+  tempAnimeData = {
+    id: item.id,
+    mediaType: item.media_type,
+    title: item.title || '',
+    originalTitle: item.original_title || '',
+    imgSrc: item.poster_url || '',
+    genres: item.genres || [],
+    overview: item.overview || '',
+    rating: item.vote_average || 0,
+    releaseDate: item.release_date || '',
+    aiReview: ''
+  };
 
-document.getElementById('addPreviewTitle').innerText = tempAnimeData.title || '작품 제목';
-document.getElementById('addPreviewGenres').innerText =
-  (tempAnimeData.genres && tempAnimeData.genres.length > 0)
-    ? tempAnimeData.genres.slice(0, 2).join(', ')
-    : '-';
-document.getElementById('addPreviewRating').innerText =
-  tempAnimeData.rating ? Number(tempAnimeData.rating).toFixed(1) : '0.0';
+  document.getElementById('animeTitle').value = tempAnimeData.title;
+  document.getElementById('animeOriginalTitle').value = tempAnimeData.originalTitle;
+  document.getElementById('animeRating').value =
+    tempAnimeData.rating ? Number(tempAnimeData.rating).toFixed(1) : '-';
+  document.getElementById('imgUrl').value = tempAnimeData.imgSrc;
+  updatePreviewImage();
 
-try {
-const res = await fetch('/api/generate-review', {
-method: 'POST',
-headers: { 'Content-Type': 'application/json' },
-body: JSON.stringify({
-  title: tempAnimeData.title,
-  originalTitle: tempAnimeData.originalTitle,
-  overview: tempAnimeData.overview,
-  genres: tempAnimeData.genres,
-  releaseDate: tempAnimeData.releaseDate,
-  voteAverage: tempAnimeData.rating
-})
-});
+  document.getElementById('addPreviewTitle').innerText = tempAnimeData.title || '작품 제목';
+  document.getElementById('addPreviewGenres').innerText =
+    (tempAnimeData.genres && tempAnimeData.genres.length > 0)
+      ? tempAnimeData.genres.slice(0, 2).join(', ')
+      : '-';
+  document.getElementById('addPreviewRating').innerText =
+    tempAnimeData.rating ? Number(tempAnimeData.rating).toFixed(1) : '0.0';
 
-const reviewData = await res.json();
-tempAnimeData.aiReview = reviewData.shortReview || '';
-document.getElementById('animeReview').value = tempAnimeData.aiReview;
-updatePreviewReview();
-} catch(err) {
-console.error(err);
-}
+  const reviewTextarea = document.getElementById('animeReview');
+  reviewTextarea.value = 'AI 한줄평 생성 중...';
+  updatePreviewReview();
+
+  try {
+    const res = await fetch('/api/generate-review', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: tempAnimeData.title,
+        originalTitle: tempAnimeData.originalTitle,
+        overview: tempAnimeData.overview,
+        genres: tempAnimeData.genres,
+        releaseDate: tempAnimeData.releaseDate,
+        voteAverage: tempAnimeData.rating
+      })
+    });
+
+    const reviewData = await res.json();
+    tempAnimeData.aiReview = reviewData.shortReview || '';
+    reviewTextarea.value = tempAnimeData.aiReview;
+    updatePreviewReview();
+
+    if (!silent) {
+      showToast('작품 정보를 적용했습니다.');
+    }
+  } catch (err) {
+    console.error(err);
+    reviewTextarea.value = '';
+    updatePreviewReview();
+  }
 }
 
 async function generateTasteProfile(btn) {
