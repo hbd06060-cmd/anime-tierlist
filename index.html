@@ -155,9 +155,6 @@ animation: spin 1s linear infinite;
 </div>
 <div class="flex-shrink-0 w-full md:w-auto text-right flex flex-col items-end gap-2">
 <div class="flex gap-2 mb-1 flex-wrap justify-end">
-<button onclick="openSettingsModal()" class="text-xs px-3 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white transition-colors">
-설정
-</button>
 <button onclick="openExportCodeModal()" class="text-xs px-3 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white transition-colors">
 백업 코드 생성
 </button>
@@ -563,104 +560,6 @@ AI 추천 이유
     </div>
   </div>
 </div>
-
-<!-- 설정 모달 -->
-<div id="settingsModal" onclick="if(event.target === this) closeSettingsModal()" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-[170] p-4 transition-opacity">
-  <div class="bg-gray-800 rounded-2xl border border-gray-600 w-full max-w-2xl shadow-2xl p-6 md:p-8" onclick="event.stopPropagation()">
-    <div class="flex items-start justify-between gap-4 mb-5">
-      <div>
-        <h3 class="text-2xl font-bold text-white">설정</h3>
-        <p class="text-sm text-gray-400 mt-1">앞으로 추가될 옵션들도 여기에서 관리할 수 있습니다.</p>
-      </div>
-      <button onclick="closeSettingsModal()" class="text-gray-400 hover:text-white bg-gray-700/80 hover:bg-gray-600 p-2 rounded-full transition-colors">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-      </button>
-    </div>
-
-    <div class="space-y-4">
-      <div class="bg-gray-900 border border-gray-700 rounded-xl p-4">
-        <div class="flex items-start justify-between gap-4">
-          <div class="min-w-0">
-            <p class="text-white font-bold">AI 한줄평 자동 생성</p>
-            <p class="text-sm text-gray-400 mt-1 leading-relaxed">
-              작품 후보를 선택했을 때 AI가 자동으로 한줄평을 작성합니다. 꺼두면 직접 입력만 사용합니다.
-            </p>
-            <p id="settingsAutoReviewUsageText" class="text-xs text-purple-300 mt-3">
-              오늘 0/5회 사용
-            </p>
-          </div>
-
-          <label class="inline-flex items-center cursor-pointer flex-shrink-0">
-            <input id="settingsAutoReviewToggle" type="checkbox" class="sr-only peer" onchange="handleAutoReviewToggleChange(this.checked)">
-            <div class="relative w-12 h-7 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:bg-purple-600 transition-colors">
-              <div class="absolute top-1 left-1 bg-white w-5 h-5 rounded-full transition-transform peer-checked:translate-x-5"></div>
-            </div>
-          </label>
-        </div>
-      </div>
-
-      <div class="bg-gray-900/70 border border-gray-700 rounded-xl p-4 space-y-3">
-  <div>
-    <p class="text-sm text-gray-300 font-bold mb-2">AI 추천 사용량</p>
-    <p id="settingsRecommendUsageText" class="text-sm text-pink-300">
-      오늘 0/3회 사용
-    </p>
-  </div>
-
-  <div>
-    <p class="text-sm text-gray-300 font-bold mb-2">안내</p>
-    <ul class="text-sm text-gray-400 leading-relaxed space-y-1">
-      <li>• AI 한줄평 자동 생성 기본값은 꺼짐입니다.</li>
-      <li>• 자동 생성을 켜면 하루 최대 5회까지 사용됩니다.</li>
-      <li>• AI 추천은 하루 최대 3회까지 사용할 수 있습니다.</li>
-      <li>• 직접 입력은 언제나 제한 없이 가능합니다.</li>
-      <li>• 설정은 언제든 다시 변경할 수 있습니다.</li>
-    </ul>
-  </div>
-</div>
-    </div>
-
-    <div class="flex justify-end gap-3 mt-6">
-      <button onclick="closeSettingsModal()" class="px-5 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-gray-700 transition-colors">닫기</button>
-    </div>
-  </div>
-</div>
-
-<!-- 최초 1회 설정 안내 모달 -->
-<div id="settingsIntroModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-[180] p-4 transition-opacity">
-  <div class="bg-gray-800 rounded-2xl border border-gray-600 w-full max-w-xl shadow-2xl p-6 md:p-8">
-    <div class="mb-5">
-      <h3 class="text-2xl font-bold text-white mb-2">처음 오셨네요</h3>
-      <p class="text-sm text-gray-400 leading-relaxed">
-        이 사이트에서는 한줄평을 직접 작성할 수도 있고, AI 자동 생성 기능을 켤 수도 있습니다.
-        자동 생성은 편리하지만 하루 사용 횟수 제한이 있습니다.
-      </p>
-    </div>
-
-    <div class="bg-gray-900 border border-gray-700 rounded-xl p-4 mb-5">
-      <p class="text-sm text-gray-200 font-bold mb-2">AI 자동 생성 기능</p>
-      <p class="text-sm text-gray-400 leading-relaxed">
-        작품 후보 선택 시 AI가 한줄평을 자동으로 채워줍니다.  
-        기본값은 꺼짐이며, 켜면 하루 최대 5회까지 자동 생성됩니다.
-      </p>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-      <button onclick="completeSettingsIntro(false)" class="px-4 py-3 rounded-xl bg-gray-700 hover:bg-gray-600 text-white font-bold transition-colors">
-        끈 상태로 시작하기
-      </button>
-      <button onclick="completeSettingsIntro(true)" class="px-4 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold transition-colors">
-        켜고 시작하기
-      </button>
-    </div>
-
-    <button onclick="openSettingsFromIntro()" class="w-full mt-3 text-sm text-gray-400 hover:text-white transition-colors">
-      먼저 설정 화면에서 보고 결정할게요
-    </button>
-  </div>
-</div>
-
-
 <script>
 // ==========================================
 // 환경 변수 설정
@@ -698,8 +597,7 @@ titleKo: "아직 분석되지 않음",
 titleEn: "Not Analyzed",
 description: "티어리스트를 채우고 분석해보세요."
 },
-recommendedItems: [],
-settings: getDefaultSettings()
+recommendedItems: []
 };
 
 let tempAnimeData = null;
@@ -828,223 +726,6 @@ function getLocalExtrasKey() {
   return null;
 }
 
-function getDefaultSettings() {
-  return {
-    autoGenerateReview: false,
-    autoGenerateReviewDailyLimit: 5,
-    autoGenerateReviewUsedCount: 0,
-    autoGenerateReviewUsedDate: '',
-
-    recommendDailyLimit: 3,
-    recommendUsedCount: 0,
-    recommendUsedDate: '',
-
-    hasCompletedIntro: false
-  };
-}
-
-function getSettingsStorageKey() {
-  if (isDemoMode()) return 'anime_settings_demo_v1';
-  if (isSocialLogin()) return `anime_settings_social_${appState.user.id}_v1`;
-  if (isLegacyLogin()) return `anime_settings_legacy_${appState.user.name}_v1`;
-  return null;
-}
-
-function getTodaySeoulKey() {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Seoul',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  }).format(new Date());
-}
-
-function ensureSettingsDailyLimitState() {
-  if (!appState.settings) {
-    appState.settings = getDefaultSettings();
-  }
-
-  const today = getTodaySeoulKey();
-
-  if (appState.settings.autoGenerateReviewUsedDate !== today) {
-    appState.settings.autoGenerateReviewUsedDate = today;
-    appState.settings.autoGenerateReviewUsedCount = 0;
-  }
-
-  if (appState.settings.recommendUsedDate !== today) {
-    appState.settings.recommendUsedDate = today;
-    appState.settings.recommendUsedCount = 0;
-  }
-}
-
-function loadUserSettings() {
-  // 소셜 로그인 사용자는 DB에서 읽으므로 여기서는 기본값만 세팅
-  if (isSocialLogin()) {
-    appState.settings = getDefaultSettings();
-    ensureSettingsDailyLimitState();
-    renderSettingsUI();
-    return;
-  }
-
-  // 체험 모드 / legacy 로그인은 localStorage 사용
-  const key = getSettingsStorageKey();
-  let nextSettings = getDefaultSettings();
-
-  if (key) {
-    const raw = localStorage.getItem(key);
-    if (raw) {
-      try {
-        const parsed = JSON.parse(raw);
-        nextSettings = {
-          ...getDefaultSettings(),
-          ...parsed
-        };
-      } catch (e) {
-        console.error('Settings parse error:', e);
-      }
-    }
-  }
-
-  appState.settings = nextSettings;
-  ensureSettingsDailyLimitState();
-  saveUserSettings(true);
-  renderSettingsUI();
-}
-
-function saveUserSettings(skipRender = false) {
-  ensureSettingsDailyLimitState();
-
-  // 소셜 로그인 사용자는 DB 저장
-  if (isSocialLogin()) {
-    if (!skipRender) {
-      renderSettingsUI();
-    }
-    saveUserMetaToDB();
-    return;
-  }
-
-  // 체험 모드 / legacy 로그인은 localStorage 저장
-  const key = getSettingsStorageKey();
-  if (!key) return;
-
-  localStorage.setItem(key, JSON.stringify(appState.settings));
-
-  if (!skipRender) {
-    renderSettingsUI();
-  }
-}
-
-function getRemainingAutoReviewCount() {
-  ensureSettingsDailyLimitState();
-  const limit = Number(appState.settings.autoGenerateReviewDailyLimit || 5);
-  const used = Number(appState.settings.autoGenerateReviewUsedCount || 0);
-  return Math.max(0, limit - used);
-}
-
-function getRemainingRecommendCount() {
-  ensureSettingsDailyLimitState();
-  const limit = Number(appState.settings.recommendDailyLimit || 3);
-  const used = Number(appState.settings.recommendUsedCount || 0);
-  return Math.max(0, limit - used);
-}
-
-function canUseRecommendation() {
-  return getRemainingRecommendCount() > 0;
-}
-
-function consumeRecommendationQuota() {
-  ensureSettingsDailyLimitState();
-  appState.settings.recommendUsedCount += 1;
-  saveUserSettings();
-}
-
-function consumeAutoReviewQuota() {
-  ensureSettingsDailyLimitState();
-  appState.settings.autoGenerateReviewUsedCount += 1;
-  saveUserSettings();
-}
-
-function renderSettingsUI() {
-  ensureSettingsDailyLimitState();
-
-  const toggleEl = document.getElementById('settingsAutoReviewToggle');
-  const usageEl = document.getElementById('settingsAutoReviewUsageText');
-  const recommendUsageEl = document.getElementById('settingsRecommendUsageText');
-
-  if (toggleEl) {
-    toggleEl.checked = !!appState.settings.autoGenerateReview;
-  }
-
-  if (usageEl) {
-    const limit = Number(appState.settings.autoGenerateReviewDailyLimit || 5);
-    const used = Number(appState.settings.autoGenerateReviewUsedCount || 0);
-    usageEl.innerText = `오늘 ${used}/${limit}회 사용`;
-  }
-
-  if (recommendUsageEl) {
-    const limit = Number(appState.settings.recommendDailyLimit || 3);
-    const used = Number(appState.settings.recommendUsedCount || 0);
-    recommendUsageEl.innerText = `오늘 ${used}/${limit}회 사용`;
-  }
-}
-
-function openSettingsModal() {
-  renderSettingsUI();
-  const modal = document.getElementById('settingsModal');
-  modal.classList.remove('hidden');
-  modal.classList.add('flex');
-}
-
-function closeSettingsModal() {
-  if (appState.user.isLoggedIn && !appState.settings.hasCompletedIntro) {
-    appState.settings.hasCompletedIntro = true;
-    saveUserSettings(true);
-  }
-
-  const modal = document.getElementById('settingsModal');
-  modal.classList.add('hidden');
-  modal.classList.remove('flex');
-}
-
-function openSettingsIntroModal() {
-  const modal = document.getElementById('settingsIntroModal');
-  modal.classList.remove('hidden');
-  modal.classList.add('flex');
-}
-
-function closeSettingsIntroModal() {
-  const modal = document.getElementById('settingsIntroModal');
-  modal.classList.add('hidden');
-  modal.classList.remove('flex');
-}
-
-function maybeOpenSettingsIntro() {
-  if (!appState.user.isLoggedIn) return;
-  if (appState.settings?.hasCompletedIntro) return;
-
-  openSettingsIntroModal();
-}
-
-function handleAutoReviewToggleChange(checked) {
-  appState.settings.autoGenerateReview = !!checked;
-  appState.settings.hasCompletedIntro = true;
-  saveUserSettings();
-  showToast(checked ? 'AI 한줄평 자동 생성이 켜졌습니다.' : 'AI 한줄평 자동 생성이 꺼졌습니다.');
-}
-
-function completeSettingsIntro(enableAuto) {
-  appState.settings.autoGenerateReview = !!enableAuto;
-  appState.settings.hasCompletedIntro = true;
-  saveUserSettings();
-  closeSettingsIntroModal();
-  showToast(enableAuto ? 'AI 한줄평 자동 생성이 켜진 상태로 시작합니다.' : '직접 입력 모드로 시작합니다.');
-}
-
-function openSettingsFromIntro() {
-  closeSettingsIntroModal();
-  openSettingsModal();
-}
-
 function getLinkedProviders() {
   const identities = appState.user.identities || [];
   return identities.map(i => i.provider);
@@ -1121,7 +802,16 @@ function generateId() { return Math.random().toString(36).substr(2, 9); }
 function getPlaceholderUrl(title) {
 return `https://placehold.co/300x450/1f2937/9ca3af?text=${encodeURIComponent(title || 'No Image')}&font=roboto`;
 }
-
+function canUseAutoReview() {
+  try {
+    const raw = localStorage.getItem('anime_settings');
+    if (!raw) return false; // 기본값: 꺼짐
+    const settings = JSON.parse(raw);
+    return settings.autoReview === true;
+  } catch (e) {
+    return false;
+  }
+}
 function generatePublicId() {
   return Math.random().toString(36).slice(2, 12);
 }
@@ -1430,49 +1120,17 @@ titleKo: data.taste_profile_title_ko || "아직 분석되지 않음",
 titleEn: data.taste_profile_title_en || "Not Analyzed",
 description: data.taste_profile_description || "티어리스트를 채우고 분석해보세요."
 };
-
 appState.recommendedItems = data.recommended_items || [];
-
-// 소셜 로그인 사용자는 DB 설정값 사용
-if (isSocialLogin()) {
-  appState.settings = {
-  ...getDefaultSettings(),
-  hasCompletedIntro: !!data.settings_intro_seen,
-  autoGenerateReview: !!data.auto_generate_review,
-  autoGenerateReviewDailyLimit: Number(data.auto_generate_review_daily_limit || 5),
-  autoGenerateReviewUsedCount: Number(data.auto_generate_review_used_count || 0),
-  autoGenerateReviewUsedDate: data.auto_generate_review_used_date || '',
-
-  recommendDailyLimit: Number(data.recommend_daily_limit || 3),
-  recommendUsedCount: Number(data.recommend_used_count || 0),
-  recommendUsedDate: data.recommend_used_date || ''
-};
-
-  ensureSettingsDailyLimitState();
-  renderSettingsUI();
-}
 
 renderTasteProfile();
 renderRecommendations();
 updateRecButtonUI();
 } else {
 loadLocalExtras();
-
-if (isSocialLogin()) {
-  appState.settings = getDefaultSettings();
-  ensureSettingsDailyLimitState();
-  renderSettingsUI();
-}
 }
 } catch (err) {
 console.error("Load User Meta Error:", err);
 loadLocalExtras();
-
-if (isSocialLogin()) {
-  appState.settings = getDefaultSettings();
-  ensureSettingsDailyLimitState();
-  renderSettingsUI();
-}
 }
 }
 
@@ -1496,27 +1154,16 @@ try {
   const { data: existingMeta } = await existingQuery.maybeSingle();
 
   const payload = {
-  user_id: isSocialLogin() ? appState.user.id : null,
-  username: isSocialLogin() ? null : appState.user.name,
-  taste_profile_title_ko: appState.tasteProfile.titleKo,
-  taste_profile_title_en: appState.tasteProfile.titleEn,
-  taste_profile_description: appState.tasteProfile.description,
-  recommended_items: appState.recommendedItems,
-  public_id: existingMeta?.public_id || null,
-  is_public: existingMeta?.is_public || false,
-
-  settings_intro_seen: appState.settings?.hasCompletedIntro ?? false,
-  auto_generate_review: appState.settings?.autoGenerateReview ?? false,
-  auto_generate_review_daily_limit: appState.settings?.autoGenerateReviewDailyLimit ?? 5,
-  auto_generate_review_used_count: appState.settings?.autoGenerateReviewUsedCount ?? 0,
-  auto_generate_review_used_date: appState.settings?.autoGenerateReviewUsedDate || null,
-
-  recommend_daily_limit: appState.settings?.recommendDailyLimit ?? 3,
-  recommend_used_count: appState.settings?.recommendUsedCount ?? 0,
-  recommend_used_date: appState.settings?.recommendUsedDate || null,
-
-  updated_at: new Date().toISOString()
-};
+    user_id: isSocialLogin() ? appState.user.id : null,
+    username: isSocialLogin() ? null : appState.user.name,
+    taste_profile_title_ko: appState.tasteProfile.titleKo,
+    taste_profile_title_en: appState.tasteProfile.titleEn,
+    taste_profile_description: appState.tasteProfile.description,
+    recommended_items: appState.recommendedItems,
+    public_id: existingMeta?.public_id || null,
+    is_public: existingMeta?.is_public || false,
+    updated_at: new Date().toISOString()
+  };
 
   let result;
   if (isSocialLogin()) {
@@ -1540,27 +1187,6 @@ try {
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => { initializeApp(); });
 
-async function initializeLoggedInUI({ refreshIdentities = false } = {}) {
-  closeNamePopup();
-
-  // localStorage 기반 설정은 여기서 먼저 로드
-  // 소셜 로그인은 loadUserMetaFromDB 안에서 DB 설정으로 덮어씀
-  loadUserSettings();
-
-  if (refreshIdentities) {
-    await refreshLinkedIdentities();
-  }
-
-  await loadUserMetaFromDB();
-  await loadTierListFromDB();
-
-  renderUserInfo();
-
-  setTimeout(() => {
-    maybeOpenSettingsIntro();
-  }, 0);
-}
-
 async function initializeApp() {
 setupDragAndDrop();
 
@@ -1569,7 +1195,10 @@ const savedName = getCurrentUser();
 if (!supabaseClient) {
 if (savedName) {
 saveCurrentUser(savedName);
-await initializeLoggedInUI({ refreshIdentities: false });
+closeNamePopup();
+renderUserInfo();
+await loadUserMetaFromDB();
+await loadTierListFromDB();
 } else {
 openNamePopup();
 }
@@ -1587,10 +1216,17 @@ const session = data?.session;
 
 if (session?.user) {
 applySocialUser(session.user);
-await initializeLoggedInUI({ refreshIdentities: true });
+closeNamePopup();
+renderUserInfo();
+await refreshLinkedIdentities();
+await loadUserMetaFromDB();
+await loadTierListFromDB();
 } else if (savedName) {
 saveCurrentUser(savedName);
-await initializeLoggedInUI({ refreshIdentities: false });
+closeNamePopup();
+renderUserInfo();
+await loadUserMetaFromDB();
+await loadTierListFromDB();
 } else {
 openNamePopup();
 }
@@ -1598,23 +1234,32 @@ openNamePopup();
 supabaseClient.auth.onAuthStateChange(async (_event, session) => {
 if (session?.user) {
 applySocialUser(session.user);
-await initializeLoggedInUI({ refreshIdentities: true });
+closeNamePopup();
+renderUserInfo();
+await refreshLinkedIdentities();
+await loadUserMetaFromDB();
+await loadTierListFromDB();
 } else {
 const savedName = getCurrentUser();
 
 if (savedName) {
 saveCurrentUser(savedName);
-await initializeLoggedInUI({ refreshIdentities: false });
+closeNamePopup();
+renderUserInfo();
+await loadUserMetaFromDB();
+await loadTierListFromDB();
 } else {
 clearUserState();
-resetAppData();
-appState.settings = getDefaultSettings();
+appState.tierList = { SS: [], S: [], A: [], B: [], C: [], D: [] };
+appState.recommendedItems = [];
+appState.tasteProfile = {
+titleKo: "아직 분석되지 않음",
+titleEn: "Not Analyzed",
+description: "티어리스트를 채우고 분석해보세요."
+};
 renderTierList();
 renderRecommendations();
 updateRecButtonUI();
-renderSettingsUI();
-closeSettingsModal();
-closeSettingsIntroModal();
 openNamePopup();
 }
 }
@@ -1623,7 +1268,10 @@ openNamePopup();
 console.error('Initialize app error:', err);
 if (savedName) {
 saveCurrentUser(savedName);
-await initializeLoggedInUI({ refreshIdentities: false });
+closeNamePopup();
+renderUserInfo();
+await loadUserMetaFromDB();
+await loadTierListFromDB();
 } else {
 openNamePopup();
 }
@@ -1719,16 +1367,12 @@ grid.insertAdjacentHTML('beforeend', cardHtml);
 function updateRecButtonUI() {
 const btnText = document.getElementById('recommendBtnText');
 const statusText = document.getElementById('rec-status-text');
-
-ensureSettingsDailyLimitState();
-const remaining = getRemainingRecommendCount();
-
 if (appState.recommendedItems && appState.recommendedItems.length > 0) {
-  btnText.innerText = "다시 추천받기";
-  statusText.innerText = `현재 추천 목록이 저장되어 있습니다. 다시 추천받기를 누르면 새 추천으로 교체됩니다. 오늘 남은 추천 ${remaining}회`;
+btnText.innerText = "다시 추천받기";
+statusText.innerText = "현재 추천 목록이 저장되어 있습니다. 다시 추천받기를 누르면 새 추천으로 교체됩니다.";
 } else {
-  btnText.innerText = "추천받기";
-  statusText.innerText = `추천된 작품을 드래그해서 위 티어로 바로 넣을 수 있습니다. 오늘 남은 추천 ${remaining}회`;
+btnText.innerText = "추천받기";
+statusText.innerText = "추천된 작품을 드래그해서 위 티어로 바로 넣을 수 있습니다.";
 }
 }
 
@@ -2029,16 +1673,12 @@ clearCurrentUser();
 clearUserState();
 applyDemoUser();
 resetAppData();
-loadUserSettings();
 renderUserInfo();
 renderTierList();
 renderRecommendations();
 updateRecButtonUI();
 renderMigrationBanner();
 closeNamePopup();
-setTimeout(() => {
-  maybeOpenSettingsIntro();
-}, 0);
 showToast('체험 모드로 시작했습니다. 이 기록은 저장되지 않습니다.');
 }
 
@@ -2061,13 +1701,9 @@ clearCurrentUser();
 
 clearUserState();
 resetAppData();
-appState.settings = getDefaultSettings();
 renderTierList();
 renderRecommendations();
 updateRecButtonUI();
-renderSettingsUI();
-closeSettingsModal();
-closeSettingsIntroModal();
 openNamePopup();
 renderAccountLinkUI();
 }
@@ -2654,7 +2290,16 @@ showToast('한줄평이 수정되었습니다.');
 async function saveAnime() {
 const title = document.getElementById('animeTitle').value.trim();
 const reviewInput = document.getElementById('animeReview').value.trim();
-if (!title || !reviewInput) return;
+
+if (!title) {
+  showToast('작품 제목을 먼저 선택해주세요.', true);
+  return;
+}
+
+if (!reviewInput) {
+  showToast('한줄평을 입력해주세요.', true);
+  return;
+}
 
 const newAnime = {
 id: generateId(),
@@ -3113,64 +2758,53 @@ async function selectCandidate(item, element = null, options = {}) {
 
   const reviewTextarea = document.getElementById('animeReview');
 
-  if (!appState.settings?.autoGenerateReview) {
-    tempAnimeData.aiReview = '';
-    reviewTextarea.value = '';
-    updatePreviewReview();
-
-    if (!silent) {
-      showToast('작품 정보를 적용했습니다. 한줄평은 직접 입력해주세요.');
-    }
-    return;
-  }
-
-  if (!canUseAutoReview()) {
-    tempAnimeData.aiReview = '';
-    reviewTextarea.value = '';
-    updatePreviewReview();
-
-    if (!silent) {
-      showToast('오늘 AI 한줄평 자동 생성 횟수를 모두 사용했습니다. 직접 입력은 계속 가능합니다.', true);
-    }
-    renderSettingsUI();
-    return;
-  }
-
-  reviewTextarea.value = 'AI 한줄평 생성 중...';
+if (!canUseAutoReview()) {
+  tempAnimeData.aiReview = '';
+  reviewTextarea.value = '';
+  reviewTextarea.placeholder = 'AI 한줄평이 꺼져 있습니다. 직접 입력해주세요.';
   updatePreviewReview();
 
-  try {
-    const res = await fetchWithTimeout('/api/generate-review', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: tempAnimeData.title,
-        originalTitle: tempAnimeData.originalTitle,
-        overview: tempAnimeData.overview,
-        genres: tempAnimeData.genres,
-        releaseDate: tempAnimeData.releaseDate,
-        voteAverage: tempAnimeData.rating
-      })
-    }, 15000);
+  if (!silent) {
+    showToast('작품 정보를 적용했습니다. 한줄평은 직접 입력해주세요.');
+  }
+  return;
+}
 
-    const reviewData = await res.json();
-    tempAnimeData.aiReview = reviewData.shortReview || '';
-    reviewTextarea.value = tempAnimeData.aiReview;
-    updatePreviewReview();
+reviewTextarea.placeholder = '후보 리스트에서 작품을 선택하면 AI가 한줄평을 생성합니다.';
+reviewTextarea.value = 'AI 한줄평 생성 중...';
+updatePreviewReview();
 
-    consumeAutoReviewQuota();
+try {
+  const res = await fetchWithTimeout('/api/generate-review', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      title: tempAnimeData.title,
+      originalTitle: tempAnimeData.originalTitle,
+      overview: tempAnimeData.overview,
+      genres: tempAnimeData.genres,
+      releaseDate: tempAnimeData.releaseDate,
+      voteAverage: tempAnimeData.rating
+    })
+  }, 15000);
 
-    if (!silent) {
-      showToast('작품 정보와 AI 한줄평을 적용했습니다.');
-    }
-  } catch (err) {
-    console.error(err);
-    reviewTextarea.value = '';
-    updatePreviewReview();
+  const reviewData = await res.json();
+  tempAnimeData.aiReview = reviewData.shortReview || '';
+  reviewTextarea.value = tempAnimeData.aiReview;
+  updatePreviewReview();
 
-    if (!silent) {
-      showToast('작품 정보는 적용했지만 AI 한줄평 생성에는 실패했습니다.', true);
-    }
+  if (!silent) {
+    showToast('작품 정보를 적용했습니다.');
+  }
+} catch (err) {
+  console.error(err);
+  tempAnimeData.aiReview = '';
+  reviewTextarea.value = '';
+  reviewTextarea.placeholder = 'AI 한줄평 생성에 실패했습니다. 직접 입력해주세요.';
+  updatePreviewReview();
+
+  if (!silent) {
+    showToast('AI 한줄평 생성에 실패했습니다. 직접 입력해주세요.', true);
   }
 }
 
@@ -3225,12 +2859,6 @@ async function generateRecommendations(btn) {
   const allItems = Object.values(appState.tierList).flat();
   if (allItems.length < 2) {
     showToast('작품을 2개 이상 추가해주세요.', true);
-    return;
-  }
-
-  if (!canUseRecommendation()) {
-    renderSettingsUI();
-    showToast('오늘 AI 추천 횟수 3회를 모두 사용했습니다.', true);
     return;
   }
 
@@ -3358,12 +2986,9 @@ async function generateRecommendations(btn) {
 
     appState.recommendedItems = finalRecs.slice(0, 4);
 
-    consumeRecommendationQuota();
-
     await saveUserMetaToDB();
     renderRecommendations();
     updateRecButtonUI();
-    renderSettingsUI();
 
     if (appState.recommendedItems.length === 0) {
       showToast('기존 작품과 겹치지 않는 추천을 찾지 못했습니다. 다시 시도해주세요.', true);
@@ -3387,8 +3012,6 @@ document.addEventListener('keydown', (e) => {
       closeExportCodeModal();
       closeImportCodeModal();
       closeShareModal();
-      closeSettingsModal();
-      closeSettingsIntroModal();
     }
 });
 </script>
