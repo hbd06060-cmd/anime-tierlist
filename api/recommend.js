@@ -1,13 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseServiceKey =
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
-
-const supabase =
-  supabaseUrl && supabaseServiceKey
-    ? createClient(supabaseUrl, supabaseServiceKey)
-    : null;
+// 캐시 기능은 잠시 비활성화
 
 function safeJsonParse(text) {
   try {
@@ -28,10 +19,8 @@ export default async function handler(req, res) {
     const apiKey = process.env.GEMINI_API_KEY;
 
     console.log('recommend route hit');
-    console.log('hasGeminiKey:', !!apiKey);
-    console.log('hasSupabaseUrl:', !!supabaseUrl);
-    console.log('hasSupabaseServiceKey:', !!supabaseServiceKey);
-    console.log('body keys:', Object.keys(body || {}));
+console.log('hasGeminiKey:', !!apiKey);
+console.log('body keys:', Object.keys(body || {}));
 
     if (!apiKey) {
       return res.status(500).json({
@@ -131,39 +120,8 @@ ${insightText}
       }
     };
 
-    const cacheKey = JSON.stringify({
-      titles,
-      ss,
-      s,
-      a,
-      b,
-      c,
-      d
-    });
-
-    try {
-      if (supabase) {
-        const { data: cached, error: cacheReadError } = await supabase
-          .from('ai_cache')
-          .select('result')
-          .eq('cache_key', cacheKey)
-          .maybeSingle();
-
-        if (cacheReadError) {
-          console.error('ai_cache read error:', cacheReadError);
-        } else if (cached?.result) {
-          console.log('recommend cache hit');
-          return res.status(200).json(cached.result);
-        }
-      } else {
-        console.warn('Supabase cache disabled: missing SUPABASE_URL or service key');
-      }
-    } catch (cacheErr) {
-      console.error('ai_cache read catch error:', cacheErr);
-    }
-
     let result = null;
-    const models = ['gemini-2.5-flash-lite', 'gemini-2.5-flash'];
+const models = ['gemini-2.5-flash-lite', 'gemini-2.5-flash'];
 
     for (const model of models) {
       try {
@@ -201,26 +159,6 @@ ${insightText}
       return res.status(429).json({
         error: 'AI limit reached or invalid AI response'
       });
-    }
-
-    try {
-      if (supabase) {
-        const { error: cacheWriteError } = await supabase
-          .from('ai_cache')
-          .upsert(
-            {
-              cache_key: cacheKey,
-              result
-            },
-            { onConflict: 'cache_key' }
-          );
-
-        if (cacheWriteError) {
-          console.error('ai_cache write error:', cacheWriteError);
-        }
-      }
-    } catch (cacheErr) {
-      console.error('ai_cache write catch error:', cacheErr);
     }
 
     return res.status(200).json(result);
