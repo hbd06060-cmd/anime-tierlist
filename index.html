@@ -169,6 +169,9 @@ animation: spin 1s linear infinite;
 <button id="refreshMissingBtn" onclick="refreshMissingAnimeMetadata(this)" class="text-xs px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition-colors">
 작품 정보 보정
 </button>
+<button onclick="openShareModal()" class="text-xs px-3 py-2 rounded-lg bg-pink-600 hover:bg-pink-500 text-white transition-colors">
+공유하기
+</button>
 </div>
 <button onclick="handleLogout()" class="text-xs text-gray-400 hover:text-white transition-colors underline mb-1">
 이름 변경 (로그아웃)
@@ -514,7 +517,54 @@ AI 추천 이유
     </div>
   </div>
 </div>
+<!-- 공유하기 모달 -->
+<div id="shareModal" onclick="if(event.target === this) closeShareModal()" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-[160] p-4 transition-opacity">
+  <div class="bg-gray-800 rounded-2xl border border-gray-600 w-full max-w-2xl shadow-2xl p-6 md:p-8" onclick="event.stopPropagation()">
+    <div class="flex items-start justify-between gap-4 mb-4">
+      <div>
+        <h3 class="text-2xl font-bold text-white">티어리스트 공유</h3>
+        <p class="text-sm text-gray-400 mt-1">공개 링크를 만들고 다른 사람에게 내 티어리스트를 보여줄 수 있습니다.</p>
+      </div>
+      <button onclick="closeShareModal()" class="text-gray-400 hover:text-white bg-gray-700/80 hover:bg-gray-600 p-2 rounded-full transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+      </button>
+    </div>
 
+    <div class="space-y-4">
+      <div class="bg-gray-900 border border-gray-700 rounded-xl p-4">
+        <p class="text-sm text-gray-300 font-bold mb-2">공유 상태</p>
+        <p id="shareStatusText" class="text-sm text-gray-400">확인 중...</p>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-400 mb-2">공유 링크</label>
+        <input
+          type="text"
+          id="shareLinkInput"
+          readonly
+          placeholder="공유 링크를 생성하면 여기에 표시됩니다."
+          class="w-full bg-gray-900 border border-gray-700 text-white rounded-lg p-3 focus:outline-none"
+        >
+      </div>
+
+      <div class="flex flex-wrap gap-2">
+        <button id="enableShareBtn" onclick="enableShareLink(this)" class="px-4 py-2 rounded-lg bg-pink-600 hover:bg-pink-500 text-white text-sm font-bold transition-colors">
+          공개 링크 생성
+        </button>
+        <button id="copyShareBtn" onclick="copyShareLink()" class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold transition-colors">
+          링크 복사
+        </button>
+        <button id="disableShareBtn" onclick="disableShareLink(this)" class="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-sm font-bold transition-colors">
+          비공개로 전환
+        </button>
+      </div>
+
+      <p class="text-xs text-gray-500">
+        공유 페이지에서는 티어리스트, 성향 분석, 추천 목록이 읽기 전용으로 표시됩니다.
+      </p>
+    </div>
+  </div>
+</div>
 <script>
 // ==========================================
 // 환경 변수 설정
@@ -742,6 +792,14 @@ function renderAccountLinkUI() {
 function generateId() { return Math.random().toString(36).substr(2, 9); }
 function getPlaceholderUrl(title) {
 return `https://placehold.co/300x450/1f2937/9ca3af?text=${encodeURIComponent(title || 'No Image')}&font=roboto`;
+}
+
+function generatePublicId() {
+  return Math.random().toString(36).slice(2, 12);
+}
+
+function buildShareUrl(publicId) {
+  return `${window.location.origin}/share.html?id=${encodeURIComponent(publicId)}`;
 }
 
 function isMissingPosterUrl(url) {
@@ -1057,30 +1115,44 @@ saveLocalExtras();
 if (!supabaseClient || (!appState.user.id && !appState.user.name)) return;
 
 try {
-const payload = {
-  user_id: isSocialLogin() ? appState.user.id : null,
-  username: isSocialLogin() ? null : appState.user.name,
-  taste_profile_title_ko: appState.tasteProfile.titleKo,
-  taste_profile_title_en: appState.tasteProfile.titleEn,
-  taste_profile_description: appState.tasteProfile.description,
-  recommended_items: appState.recommendedItems,
-  updated_at: new Date().toISOString()
-};
+  let existingQuery = supabaseClient
+    .from('user_meta')
+    .select('public_id, is_public');
 
-let result;
-if (isSocialLogin()) {
-result = await supabaseClient
-.from('user_meta')
-.upsert(payload, { onConflict: 'user_id' });
-} else {
-result = await supabaseClient
-.from('user_meta')
-.upsert(payload, { onConflict: 'username' });
-}
+  if (isSocialLogin()) {
+    existingQuery = existingQuery.eq('user_id', appState.user.id);
+  } else {
+    existingQuery = existingQuery.eq('username', appState.user.name).is('user_id', null);
+  }
 
-if (result.error) console.error("Save User Meta Error:", result.error);
+  const { data: existingMeta } = await existingQuery.maybeSingle();
+
+  const payload = {
+    user_id: isSocialLogin() ? appState.user.id : null,
+    username: isSocialLogin() ? null : appState.user.name,
+    taste_profile_title_ko: appState.tasteProfile.titleKo,
+    taste_profile_title_en: appState.tasteProfile.titleEn,
+    taste_profile_description: appState.tasteProfile.description,
+    recommended_items: appState.recommendedItems,
+    public_id: existingMeta?.public_id || null,
+    is_public: existingMeta?.is_public || false,
+    updated_at: new Date().toISOString()
+  };
+
+  let result;
+  if (isSocialLogin()) {
+    result = await supabaseClient
+      .from('user_meta')
+      .upsert(payload, { onConflict: 'user_id' });
+  } else {
+    result = await supabaseClient
+      .from('user_meta')
+      .upsert(payload, { onConflict: 'username' });
+  }
+
+  if (result.error) console.error("Save User Meta Error:", result.error);
 } catch (err) {
-console.error("Save User Meta Catch Error:", err);
+  console.error("Save User Meta Catch Error:", err);
 }
 }
 
@@ -1743,6 +1815,195 @@ function closeImportCodeModal() {
 const modal = document.getElementById('importCodeModal');
 modal.classList.add('hidden');
 modal.classList.remove('flex');
+}
+
+function openShareModal() {
+  if (!appState.user.isLoggedIn) {
+    showToast('먼저 로그인해주세요.', true);
+    return;
+  }
+
+  const modal = document.getElementById('shareModal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+
+  loadShareSettings();
+}
+
+function closeShareModal() {
+  const modal = document.getElementById('shareModal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+}
+
+async function loadShareSettings() {
+  const statusEl = document.getElementById('shareStatusText');
+  const inputEl = document.getElementById('shareLinkInput');
+
+  statusEl.innerText = '확인 중...';
+  inputEl.value = '';
+
+  if (!supabaseClient || (!appState.user.id && !appState.user.name)) {
+    statusEl.innerText = '공유 기능을 사용할 수 없습니다.';
+    return;
+  }
+
+  try {
+    let query = supabaseClient
+      .from('user_meta')
+      .select('public_id, is_public');
+
+    if (isSocialLogin()) {
+      query = query.eq('user_id', appState.user.id);
+    } else {
+      query = query.eq('username', appState.user.name).is('user_id', null);
+    }
+
+    const { data, error } = await query.maybeSingle();
+
+    if (error) throw error;
+
+    if (data?.is_public && data?.public_id) {
+      statusEl.innerText = '현재 공개 상태입니다.';
+      inputEl.value = buildShareUrl(data.public_id);
+    } else if (data?.public_id) {
+      statusEl.innerText = '공유 링크가 존재하지만 현재 비공개 상태입니다.';
+      inputEl.value = buildShareUrl(data.public_id);
+    } else {
+      statusEl.innerText = '아직 생성된 공유 링크가 없습니다.';
+    }
+  } catch (err) {
+    console.error('loadShareSettings error:', err);
+    statusEl.innerText = '공유 설정을 불러오지 못했습니다.';
+  }
+}
+
+async function enableShareLink(btn) {
+  if (!supabaseClient || (!appState.user.id && !appState.user.name)) {
+    showToast('공유 기능을 사용할 수 없습니다.', true);
+    return;
+  }
+
+  const originalText = btn.innerText;
+  btn.disabled = true;
+  btn.classList.add('opacity-50');
+  btn.innerText = '생성 중...';
+
+  try {
+    let query = supabaseClient
+      .from('user_meta')
+      .select('*');
+
+    if (isSocialLogin()) {
+      query = query.eq('user_id', appState.user.id);
+    } else {
+      query = query.eq('username', appState.user.name).is('user_id', null);
+    }
+
+    const { data: existing, error: fetchError } = await query.maybeSingle();
+    if (fetchError) throw fetchError;
+
+    const publicId = existing?.public_id || generatePublicId();
+
+    const payload = {
+      user_id: isSocialLogin() ? appState.user.id : null,
+      username: isSocialLogin() ? null : appState.user.name,
+      taste_profile_title_ko: appState.tasteProfile.titleKo,
+      taste_profile_title_en: appState.tasteProfile.titleEn,
+      taste_profile_description: appState.tasteProfile.description,
+      recommended_items: appState.recommendedItems,
+      public_id: publicId,
+      is_public: true,
+      updated_at: new Date().toISOString()
+    };
+
+    let result;
+    if (isSocialLogin()) {
+      result = await supabaseClient.from('user_meta').upsert(payload, { onConflict: 'user_id' });
+    } else {
+      result = await supabaseClient.from('user_meta').upsert(payload, { onConflict: 'username' });
+    }
+
+    if (result.error) throw result.error;
+
+    const shareUrl = buildShareUrl(publicId);
+    document.getElementById('shareLinkInput').value = shareUrl;
+    document.getElementById('shareStatusText').innerText = '현재 공개 상태입니다.';
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      showToast('공유 링크가 생성되고 복사되었습니다.');
+    } catch (err) {
+      showToast('공유 링크가 생성되었습니다.');
+    }
+  } catch (err) {
+    console.error('enableShareLink error:', err);
+    showToast('공유 링크 생성에 실패했습니다.', true);
+  } finally {
+    btn.disabled = false;
+    btn.classList.remove('opacity-50');
+    btn.innerText = originalText;
+  }
+}
+
+async function disableShareLink(btn) {
+  if (!supabaseClient || (!appState.user.id && !appState.user.name)) {
+    showToast('공유 기능을 사용할 수 없습니다.', true);
+    return;
+  }
+
+  const originalText = btn.innerText;
+  btn.disabled = true;
+  btn.classList.add('opacity-50');
+  btn.innerText = '변경 중...';
+
+  try {
+    let query = supabaseClient
+      .from('user_meta')
+      .update({ is_public: false, updated_at: new Date().toISOString() });
+
+    if (isSocialLogin()) {
+      query = query.eq('user_id', appState.user.id);
+    } else {
+      query = query.eq('username', appState.user.name).is('user_id', null);
+    }
+
+    const { error } = await query;
+    if (error) throw error;
+
+    document.getElementById('shareStatusText').innerText = '현재 비공개 상태입니다.';
+    showToast('공유가 비공개로 전환되었습니다.');
+  } catch (err) {
+    console.error('disableShareLink error:', err);
+    showToast('비공개 전환에 실패했습니다.', true);
+  } finally {
+    btn.disabled = false;
+    btn.classList.remove('opacity-50');
+    btn.innerText = originalText;
+  }
+}
+
+async function copyShareLink() {
+  const input = document.getElementById('shareLinkInput');
+  const value = String(input.value || '').trim();
+
+  if (!value) {
+    showToast('먼저 공유 링크를 생성해주세요.', true);
+    return;
+  }
+
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(value);
+    } else {
+      input.focus();
+      input.select();
+      document.execCommand('copy');
+    }
+    showToast('공유 링크가 복사되었습니다.');
+  } catch (err) {
+    showToast('링크 복사에 실패했습니다.', true);
+  }
 }
 
 async function applyImportCode() {
@@ -2679,7 +2940,13 @@ async function generateRecommendations(btn) {
 }
 
 document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') { closeDetailModal(); closeAddModal(); closeExportCodeModal(); closeImportCodeModal(); }
+    if (e.key === 'Escape') {
+      closeDetailModal();
+      closeAddModal();
+      closeExportCodeModal();
+      closeImportCodeModal();
+      closeShareModal();
+    }
 });
 </script>
 </body>
