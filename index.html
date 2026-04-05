@@ -167,6 +167,9 @@ animation: spin 1s linear infinite;
 <button onclick="openShareModal()" class="text-xs px-3 py-2 rounded-lg bg-pink-600 hover:bg-pink-500 text-white transition-colors">
 공유하기
 </button>
+<button onclick="openSettingsModal()" class="text-xs px-3 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white transition-colors">
+설정
+</button>
 </div>
 <button id="logoutBtn" onclick="handleLogout()" class="text-xs text-gray-400 hover:text-white transition-colors underline mb-1">
 이름 변경 (로그아웃)
@@ -396,8 +399,8 @@ AI RECOMMENDED
 </div>
 
 <div>
-<label class="block text-sm font-medium text-gray-400 mb-2">한줄평 (작품 선택 시 AI가 자동 생성) <span class="text-red-500">*</span></label>
-<textarea id="animeReview" rows="2" placeholder="후보 리스트에서 작품을 선택하면 AI가 한줄평을 생성합니다." class="w-full bg-gray-900 border border-gray-700 text-white rounded-lg p-3 focus:outline-none focus:border-blue-500 transition-colors" oninput="updatePreviewReview()"></textarea>
+<label class="block text-sm font-medium text-gray-400 mb-2">한줄평 <span class="text-red-500">*</span></label>
+<textarea id="animeReview" rows="2" placeholder="AI 자동 생성이 꺼져 있으면 직접 입력해주세요." class="w-full bg-gray-900 border border-gray-700 text-white rounded-lg p-3 focus:outline-none focus:border-blue-500 transition-colors" oninput="updatePreviewReview()"></textarea>
 </div>
 </div>
 </div>
@@ -557,6 +560,41 @@ AI 추천 이유
       <p class="text-xs text-gray-500">
         공유 페이지에서는 티어리스트, 성향 분석, 추천 목록이 읽기 전용으로 표시됩니다.
       </p>
+    </div>
+  </div>
+</div>
+<!-- 설정 모달 -->
+<div id="settingsModal" onclick="if(event.target === this) closeSettingsModal()" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-[170] p-4 transition-opacity">
+  <div class="bg-gray-800 rounded-2xl border border-gray-600 w-full max-w-lg shadow-2xl p-6 md:p-8" onclick="event.stopPropagation()">
+    <div class="flex items-start justify-between gap-4 mb-6">
+      <div>
+        <h3 class="text-2xl font-bold text-white">설정</h3>
+        <p class="text-sm text-gray-400 mt-1">AI 자동 생성 관련 옵션을 설정할 수 있습니다.</p>
+      </div>
+      <button onclick="closeSettingsModal()" class="text-gray-400 hover:text-white bg-gray-700/80 hover:bg-gray-600 p-2 rounded-full transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+      </button>
+    </div>
+
+    <div class="space-y-5">
+      <div class="flex items-start justify-between gap-4 bg-gray-900 border border-gray-700 rounded-xl p-4">
+        <div>
+          <p class="text-white font-bold">AI 한줄평 자동 생성</p>
+          <p class="text-xs text-gray-400 mt-1">
+            작품 선택 시 AI가 한줄평을 자동으로 작성합니다. 꺼두면 직접 입력해야 합니다.
+          </p>
+        </div>
+        <label class="inline-flex items-center cursor-pointer flex-shrink-0">
+          <input id="autoReviewToggle" type="checkbox" class="sr-only" onchange="handleAutoReviewToggle(this)">
+          <div class="w-11 h-6 bg-gray-600 rounded-full relative transition-colors">
+            <div id="autoReviewKnob" class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform"></div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div class="flex justify-end gap-3 mt-6">
+      <button onclick="closeSettingsModal()" class="px-5 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-gray-700 transition-colors">닫기</button>
     </div>
   </div>
 </div>
@@ -811,6 +849,62 @@ function canUseAutoReview() {
   } catch (e) {
     return false;
   }
+}
+function getAnimeSettings() {
+  try {
+    const raw = localStorage.getItem('anime_settings');
+    if (!raw) {
+      return { autoReview: false };
+    }
+    return { autoReview: false, ...JSON.parse(raw) };
+  } catch (e) {
+    return { autoReview: false };
+  }
+}
+
+function saveAnimeSettings(settings) {
+  localStorage.setItem('anime_settings', JSON.stringify(settings));
+}
+
+function syncSettingsUI() {
+  const toggle = document.getElementById('autoReviewToggle');
+  const knob = document.getElementById('autoReviewKnob');
+  const settings = getAnimeSettings();
+
+  if (!toggle || !knob) return;
+
+  toggle.checked = settings.autoReview === true;
+
+  if (toggle.checked) {
+    knob.style.transform = 'translateX(20px)';
+    knob.parentElement.classList.remove('bg-gray-600');
+    knob.parentElement.classList.add('bg-purple-600');
+  } else {
+    knob.style.transform = 'translateX(0px)';
+    knob.parentElement.classList.remove('bg-purple-600');
+    knob.parentElement.classList.add('bg-gray-600');
+  }
+}
+
+function openSettingsModal() {
+  syncSettingsUI();
+  const modal = document.getElementById('settingsModal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+function closeSettingsModal() {
+  const modal = document.getElementById('settingsModal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+}
+
+function handleAutoReviewToggle(input) {
+  const settings = getAnimeSettings();
+  settings.autoReview = input.checked === true;
+  saveAnimeSettings(settings);
+  syncSettingsUI();
+  showToast(input.checked ? 'AI 한줄평 자동 생성을 켰습니다.' : 'AI 한줄평 자동 생성을 껐습니다.');
 }
 function generatePublicId() {
   return Math.random().toString(36).slice(2, 12);
@@ -2288,39 +2382,52 @@ showToast('한줄평이 수정되었습니다.');
 }
 
 async function saveAnime() {
-const title = document.getElementById('animeTitle').value.trim();
-const reviewInput = document.getElementById('animeReview').value.trim();
+  const title = document.getElementById('animeTitle').value.trim();
+  const reviewInput = document.getElementById('animeReview').value.trim();
 
-if (!title) {
-  showToast('작품 제목을 먼저 선택해주세요.', true);
-  return;
-}
+  if (!currentTier || !appState.tierList[currentTier]) {
+    showToast('현재 티어 정보가 비어 있습니다. 다시 모달을 열어주세요.', true);
+    console.error('saveAnime: currentTier invalid', currentTier);
+    return;
+  }
 
-if (!reviewInput) {
-  showToast('한줄평을 입력해주세요.', true);
-  return;
-}
+  if (!title) {
+    showToast('작품 제목을 먼저 선택해주세요.', true);
+    return;
+  }
 
-const newAnime = {
-id: generateId(),
-title: title,
-originalTitle: tempAnimeData?.originalTitle || '',
-imgSrc: document.getElementById('imgUrl').value.trim() || getPlaceholderUrl(title),
-genres: tempAnimeData?.genres || [],
-overview: tempAnimeData?.overview || '',
-rating: tempAnimeData?.rating || 0,
-releaseDate: tempAnimeData?.releaseDate || '',
-tier: currentTier,
-aiReview: tempAnimeData?.aiReview || '',
-userReview: reviewInput
-};
+  if (!reviewInput) {
+    showToast('한줄평을 입력해주세요.', true);
+    return;
+  }
 
-const savedData = await saveAnimeToDB(newAnime, appState.tierList[currentTier].length);
-if (savedData?.[0]) newAnime.id = savedData[0].id;
+  const newAnime = {
+    id: generateId(),
+    title: title,
+    originalTitle: tempAnimeData?.originalTitle || '',
+    imgSrc: document.getElementById('imgUrl').value.trim() || getPlaceholderUrl(title),
+    genres: tempAnimeData?.genres || [],
+    overview: tempAnimeData?.overview || '',
+    rating: tempAnimeData?.rating || 0,
+    releaseDate: tempAnimeData?.releaseDate || '',
+    tier: currentTier,
+    aiReview: tempAnimeData?.aiReview || '',
+    userReview: reviewInput
+  };
 
-appState.tierList[currentTier].push(newAnime);
-renderTierList();
-closeAddModal();
+  try {
+    const savedData = await saveAnimeToDB(newAnime, appState.tierList[currentTier].length);
+    if (savedData?.[0]) newAnime.id = savedData[0].id;
+
+    appState.tierList[currentTier].push(newAnime);
+    renderTierList();
+    closeAddModal();
+    showToast('작품이 목록에 추가되었습니다.');
+    console.log('saveAnime success:', newAnime);
+  } catch (err) {
+    console.error('saveAnime failed:', err);
+    showToast('작품 추가 중 오류가 발생했습니다.', true);
+  }
 }
 
 async function deleteAnime(btn, event, id, tier) {
