@@ -2205,17 +2205,27 @@ function setupDragAndDrop() {
     if (!grid) return;
 
     new Sortable(grid, {
-      group: 'tierList',
-      animation: 220,
-      delay: 0,
-      delayOnTouchOnly: true,
-      ghostClass: 'sortable-ghost',
-      dragClass: 'sortable-drag',
-      forceFallback: false,
-      fallbackOnBody: false,
-      fallbackTolerance: 6,
-      filter: 'button, #rec-empty-state',
-      preventOnFilter: false,
+  group: 'tierList',
+  animation: 220,
+
+  // 모바일에서는 길게 눌렀을 때만 드래그 시작
+  delay: 250,
+touchStartThreshold: 10,
+fallbackTolerance: 14,
+  delayOnTouchOnly: true,
+  touchStartThreshold: 8,
+
+  ghostClass: 'sortable-ghost',
+  dragClass: 'sortable-drag',
+
+  forceFallback: false,
+  fallbackOnBody: false,
+
+  // 손가락이 조금 움직인 정도로는 드래그 시작 안 되게
+  fallbackTolerance: 12,
+
+  filter: 'button, #rec-empty-state',
+  preventOnFilter: false,
 
       onStart: () => {
         isDragging = true;
