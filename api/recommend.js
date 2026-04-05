@@ -9,6 +9,14 @@ const supabase =
     ? createClient(supabaseUrl, supabaseServiceKey)
     : null;
 
+function safeJsonParse(text) {
+  try {
+    return JSON.parse(String(text || '').replace(/```json/g, '').replace(/```/g, '').trim());
+  } catch (err) {
+    return null;
+  }
+}
+
 export default async function handler(req, res) {
   try {
     if (req.method !== 'POST') {
@@ -18,12 +26,21 @@ export default async function handler(req, res) {
     const body = req.body || {};
     const { titles, ss, s, a, b, c, d, preferenceInsights } = body;
     const apiKey = process.env.GEMINI_API_KEY;
-console.log('recommend route hit');
-console.log('hasGeminiKey:', !!apiKey);
-console.log('hasSupabaseUrl:', !!supabaseUrl);
-console.log('hasSupabaseServiceKey:', !!supabaseServiceKey);
-console.log('body keys:', Object.keys(body || {}));
-    const insightText = preferenceInsights ? `
+
+    console.log('recommend route hit');
+    console.log('hasGeminiKey:', !!apiKey);
+    console.log('hasSupabaseUrl:', !!supabaseUrl);
+    console.log('hasSupabaseServiceKey:', !!supabaseServiceKey);
+    console.log('body keys:', Object.keys(body || {}));
+
+    if (!apiKey) {
+      return res.status(500).json({
+        error: 'missing GEMINI_API_KEY'
+      });
+    }
+
+    const insightText = preferenceInsights
+      ? `
 [사용자 취향 요약]
 상위 선호작:
 ${(preferenceInsights.topFavorites || []).map(x => `- ${x.title} (${x.tier}) : ${x.review || '리뷰 없음'}`).join('\n')}
@@ -42,12 +59,15 @@ ${(preferenceInsights.genrePreferences || []).map(x => `- ${x.genre} / 평균 ${
 
 리뷰 근거:
 ${(preferenceInsights.reviewEvidence || []).slice(0, 12).map(x => `- ${x.title} (${x.tier}) : ${x.review}`).join('\n')}
-` : '';
+`
+      : '';
 
     const payload = {
-        contents: [{
-            parts: [{
-                text: `사용자가 이미 본 작품 목록:
+      contents: [
+        {
+          parts: [
+            {
+              text: `사용자가 이미 본 작품 목록:
 ${titles || '없음'}
 
 등급별 티어리스트:
@@ -90,107 +110,119 @@ ${insightText}
   "originalTitle": "원제",
   "reason": "이 사용자는 ...을 좋아하고 ...에는 민감하기 때문에 이 작품이 잘 맞을 가능성이 높다."
 }`
-            }]
-        }],
-        generationConfig: {
-            responseMimeType: "application/json",
-            responseSchema: {
-                type: "ARRAY",
-                items: {
-                    type: "OBJECT",
-                    properties: {
-                        title: { type: "STRING" },
-                        originalTitle: { type: "STRING" },
-                        reason: { type: "STRING" }
-                    },
-                    required: ["title", "originalTitle", "reason"]
-                }
             }
+          ]
         }
+      ],
+      generationConfig: {
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: 'ARRAY',
+          items: {
+            type: 'OBJECT',
+            properties: {
+              title: { type: 'STRING' },
+              originalTitle: { type: 'STRING' },
+              reason: { type: 'STRING' }
+            },
+            required: ['title', 'originalTitle', 'reason']
+          }
+        }
+      }
     };
-// ==========================
-// 캐시 키 생성
-// ==========================
-const cacheKey = JSON.stringify({
-  titles, ss, s, a, b, c, d
-});
 
-// ==========================
-// 캐시 조회
-// ==========================
-try {
-  if (supabase) {
-    const { data: cached, error: cacheReadError } = await supabase
-      .from('ai_cache')
-      .select('result')
-      .eq('cache_key', cacheKey)
-      .maybeSingle();
+    const cacheKey = JSON.stringify({
+      titles,
+      ss,
+      s,
+      a,
+      b,
+      c,
+      d
+    });
 
-    if (cacheReadError) {
-      console.error('ai_cache read error:', cacheReadError);
-    } else if (cached?.result) {
-      return res.status(200).json(cached.result);
+    try {
+      if (supabase) {
+        const { data: cached, error: cacheReadError } = await supabase
+          .from('ai_cache')
+          .select('result')
+          .eq('cache_key', cacheKey)
+          .maybeSingle();
+
+        if (cacheReadError) {
+          console.error('ai_cache read error:', cacheReadError);
+        } else if (cached?.result) {
+          console.log('recommend cache hit');
+          return res.status(200).json(cached.result);
+        }
+      } else {
+        console.warn('Supabase cache disabled: missing SUPABASE_URL or service key');
+      }
+    } catch (cacheErr) {
+      console.error('ai_cache read catch error:', cacheErr);
     }
-  } else {
-    console.warn('Supabase cache disabled: missing SUPABASE_URL or service key');
-  }
-} catch (cacheErr) {
-  console.error('ai_cache read catch error:', cacheErr);
-}
 
-// ==========================
-// 기존 로직 진행
-// ==========================
-let result = null;
-const models = ['gemini-2.5-flash-lite', 'gemini-2.5-flash'];
+    let result = null;
+    const models = ['gemini-2.5-flash-lite', 'gemini-2.5-flash'];
 
     for (const model of models) {
-        try {
-            const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
+      try {
+        const r = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          }
+        );
 
-            if (!r.ok) continue;
-
-            const json = await r.json();
-            const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
-
-            if (text) {
-                result = JSON.parse(text.replace(/```json/g, '').replace(/```/g, '').trim());
-                break;
-            }
-        } catch (e) {
-            continue;
+        if (!r.ok) {
+          const badText = await r.text().catch(() => '');
+          console.error(`gemini bad response from ${model}:`, r.status, badText);
+          continue;
         }
+
+        const json = await r.json();
+        const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
+        const parsed = safeJsonParse(text);
+
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          result = parsed;
+          console.log('recommend gemini success model:', model);
+          break;
+        }
+      } catch (e) {
+        console.error(`gemini fetch error from ${model}:`, e);
+        continue;
+      }
     }
 
     if (!result) {
-  return res.status(429).json({ error: 'AI limit reached' });
-}
-
-// ==========================
-// 캐시 저장
-// ==========================
-try {
-  if (supabase) {
-    const { error: cacheWriteError } = await supabase
-      .from('ai_cache')
-      .upsert({
-        cache_key: cacheKey,
-        result
-      }, { onConflict: 'cache_key' });
-
-    if (cacheWriteError) {
-      console.error('ai_cache write error:', cacheWriteError);
+      return res.status(429).json({
+        error: 'AI limit reached or invalid AI response'
+      });
     }
-  }
-} catch (cacheErr) {
-  console.error('ai_cache write catch error:', cacheErr);
-}
 
-// ==========================
+    try {
+      if (supabase) {
+        const { error: cacheWriteError } = await supabase
+          .from('ai_cache')
+          .upsert(
+            {
+              cache_key: cacheKey,
+              result
+            },
+            { onConflict: 'cache_key' }
+          );
+
+        if (cacheWriteError) {
+          console.error('ai_cache write error:', cacheWriteError);
+        }
+      }
+    } catch (cacheErr) {
+      console.error('ai_cache write catch error:', cacheErr);
+    }
+
     return res.status(200).json(result);
   } catch (err) {
     console.error('recommend fatal error:', err);
