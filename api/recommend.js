@@ -10,13 +10,19 @@ const supabase =
     : null;
 
 export default async function handler(req, res) {
+  try {
     if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method Not Allowed' });
+      return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
-    const { titles, ss, s, a, b, c, d, preferenceInsights } = req.body;
+    const body = req.body || {};
+    const { titles, ss, s, a, b, c, d, preferenceInsights } = body;
     const apiKey = process.env.GEMINI_API_KEY;
-
+console.log('recommend route hit');
+console.log('hasGeminiKey:', !!apiKey);
+console.log('hasSupabaseUrl:', !!supabaseUrl);
+console.log('hasSupabaseServiceKey:', !!supabaseServiceKey);
+console.log('body keys:', Object.keys(body || {}));
     const insightText = preferenceInsights ? `
 [사용자 취향 요약]
 상위 선호작:
@@ -185,5 +191,12 @@ try {
 }
 
 // ==========================
-return res.status(200).json(result);
+    return res.status(200).json(result);
+  } catch (err) {
+    console.error('recommend fatal error:', err);
+    return res.status(500).json({
+      error: 'recommend fatal error',
+      message: err?.message || 'unknown error'
+    });
+  }
 }
