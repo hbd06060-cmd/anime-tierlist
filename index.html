@@ -2989,10 +2989,17 @@ async function generateRecommendations(btn) {
 }, 20000);
 
     if (!response.ok) {
-      throw new Error(`recommend failed: ${response.status}`);
-    }
+  let errBody = null;
+  try {
+    errBody = await response.json();
+  } catch (_) {
+    errBody = await response.text().catch(() => '');
+  }
+  console.error('recommend api error body:', errBody);
+  throw new Error(`recommend failed: ${response.status}`);
+}
 
-    const recs = await response.json();
+const recs = await response.json();
 
     // 1차: 내가 이미 본 작품 제목 모으기
     const watchedSet = new Set();
