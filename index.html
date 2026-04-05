@@ -858,6 +858,15 @@ function ensureSettingsDailyLimitState() {
 }
 
 function loadUserSettings() {
+  // 소셜 로그인 사용자는 DB에서 읽으므로 여기서는 기본값만 세팅
+  if (isSocialLogin()) {
+    appState.settings = getDefaultSettings();
+    ensureSettingsDailyLimitState();
+    renderSettingsUI();
+    return;
+  }
+
+  // 체험 모드 / legacy 로그인은 localStorage 사용
   const key = getSettingsStorageKey();
   let nextSettings = getDefaultSettings();
 
@@ -883,10 +892,21 @@ function loadUserSettings() {
 }
 
 function saveUserSettings(skipRender = false) {
+  ensureSettingsDailyLimitState();
+
+  // 소셜 로그인 사용자는 DB 저장
+  if (isSocialLogin()) {
+    if (!skipRender) {
+      renderSettingsUI();
+    }
+    saveUserMetaToDB();
+    return;
+  }
+
+  // 체험 모드 / legacy 로그인은 localStorage 저장
   const key = getSettingsStorageKey();
   if (!key) return;
 
-  ensureSettingsDailyLimitState();
   localStorage.setItem(key, JSON.stringify(appState.settings));
 
   if (!skipRender) {
@@ -937,6 +957,11 @@ function openSettingsModal() {
 }
 
 function closeSettingsModal() {
+  if (appState.user.isLoggedIn && !appState.settings.hasCompletedIntro) {
+    appState.settings.hasCompletedIntro = true;
+    saveUserSettings(true);
+  }
+
   const modal = document.getElementById('settingsModal');
   modal.classList.add('hidden');
   modal.classList.remove('flex');
@@ -963,6 +988,7 @@ function maybeOpenSettingsIntro() {
 
 function handleAutoReviewToggleChange(checked) {
   appState.settings.autoGenerateReview = !!checked;
+  appState.settings.hasCompletedIntro = true;
   saveUserSettings();
   showToast(checked ? 'AI 한줄평 자동 생성이 켜졌습니다.' : 'AI 한줄평 자동 생성이 꺼졌습니다.');
 }
@@ -976,8 +1002,6 @@ function completeSettingsIntro(enableAuto) {
 }
 
 function openSettingsFromIntro() {
-  appState.settings.hasCompletedIntro = true;
-  saveUserSettings();
   closeSettingsIntroModal();
   openSettingsModal();
 }
@@ -1367,17 +1391,45 @@ titleKo: data.taste_profile_title_ko || "아직 분석되지 않음",
 titleEn: data.taste_profile_title_en || "Not Analyzed",
 description: data.taste_profile_description || "티어리스트를 채우고 분석해보세요."
 };
+
 appState.recommendedItems = data.recommended_items || [];
+
+// 소셜 로그인 사용자는 DB 설정값 사용
+if (isSocialLogin()) {
+  appState.settings = {
+    ...getDefaultSettings(),
+    hasCompletedIntro: !!data.settings_intro_seen,
+    autoGenerateReview: !!data.auto_generate_review,
+    autoGenerateReviewDailyLimit: Number(data.auto_generate_review_daily_limit || 5),
+    autoGenerateReviewUsedCount: Number(data.auto_generate_review_used_count || 0),
+    autoGenerateReviewUsedDate: data.auto_generate_review_used_date || ''
+  };
+
+  ensureSettingsDailyLimitState();
+  renderSettingsUI();
+}
 
 renderTasteProfile();
 renderRecommendations();
 updateRecButtonUI();
 } else {
 loadLocalExtras();
+
+if (isSocialLogin()) {
+  appState.settings = getDefaultSettings();
+  ensureSettingsDailyLimitState();
+  renderSettingsUI();
+}
 }
 } catch (err) {
 console.error("Load User Meta Error:", err);
 loadLocalExtras();
+
+if (isSocialLogin()) {
+  appState.settings = getDefaultSettings();
+  ensureSettingsDailyLimitState();
+  renderSettingsUI();
+}
 }
 }
 
@@ -1409,6 +1461,13 @@ try {
     recommended_items: appState.recommendedItems,
     public_id: existingMeta?.public_id || null,
     is_public: existingMeta?.is_public || false,
+
+    settings_intro_seen: appState.settings?.hasCompletedIntro ?? false,
+    auto_generate_review: appState.settings?.autoGenerateReview ?? false,
+    auto_generate_review_daily_limit: appState.settings?.autoGenerateReviewDailyLimit ?? 5,
+    auto_generate_review_used_count: appState.settings?.autoGenerateReviewUsedCount ?? 0,
+    auto_generate_review_used_date: appState.settings?.autoGenerateReviewUsedDate || null,
+
     updated_at: new Date().toISOString()
   };
 
@@ -1436,7 +1495,9 @@ document.addEventListener('DOMContentLoaded', () => { initializeApp(); });
 
 async function initializeLoggedInUI({ refreshIdentities = false } = {}) {
   closeNamePopup();
-  renderUserInfo();
+
+  // localStorage 기반 설정은 여기서 먼저 로드
+  // 소셜 로그인은 loadUserMetaFromDB 안에서 DB 설정으로 덮어씀
   loadUserSettings();
 
   if (refreshIdentities) {
@@ -1445,6 +1506,8 @@ async function initializeLoggedInUI({ refreshIdentities = false } = {}) {
 
   await loadUserMetaFromDB();
   await loadTierListFromDB();
+
+  renderUserInfo();
 
   setTimeout(() => {
     maybeOpenSettingsIntro();
