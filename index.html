@@ -599,15 +599,25 @@ AI 추천 이유
         </div>
       </div>
 
-      <div class="bg-gray-900/70 border border-gray-700 rounded-xl p-4">
-        <p class="text-sm text-gray-300 font-bold mb-2">안내</p>
-        <ul class="text-sm text-gray-400 leading-relaxed space-y-1">
-          <li>• 기본값은 꺼짐입니다.</li>
-          <li>• 자동 생성을 켜면 하루 최대 5회까지 사용됩니다.</li>
-          <li>• 직접 입력은 언제나 제한 없이 가능합니다.</li>
-          <li>• 설정은 언제든 다시 변경할 수 있습니다.</li>
-        </ul>
-      </div>
+      <div class="bg-gray-900/70 border border-gray-700 rounded-xl p-4 space-y-3">
+  <div>
+    <p class="text-sm text-gray-300 font-bold mb-2">AI 추천 사용량</p>
+    <p id="settingsRecommendUsageText" class="text-sm text-pink-300">
+      오늘 0/3회 사용
+    </p>
+  </div>
+
+  <div>
+    <p class="text-sm text-gray-300 font-bold mb-2">안내</p>
+    <ul class="text-sm text-gray-400 leading-relaxed space-y-1">
+      <li>• AI 한줄평 자동 생성 기본값은 꺼짐입니다.</li>
+      <li>• 자동 생성을 켜면 하루 최대 5회까지 사용됩니다.</li>
+      <li>• AI 추천은 하루 최대 3회까지 사용할 수 있습니다.</li>
+      <li>• 직접 입력은 언제나 제한 없이 가능합니다.</li>
+      <li>• 설정은 언제든 다시 변경할 수 있습니다.</li>
+    </ul>
+  </div>
+</div>
     </div>
 
     <div class="flex justify-end gap-3 mt-6">
@@ -824,6 +834,11 @@ function getDefaultSettings() {
     autoGenerateReviewDailyLimit: 5,
     autoGenerateReviewUsedCount: 0,
     autoGenerateReviewUsedDate: '',
+
+    recommendDailyLimit: 3,
+    recommendUsedCount: 0,
+    recommendUsedDate: '',
+
     hasCompletedIntro: false
   };
 }
@@ -854,6 +869,11 @@ function ensureSettingsDailyLimitState() {
   if (appState.settings.autoGenerateReviewUsedDate !== today) {
     appState.settings.autoGenerateReviewUsedDate = today;
     appState.settings.autoGenerateReviewUsedCount = 0;
+  }
+
+  if (appState.settings.recommendUsedDate !== today) {
+    appState.settings.recommendUsedDate = today;
+    appState.settings.recommendUsedCount = 0;
   }
 }
 
@@ -921,9 +941,21 @@ function getRemainingAutoReviewCount() {
   return Math.max(0, limit - used);
 }
 
-function canUseAutoReview() {
-  if (!appState.settings?.autoGenerateReview) return false;
-  return getRemainingAutoReviewCount() > 0;
+function getRemainingRecommendCount() {
+  ensureSettingsDailyLimitState();
+  const limit = Number(appState.settings.recommendDailyLimit || 3);
+  const used = Number(appState.settings.recommendUsedCount || 0);
+  return Math.max(0, limit - used);
+}
+
+function canUseRecommendation() {
+  return getRemainingRecommendCount() > 0;
+}
+
+function consumeRecommendationQuota() {
+  ensureSettingsDailyLimitState();
+  appState.settings.recommendUsedCount += 1;
+  saveUserSettings();
 }
 
 function consumeAutoReviewQuota() {
@@ -937,6 +969,7 @@ function renderSettingsUI() {
 
   const toggleEl = document.getElementById('settingsAutoReviewToggle');
   const usageEl = document.getElementById('settingsAutoReviewUsageText');
+  const recommendUsageEl = document.getElementById('settingsRecommendUsageText');
 
   if (toggleEl) {
     toggleEl.checked = !!appState.settings.autoGenerateReview;
@@ -946,6 +979,12 @@ function renderSettingsUI() {
     const limit = Number(appState.settings.autoGenerateReviewDailyLimit || 5);
     const used = Number(appState.settings.autoGenerateReviewUsedCount || 0);
     usageEl.innerText = `오늘 ${used}/${limit}회 사용`;
+  }
+
+  if (recommendUsageEl) {
+    const limit = Number(appState.settings.recommendDailyLimit || 3);
+    const used = Number(appState.settings.recommendUsedCount || 0);
+    recommendUsageEl.innerText = `오늘 ${used}/${limit}회 사용`;
   }
 }
 
@@ -1397,13 +1436,17 @@ appState.recommendedItems = data.recommended_items || [];
 // 소셜 로그인 사용자는 DB 설정값 사용
 if (isSocialLogin()) {
   appState.settings = {
-    ...getDefaultSettings(),
-    hasCompletedIntro: !!data.settings_intro_seen,
-    autoGenerateReview: !!data.auto_generate_review,
-    autoGenerateReviewDailyLimit: Number(data.auto_generate_review_daily_limit || 5),
-    autoGenerateReviewUsedCount: Number(data.auto_generate_review_used_count || 0),
-    autoGenerateReviewUsedDate: data.auto_generate_review_used_date || ''
-  };
+  ...getDefaultSettings(),
+  hasCompletedIntro: !!data.settings_intro_seen,
+  autoGenerateReview: !!data.auto_generate_review,
+  autoGenerateReviewDailyLimit: Number(data.auto_generate_review_daily_limit || 5),
+  autoGenerateReviewUsedCount: Number(data.auto_generate_review_used_count || 0),
+  autoGenerateReviewUsedDate: data.auto_generate_review_used_date || '',
+
+  recommendDailyLimit: Number(data.recommend_daily_limit || 3),
+  recommendUsedCount: Number(data.recommend_used_count || 0),
+  recommendUsedDate: data.recommend_used_date || ''
+};
 
   ensureSettingsDailyLimitState();
   renderSettingsUI();
@@ -1453,23 +1496,27 @@ try {
   const { data: existingMeta } = await existingQuery.maybeSingle();
 
   const payload = {
-    user_id: isSocialLogin() ? appState.user.id : null,
-    username: isSocialLogin() ? null : appState.user.name,
-    taste_profile_title_ko: appState.tasteProfile.titleKo,
-    taste_profile_title_en: appState.tasteProfile.titleEn,
-    taste_profile_description: appState.tasteProfile.description,
-    recommended_items: appState.recommendedItems,
-    public_id: existingMeta?.public_id || null,
-    is_public: existingMeta?.is_public || false,
+  user_id: isSocialLogin() ? appState.user.id : null,
+  username: isSocialLogin() ? null : appState.user.name,
+  taste_profile_title_ko: appState.tasteProfile.titleKo,
+  taste_profile_title_en: appState.tasteProfile.titleEn,
+  taste_profile_description: appState.tasteProfile.description,
+  recommended_items: appState.recommendedItems,
+  public_id: existingMeta?.public_id || null,
+  is_public: existingMeta?.is_public || false,
 
-    settings_intro_seen: appState.settings?.hasCompletedIntro ?? false,
-    auto_generate_review: appState.settings?.autoGenerateReview ?? false,
-    auto_generate_review_daily_limit: appState.settings?.autoGenerateReviewDailyLimit ?? 5,
-    auto_generate_review_used_count: appState.settings?.autoGenerateReviewUsedCount ?? 0,
-    auto_generate_review_used_date: appState.settings?.autoGenerateReviewUsedDate || null,
+  settings_intro_seen: appState.settings?.hasCompletedIntro ?? false,
+  auto_generate_review: appState.settings?.autoGenerateReview ?? false,
+  auto_generate_review_daily_limit: appState.settings?.autoGenerateReviewDailyLimit ?? 5,
+  auto_generate_review_used_count: appState.settings?.autoGenerateReviewUsedCount ?? 0,
+  auto_generate_review_used_date: appState.settings?.autoGenerateReviewUsedDate || null,
 
-    updated_at: new Date().toISOString()
-  };
+  recommend_daily_limit: appState.settings?.recommendDailyLimit ?? 3,
+  recommend_used_count: appState.settings?.recommendUsedCount ?? 0,
+  recommend_used_date: appState.settings?.recommendUsedDate || null,
+
+  updated_at: new Date().toISOString()
+};
 
   let result;
   if (isSocialLogin()) {
@@ -1672,12 +1719,16 @@ grid.insertAdjacentHTML('beforeend', cardHtml);
 function updateRecButtonUI() {
 const btnText = document.getElementById('recommendBtnText');
 const statusText = document.getElementById('rec-status-text');
+
+ensureSettingsDailyLimitState();
+const remaining = getRemainingRecommendCount();
+
 if (appState.recommendedItems && appState.recommendedItems.length > 0) {
-btnText.innerText = "다시 추천받기";
-statusText.innerText = "현재 추천 목록이 저장되어 있습니다. 다시 추천받기를 누르면 새 추천으로 교체됩니다.";
+  btnText.innerText = "다시 추천받기";
+  statusText.innerText = `현재 추천 목록이 저장되어 있습니다. 다시 추천받기를 누르면 새 추천으로 교체됩니다. 오늘 남은 추천 ${remaining}회`;
 } else {
-btnText.innerText = "추천받기";
-statusText.innerText = "추천된 작품을 드래그해서 위 티어로 바로 넣을 수 있습니다.";
+  btnText.innerText = "추천받기";
+  statusText.innerText = `추천된 작품을 드래그해서 위 티어로 바로 넣을 수 있습니다. 오늘 남은 추천 ${remaining}회`;
 }
 }
 
@@ -3177,6 +3228,12 @@ async function generateRecommendations(btn) {
     return;
   }
 
+  if (!canUseRecommendation()) {
+    renderSettingsUI();
+    showToast('오늘 AI 추천 횟수 3회를 모두 사용했습니다.', true);
+    return;
+  }
+
   btn.disabled = true;
   btn.classList.add('opacity-50');
   document.getElementById('rec-loading').classList.remove('hidden');
@@ -3301,9 +3358,12 @@ async function generateRecommendations(btn) {
 
     appState.recommendedItems = finalRecs.slice(0, 4);
 
+    consumeRecommendationQuota();
+
     await saveUserMetaToDB();
     renderRecommendations();
     updateRecButtonUI();
+    renderSettingsUI();
 
     if (appState.recommendedItems.length === 0) {
       showToast('기존 작품과 겹치지 않는 추천을 찾지 못했습니다. 다시 시도해주세요.', true);
