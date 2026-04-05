@@ -102,7 +102,7 @@ ${insightText}
 // 캐시 키 생성
 // ==========================
 const cacheKey = JSON.stringify({
-  ss, s, a, b, c, d, preferenceInsights
+  titles, ss, s, a, b, c, d
 });
 
 // ==========================
@@ -123,8 +123,6 @@ if (cached?.result) {
 // ==========================
 let result = null;
 const models = ['gemini-2.5-flash-lite', 'gemini-2.5-flash'];
-    let result = null;
-    const models = ['gemini-2.5-flash-lite', 'gemini-2.5-flash'];
 
     for (const model of models) {
         try {
