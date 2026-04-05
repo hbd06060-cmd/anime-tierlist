@@ -1,9 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseServiceKey =
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+
+const supabase =
+  supabaseUrl && supabaseServiceKey
+    ? createClient(supabaseUrl, supabaseServiceKey)
+    : null;
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -108,14 +112,24 @@ const cacheKey = JSON.stringify({
 // ==========================
 // 캐시 조회
 // ==========================
-const { data: cached } = await supabase
-  .from('ai_cache')
-  .select('result')
-  .eq('cache_key', cacheKey)
-  .maybeSingle();
+try {
+  if (supabase) {
+    const { data: cached, error: cacheReadError } = await supabase
+      .from('ai_cache')
+      .select('result')
+      .eq('cache_key', cacheKey)
+      .maybeSingle();
 
-if (cached?.result) {
-  return res.status(200).json(cached.result);
+    if (cacheReadError) {
+      console.error('ai_cache read error:', cacheReadError);
+    } else if (cached?.result) {
+      return res.status(200).json(cached.result);
+    }
+  } else {
+    console.warn('Supabase cache disabled: missing SUPABASE_URL or service key');
+  }
+} catch (cacheErr) {
+  console.error('ai_cache read catch error:', cacheErr);
 }
 
 // ==========================
@@ -153,12 +167,22 @@ const models = ['gemini-2.5-flash-lite', 'gemini-2.5-flash'];
 // ==========================
 // 캐시 저장
 // ==========================
-await supabase
-  .from('ai_cache')
-  .insert({
-    cache_key: cacheKey,
-    result
-  });
+try {
+  if (supabase) {
+    const { error: cacheWriteError } = await supabase
+      .from('ai_cache')
+      .upsert({
+        cache_key: cacheKey,
+        result
+      }, { onConflict: 'cache_key' });
+
+    if (cacheWriteError) {
+      console.error('ai_cache write error:', cacheWriteError);
+    }
+  }
+} catch (cacheErr) {
+  console.error('ai_cache write catch error:', cacheErr);
+}
 
 // ==========================
 return res.status(200).json(result);
