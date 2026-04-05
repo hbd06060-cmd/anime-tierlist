@@ -1,3 +1,10 @@
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method Not Allowed' });
@@ -91,7 +98,31 @@ ${insightText}
             }
         }
     };
+// ==========================
+// 캐시 키 생성
+// ==========================
+const cacheKey = JSON.stringify({
+  ss, s, a, b, c, d, preferenceInsights
+});
 
+// ==========================
+// 캐시 조회
+// ==========================
+const { data: cached } = await supabase
+  .from('ai_cache')
+  .select('result')
+  .eq('cache_key', cacheKey)
+  .maybeSingle();
+
+if (cached?.result) {
+  return res.status(200).json(cached.result);
+}
+
+// ==========================
+// 기존 로직 진행
+// ==========================
+let result = null;
+const models = ['gemini-2.5-flash-lite', 'gemini-2.5-flash'];
     let result = null;
     const models = ['gemini-2.5-flash-lite', 'gemini-2.5-flash'];
 
@@ -118,8 +149,19 @@ ${insightText}
     }
 
     if (!result) {
-        return res.status(429).json({ error: 'AI limit reached' });
-    }
+  return res.status(429).json({ error: 'AI limit reached' });
+}
 
-    return res.status(200).json(result);
+// ==========================
+// 캐시 저장
+// ==========================
+await supabase
+  .from('ai_cache')
+  .insert({
+    cache_key: cacheKey,
+    result
+  });
+
+// ==========================
+return res.status(200).json(result);
 }
