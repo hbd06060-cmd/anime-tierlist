@@ -111,17 +111,13 @@ animation: spin 1s linear infinite;
 <h2 class="text-3xl text-white font-black mb-2">나만의 티어리스트</h2>
 <p class="text-gray-400 text-sm mb-8">티어리스트의 주인공은 누구인가요?</p>
 <div class="space-y-4">
-  <input
-    type="text"
-    id="userNameInput"
-    placeholder="기존 사용자는 이름으로 계속 로그인 가능"
-    class="w-full bg-gray-900 border border-gray-600 text-white rounded-xl p-4 text-center text-lg focus:outline-none focus:border-blue-500 transition-colors"
-    onkeypress="if(event.key === 'Enter') handleLogin()"
-  >
-
-  <button onclick="handleLogin()" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors shadow-lg text-lg">
-    이름으로 시작하기
+  <button onclick="enterDemoMode()" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors shadow-lg text-lg">
+    로그인 없이 체험하기
   </button>
+
+  <p class="text-xs text-gray-500 leading-relaxed">
+    체험 모드에서는 자유롭게 추가·수정할 수 있지만, 새로고침하거나 나가면 기록은 저장되지 않습니다.
+  </p>
 
   <div class="flex items-center gap-3 py-1">
     <div class="h-px flex-1 bg-gray-700"></div>
@@ -136,7 +132,6 @@ animation: spin 1s linear infinite;
   <button onclick="signInWithKakao()" class="w-full py-4 bg-yellow-300 hover:bg-yellow-400 text-black font-bold rounded-xl transition-colors shadow-lg text-lg">
     카카오로 로그인
   </button>
-
 </div>
 </div>
 </div>
@@ -173,7 +168,7 @@ animation: spin 1s linear infinite;
 공유하기
 </button>
 </div>
-<button onclick="handleLogout()" class="text-xs text-gray-400 hover:text-white transition-colors underline mb-1">
+<button id="logoutBtn" onclick="handleLogout()" class="text-xs text-gray-400 hover:text-white transition-colors underline mb-1">
 이름 변경 (로그아웃)
 </button>
 <div class="bg-gray-800 rounded-lg p-4 px-6 text-sm text-gray-300 shadow-lg border border-gray-700 min-w-[160px] text-center">
@@ -669,6 +664,15 @@ function saveCurrentUser(name) {
   appState.user.loginType = 'legacy';
 }
 
+function applyDemoUser() {
+  appState.user.id = null;
+  appState.user.name = '체험 사용자';
+  appState.user.email = null;
+  appState.user.isLoggedIn = true;
+  appState.user.loginType = 'demo';
+  appState.user.identities = [];
+}
+
 function clearCurrentUser() {
   localStorage.removeItem('anime_username');
 }
@@ -711,7 +715,12 @@ function isLegacyLogin() {
   return appState.user.loginType === 'legacy' && !!appState.user.name;
 }
 
+function isDemoMode() {
+  return appState.user.loginType === 'demo';
+}
+
 function getLocalExtrasKey() {
+  if (isDemoMode()) return null;
   if (isSocialLogin()) return `anime_extras_social_${appState.user.id}`;
   if (isLegacyLogin()) return `anime_extras_legacy_${appState.user.name}`;
   return null;
@@ -840,7 +849,7 @@ return JSON.parse(json);
 }
 
 function shouldShowMigrationBanner() {
-  if (!appState.user.isLoggedIn) return false;
+  if (!appState.user.isLoggedIn || isDemoMode()) return false;
 
   const total =
     appState.tierList.SS.length +
@@ -1071,6 +1080,13 @@ updateRecButtonUI();
 }
 
 async function loadUserMetaFromDB() {
+if (isDemoMode()) {
+renderTasteProfile();
+renderRecommendations();
+updateRecButtonUI();
+return;
+}
+
 if (!supabaseClient || (!appState.user.id && !appState.user.name)) {
 loadLocalExtras();
 return;
@@ -1112,6 +1128,7 @@ loadLocalExtras();
 async function saveUserMetaToDB() {
 saveLocalExtras();
 
+if (isDemoMode()) return;
 if (!supabaseClient || (!appState.user.id && !appState.user.name)) return;
 
 try {
@@ -1258,6 +1275,12 @@ const displayName = appState.user.name || '사용자';
 document.getElementById('report-title').innerText = displayName + '님의 티어리스트';
 document.title = displayName + '님의 티어리스트';
 document.getElementById('footer-text').innerText = 'Tier List created by ' + displayName;
+
+const logoutBtn = document.getElementById('logoutBtn');
+if (logoutBtn) {
+logoutBtn.innerText = isDemoMode() ? '체험 종료' : '이름 변경 (로그아웃)';
+}
+
 renderTasteProfile();
 renderAccountLinkUI();
 renderMigrationBanner();
@@ -1452,6 +1475,12 @@ return `<div class="${baseClass}" ${dataAttrs}>${innerHtml}</div>`;
 // Supabase 데이터 통신
 // ==========================================
 async function loadTierListFromDB() {
+if (isDemoMode()) {
+renderTierList();
+renderMigrationBanner();
+return;
+}
+
 if (supabaseClient && (appState.user.id || appState.user.name)) {
 let query = supabaseClient
 .from('tier_items')
@@ -1492,6 +1521,7 @@ renderMigrationBanner();
 }
 
 async function saveAnimeToDB(anime, sortOrder) {
+if (isDemoMode()) return null;
 if (supabaseClient && (appState.user.id || appState.user.name)) {
 const { data, error } = await supabaseClient.from('tier_items').insert({
 user_id: isSocialLogin() ? appState.user.id : null,
@@ -1516,14 +1546,17 @@ return null;
 }
 
 async function updateAnimeTierInDB(id, newTier) {
+if (isDemoMode()) return;
 if (supabaseClient) await supabaseClient.from('tier_items').update({ tier: newTier }).eq('id', id);
 }
 
 async function updateAnimeReviewInDB(id, review) {
+if (isDemoMode()) return;
 if (supabaseClient) await supabaseClient.from('tier_items').update({ user_review: review }).eq('id', id);
 }
 
 async function updateAnimeFieldsInDB(id, payload) {
+if (isDemoMode()) return;
 if (!supabaseClient || !id || !payload || Object.keys(payload).length === 0) return;
 const { error } = await supabaseClient.from('tier_items').update(payload).eq('id', id);
 if (error) {
@@ -1533,11 +1566,12 @@ if (error) {
 }
 
 async function deleteAnimeFromDB(id) {
+if (isDemoMode()) return;
 if (supabaseClient) await supabaseClient.from('tier_items').delete().eq('id', id);
 }
 
 async function persistTierOrder(tier) {
-if (!supabaseClient || tier === 'RECOMMENDED') return;
+if (isDemoMode() || !supabaseClient || tier === 'RECOMMENDED') return;
 const items = appState.tierList[tier];
 const promises = items.map((anime, index) => {
 return supabaseClient.from('tier_items').update({ sort_order: index }).eq('id', anime.id);
@@ -1548,7 +1582,7 @@ await Promise.all(promises);
 }
 
 async function clearAllTierItemsFromDB() {
-if (!supabaseClient || (!appState.user.id && !appState.user.name)) return;
+if (isDemoMode() || !supabaseClient || (!appState.user.id && !appState.user.name)) return;
 
 let query = supabaseClient.from('tier_items').delete();
 
@@ -1567,7 +1601,7 @@ throw error;
 }
 
 async function replaceTierListInDB() {
-if (!supabaseClient || (!appState.user.id && !appState.user.name)) return;
+if (isDemoMode() || !supabaseClient || (!appState.user.id && !appState.user.name)) return;
 
 await clearAllTierItemsFromDB();
 
@@ -1615,15 +1649,7 @@ anime.id = data[0].id;
 // ==========================================
 // 팝업, 로그인, 로그아웃 제어
 // ==========================================
-function handleLogin() {
-const nameInput = document.getElementById('userNameInput').value.trim();
-const userName = nameInput || '익명';
-
-saveCurrentUser(userName);
-renderUserInfo();
-renderAccountLinkUI();
-closeNamePopup();
-
+function resetAppData() {
 appState.tierList = { SS: [], S: [], A: [], B: [], C: [], D: [] };
 appState.recommendedItems = [];
 appState.tasteProfile = {
@@ -1631,14 +1657,24 @@ titleKo: "아직 분석되지 않음",
 titleEn: "Not Analyzed",
 description: "티어리스트를 채우고 분석해보세요."
 };
+}
 
+function enterDemoMode() {
+clearCurrentUser();
+clearUserState();
+applyDemoUser();
+resetAppData();
+renderUserInfo();
 renderTierList();
 renderRecommendations();
 updateRecButtonUI();
 renderMigrationBanner();
-loadUserMetaFromDB().then(() => {
-loadTierListFromDB();
-});
+closeNamePopup();
+showToast('체험 모드로 시작했습니다. 이 기록은 저장되지 않습니다.');
+}
+
+function handleLogin() {
+showToast('이름 로그인은 종료되었습니다. 소셜 로그인 또는 체험 모드를 이용해주세요.', true);
 }
 
 async function handleLogout() {
@@ -1655,14 +1691,7 @@ clearCurrentUser();
 }
 
 clearUserState();
-document.getElementById('userNameInput').value = '';
-appState.tierList = { SS: [], S: [], A: [], B: [], C: [], D: [] };
-appState.recommendedItems = [];
-appState.tasteProfile = {
-titleKo: "아직 분석되지 않음",
-titleEn: "Not Analyzed",
-description: "티어리스트를 채우고 분석해보세요."
-};
+resetAppData();
 renderTierList();
 renderRecommendations();
 updateRecButtonUI();
@@ -1843,10 +1872,10 @@ async function loadShareSettings() {
   statusEl.innerText = '확인 중...';
   inputEl.value = '';
 
-  if (!supabaseClient || (!appState.user.id && !appState.user.name)) {
-    statusEl.innerText = '공유 기능을 사용할 수 없습니다.';
-    return;
-  }
+  if (isDemoMode() || !supabaseClient || (!appState.user.id && !appState.user.name)) {
+  statusEl.innerText = '체험 모드에서는 공유 기능을 사용할 수 없습니다.';
+  return;
+}
 
   try {
     let query = supabaseClient
@@ -1879,10 +1908,10 @@ async function loadShareSettings() {
 }
 
 async function enableShareLink(btn) {
-  if (!supabaseClient || (!appState.user.id && !appState.user.name)) {
-    showToast('공유 기능을 사용할 수 없습니다.', true);
-    return;
-  }
+  if (isDemoMode() || !supabaseClient || (!appState.user.id && !appState.user.name)) {
+  showToast('체험 모드에서는 공유 기능을 사용할 수 없습니다.', true);
+  return;
+}
 
   const originalText = btn.innerText;
   btn.disabled = true;
@@ -1947,10 +1976,10 @@ async function enableShareLink(btn) {
 }
 
 async function disableShareLink(btn) {
-  if (!supabaseClient || (!appState.user.id && !appState.user.name)) {
-    showToast('공유 기능을 사용할 수 없습니다.', true);
-    return;
-  }
+  if (isDemoMode() || !supabaseClient || (!appState.user.id && !appState.user.name)) {
+  showToast('체험 모드에서는 공유 기능을 사용할 수 없습니다.', true);
+  return;
+}
 
   const originalText = btn.innerText;
   btn.disabled = true;
