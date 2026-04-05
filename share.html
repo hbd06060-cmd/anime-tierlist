@@ -48,16 +48,6 @@
 
       <div id="contentArea" class="hidden space-y-10">
         <section id="tiersContainer" class="space-y-8"></section>
-
-        <section class="pt-8 border-t border-gray-700/50">
-          <div class="flex items-center mb-6">
-            <h3 class="text-2xl font-bold flex items-center text-purple-400 mr-4">
-              <span class="bg-purple-500 w-2 h-8 mr-3 rounded"></span>
-              AI RECOMMENDED
-            </h3>
-          </div>
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6" id="recommendedGrid"></div>
-        </section>
       </div>
     </main>
   </div>
@@ -75,7 +65,14 @@
       C: '취향과 어긋난 작품',
       D: '거의 안 맞는 작품'
     };
-
+const TIER_THEMES = {
+  SS: { text: 'text-yellow-300', border: 'border-yellow-300/40' },
+  S: { text: 'text-yellow-500', border: 'border-yellow-500/30' },
+  A: { text: 'text-red-500', border: 'border-red-500/30' },
+  B: { text: 'text-blue-400', border: 'border-blue-400/30' },
+  C: { text: 'text-gray-400', border: 'border-gray-600/40' },
+  D: { text: 'text-gray-500', border: 'border-gray-500/40' }
+};
     function getPlaceholderUrl(title) {
       return `https://placehold.co/300x450/1f2937/9ca3af?text=${encodeURIComponent(title || 'No Image')}&font=roboto`;
     }
@@ -114,13 +111,17 @@
     }
 
     function renderTierSection(tier, items) {
-      return `
-        <section class="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
-          <div class="flex items-center mb-6">
-            <span class="text-4xl font-black text-white mr-4 drop-shadow-md">${tier}</span>
-            <div class="h-1 flex-grow bg-gradient-to-r from-white/30 to-transparent rounded"></div>
-            <span class="text-gray-300 font-bold ml-4 text-sm md:text-base">${TIER_LABELS[tier]} (${items.length}작품)</span>
-          </div>
+  const theme = TIER_THEMES[tier] || {};
+
+  return `
+    <section class="bg-gray-800/50 rounded-xl p-6 border ${theme.border || 'border-gray-700'}">
+      <div class="flex items-center mb-6">
+        <span class="text-4xl font-black ${theme.text || 'text-white'} mr-4 drop-shadow-md">${tier}</span>
+        <div class="h-1 flex-grow bg-gradient-to-r from-white/30 to-transparent rounded"></div>
+        <span class="${theme.text || 'text-gray-300'} font-bold ml-4 text-sm md:text-base">
+          ${TIER_LABELS[tier]} (${items.length}작품)
+        </span>
+      </div>
           <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
             ${items.map(item => createReadOnlyCardHtml(item, tier)).join('')}
           </div>
@@ -186,21 +187,6 @@
         tiersContainer.innerHTML = ['SS', 'S', 'A', 'B', 'C', 'D']
           .map(tier => renderTierSection(tier, grouped[tier]))
           .join('');
-
-        const recommendedGrid = document.getElementById('recommendedGrid');
-        const recommendedItems = Array.isArray(meta.recommended_items) ? meta.recommended_items : [];
-
-        if (recommendedItems.length === 0) {
-          recommendedGrid.innerHTML = `
-            <div class="col-span-full text-center py-12 text-gray-500 border-2 border-dashed border-gray-700 rounded-xl">
-              공개된 추천 작품이 없습니다.
-            </div>
-          `;
-        } else {
-          recommendedGrid.innerHTML = recommendedItems
-            .map(item => createReadOnlyCardHtml(item, 'RECOMMENDED'))
-            .join('');
-        }
 
         document.getElementById('loadingState').classList.add('hidden');
         document.getElementById('contentArea').classList.remove('hidden');
