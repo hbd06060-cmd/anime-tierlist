@@ -25,6 +25,25 @@
       -webkit-box-orient: vertical;
       overflow: hidden;
     }
+
+    /* 공유 페이지 카드 클릭 가능 표시 */
+.anime-card-container {
+  cursor: pointer;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.anime-card-container:hover {
+  transform: translateY(-2px);
+}
+
+/* 상세 모달: 텍스트 선택 가능 */
+#detailModal {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+}
+
   </style>
 </head>
 <body class="p-4 md:p-8 min-h-screen">
@@ -65,6 +84,9 @@
       C: '취향과 어긋난 작품',
       D: '거의 안 맞는 작품'
     };
+    const shareState = {
+  tierList: { SS: [], S: [], A: [], B: [], C: [], D: [] }
+};
 const TIER_THEMES = {
   SS: { text: 'text-yellow-300', border: 'border-yellow-300/40' },
   S: { text: 'text-yellow-500', border: 'border-yellow-500/30' },
@@ -94,7 +116,10 @@ const TIER_THEMES = {
       const ratingDisplay = ratingNum ? `⭐ ${ratingNum.toFixed(1)}` : '';
 
       return `
-        <div class="bg-gray-800 rounded-lg overflow-hidden border border-gray-700 relative group flex flex-col">
+        <div
+  class="anime-card-container bg-gray-800 rounded-lg overflow-hidden border border-gray-700 relative group flex flex-col"
+  onclick="openDetailModal('${anime.id}', false)"
+>
           <div class="relative h-48 md:h-60 flex-shrink-0">
             <img src="${imgSrc}" onerror="this.onerror=null; this.src='${getPlaceholderUrl(safeTitle)}';" class="w-full h-full object-cover object-top opacity-90">
           </div>
@@ -179,14 +204,16 @@ const TIER_THEMES = {
         }
 
         const grouped = { SS: [], S: [], A: [], B: [], C: [], D: [] };
-        (tierItems || []).forEach(item => {
-          if (grouped[item.tier]) grouped[item.tier].push(item);
-        });
+(tierItems || []).forEach(item => {
+  if (grouped[item.tier]) grouped[item.tier].push(item);
+});
 
-        const tiersContainer = document.getElementById('tiersContainer');
-        tiersContainer.innerHTML = ['SS', 'S', 'A', 'B', 'C', 'D']
-          .map(tier => renderTierSection(tier, grouped[tier]))
-          .join('');
+shareState.tierList = grouped;
+
+const tiersContainer = document.getElementById('tiersContainer');
+tiersContainer.innerHTML = ['SS', 'S', 'A', 'B', 'C', 'D']
+  .map(tier => renderTierSection(tier, grouped[tier]))
+  .join('');
 
         document.getElementById('loadingState').classList.add('hidden');
         document.getElementById('contentArea').classList.remove('hidden');
@@ -203,6 +230,140 @@ const TIER_THEMES = {
     }
 
     document.addEventListener('DOMContentLoaded', initializeSharePage);
+
+    let currentDetailId = null;
+let currentDetailIsRecommended = false;
+
+function openDetailModal(id, isRecommended = false) {
+  let foundAnime = null;
+
+  for (const tier in shareState.tierList) {
+    foundAnime = (shareState.tierList[tier] || []).find(a => String(a.id) === String(id));
+    if (foundAnime) break;
+  }
+
+  if (!foundAnime) return;
+
+  currentDetailId = id;
+  currentDetailIsRecommended = false;
+
+  const fallbackImg = getPlaceholderUrl(foundAnime.title);
+
+  document.getElementById('detailImg').src = foundAnime.poster_url || foundAnime.imgSrc || fallbackImg;
+  document.getElementById('detailImg').onerror = function () {
+    this.onerror = null;
+    this.src = fallbackImg;
+  };
+
+  document.getElementById('detailBadge').innerText = `${foundAnime.tier} 등급`;
+  document.getElementById('detailTitle').innerText = foundAnime.title || '제목 없음';
+  document.getElementById('detailOriginalTitle').innerText = foundAnime.original_title || foundAnime.originalTitle || '';
+  document.getElementById('detailRating').innerText =
+    (foundAnime.vote_average || foundAnime.rating)
+      ? Number(foundAnime.vote_average || foundAnime.rating).toFixed(1)
+      : '-';
+  document.getElementById('detailDate').innerText = foundAnime.release_date || foundAnime.releaseDate || '-';
+  document.getElementById('detailOverview').innerText = foundAnime.overview || '등록된 줄거리가 없습니다.';
+
+  const genresContainer = document.getElementById('detailGenres');
+  genresContainer.innerHTML = '';
+
+  const genres = Array.isArray(foundAnime.genres)
+    ? foundAnime.genres
+    : String(foundAnime.genres || '').split(',').map(v => v.trim()).filter(Boolean);
+
+  genres.forEach(genre => {
+    const span = document.createElement('span');
+    span.className = 'px-3 py-1 bg-gray-700 text-gray-200 text-xs rounded-lg font-medium border border-gray-600';
+    span.innerText = genre;
+    genresContainer.appendChild(span);
+  });
+
+  document.getElementById('detailReviewArea').classList.remove('hidden');
+  document.getElementById('detailReasonArea').classList.add('hidden');
+  document.getElementById('detailReviewText').innerText =
+    foundAnime.user_review || foundAnime.ai_review || '작성된 한줄평이 없습니다.';
+
+  const modal = document.getElementById('detailModal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+function closeDetailModal() {
+  const modal = document.getElementById('detailModal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+  currentDetailId = null;
+  currentDetailIsRecommended = false;
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeDetailModal();
+  }
+});
   </script>
+
+  <!-- 공유 페이지용 작품 상세 정보 모달 -->
+<div id="detailModal" onclick="if(event.target === this) closeDetailModal()" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-[150] p-4 transition-opacity">
+  <div class="bg-gray-800 rounded-2xl border border-gray-600 w-full max-w-5xl shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]" onclick="event.stopPropagation()">
+    <button onclick="closeDetailModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white bg-gray-700/80 hover:bg-gray-600 p-2 rounded-full transition-colors z-20">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+
+    <div class="flex flex-col md:flex-row h-full overflow-y-auto">
+      <div class="w-full md:w-2/5 flex-shrink-0 bg-gray-900 relative">
+        <img id="detailImg" src="" alt="포스터" class="w-full h-auto md:h-full object-cover border-b md:border-b-0 md:border-r border-gray-700">
+        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-gray-900 to-transparent p-6 pt-20">
+          <span id="detailBadge" class="px-3 py-1 bg-blue-600 text-white font-bold rounded-lg shadow-lg text-sm"></span>
+        </div>
+      </div>
+
+      <div class="w-full md:w-3/5 p-6 md:p-10 flex flex-col bg-gray-800">
+        <div class="mb-6">
+          <div id="detailGenres" class="flex flex-wrap gap-2 mb-3"></div>
+          <h2 id="detailTitle" class="text-3xl md:text-4xl font-black text-white leading-tight mb-2">제목</h2>
+          <p id="detailOriginalTitle" class="text-base text-gray-400 italic mb-6">원제</p>
+
+          <div class="flex items-center gap-6 text-sm text-gray-300 mb-6 bg-gray-900/80 p-4 rounded-xl border border-gray-700 shadow-inner">
+            <div class="flex flex-col">
+              <span class="text-gray-500 text-xs mb-1">평점</span>
+              <span class="font-bold text-yellow-400 flex items-center gap-1 text-lg">⭐ <span id="detailRating">-</span></span>
+            </div>
+
+            <div class="w-px h-10 bg-gray-700"></div>
+
+            <div class="flex flex-col">
+              <span class="text-gray-500 text-xs mb-1">방영/개봉</span>
+              <span id="detailDate" class="font-medium text-base">-</span>
+            </div>
+          </div>
+        </div>
+
+        <div id="detailReviewArea" class="mb-8 bg-gray-700/30 p-5 rounded-xl border border-gray-600">
+          <h3 class="text-sm font-bold text-gray-300 mb-3">작성된 한줄평</h3>
+          <p id="detailReviewText" class="text-gray-200 text-sm leading-relaxed whitespace-pre-wrap"></p>
+        </div>
+
+        <div id="detailReasonArea" class="mb-8 bg-purple-900/20 p-5 rounded-xl border border-purple-500/30 hidden">
+          <h3 class="text-sm font-bold text-purple-400 mb-3 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            AI 추천 이유
+          </h3>
+          <p id="detailReasonText" class="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap"></p>
+        </div>
+
+        <div class="flex-grow">
+          <h3 class="text-base font-bold text-gray-300 mb-3 border-b border-gray-700 pb-2">줄거리</h3>
+          <p id="detailOverview" class="text-gray-400 text-sm leading-relaxed whitespace-pre-wrap"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
