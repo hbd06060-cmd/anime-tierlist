@@ -41,6 +41,13 @@ color: #e5e7eb;
   cursor: grabbing;
 }
 
+/* 드래그 중 텍스트 선택 및 불필요한 이벤트 방지 */
+body.is-dragging, body.is-dragging * {
+  cursor: grabbing !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
 /* 상세 모달: 텍스트 선택 가능하도록 설정 */
 #detailModal {
   user-select: text !important;
@@ -101,33 +108,11 @@ animation: spin 1s linear infinite;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 1), 0 0 0 2px rgba(96, 165, 250, 0.8) !important;
   cursor: grabbing !important;
   z-index: 9999 !important;
+  transition: none !important; /* 마우스 포인터 뒤처짐 현상을 완벽히 해결하는 핵심 코드 */
 }
 
 .sortable-chosen {
-  transform: scale(0.985);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.drag-press-armed {
-  animation: pressArmedPulse 0.9s ease-in-out infinite;
-}
-
-.drag-active-feedback {
-  animation: dragActiveWiggle 0.18s ease-in-out 2;
-}
-
-@keyframes pressArmedPulse {
-  0%   { transform: scale(1); }
-  50%  { transform: scale(0.97); box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.55); }
-  100% { transform: scale(1); }
-}
-
-@keyframes dragActiveWiggle {
-  0%   { transform: rotate(0deg) scale(0.99); }
-  25%  { transform: rotate(-0.8deg) scale(0.99); }
-  50%  { transform: rotate(0.8deg) scale(0.99); }
-  75%  { transform: rotate(-0.6deg) scale(0.99); }
-  100% { transform: rotate(0deg) scale(0.99); }
+  opacity: 0.9;
 }
 </style>
 </head>
@@ -692,157 +677,6 @@ let dragUnlockTimer = null;
 let pointerDownInfo = null;
 let suppressNextCardClickUntil = 0;
 
-let dragEdgePointer = null;
-let dragEdgeScrollRaf = null;
-let dragWheelHandlerAttached = false;
-
-function getPageScrollTarget() {
-  return document.scrollingElement || document.documentElement;
-}
-
-function scrollPageByDelta(dx = 0, dy = 0) {
-  const target = getPageScrollTarget();
-  if (!target) return;
-
-  if (typeof target.scrollBy === 'function') {
-    target.scrollBy({
-      left: dx,
-      top: dy,
-      behavior: 'auto'
-    });
-  } else {
-    target.scrollLeft += dx;
-    target.scrollTop += dy;
-  }
-}
-
-function updateDragEdgePointerFromEvent(evt) {
-  const raw = evt?.originalEvent || evt;
-  if (!raw) return;
-
-  dragEdgePointer = {
-    x: Number(raw.clientX || 0),
-    y: Number(raw.clientY || 0)
-  };
-
-  startDragEdgeAutoScroll();
-}
-
-function startDragEdgeAutoScroll() {
-  if (dragEdgeScrollRaf) return;
-
-  const tick = () => {
-    if (!isDragging || !dragEdgePointer) {
-      dragEdgeScrollRaf = null;
-      return;
-    }
-
-    const vw = window.innerWidth || document.documentElement.clientWidth || 0;
-    const vh = window.innerHeight || document.documentElement.clientHeight || 0;
-
-    const edgeX = 90;
-    const edgeY = 110;
-
-    let dx = 0;
-    let dy = 0;
-
-    if (dragEdgePointer.x <= edgeX) {
-      dx = -Math.max(10, Math.round((edgeX - dragEdgePointer.x) * 0.35));
-    } else if (dragEdgePointer.x >= vw - edgeX) {
-      dx = Math.max(10, Math.round((dragEdgePointer.x - (vw - edgeX)) * 0.35));
-    }
-
-    if (dragEdgePointer.y <= edgeY) {
-      dy = -Math.max(12, Math.round((edgeY - dragEdgePointer.y) * 0.4));
-    } else if (dragEdgePointer.y >= vh - edgeY) {
-      dy = Math.max(12, Math.round((dragEdgePointer.y - (vh - edgeY)) * 0.4));
-    }
-
-    if (dx !== 0 || dy !== 0) {
-      scrollPageByDelta(dx, dy);
-    }
-
-    dragEdgeScrollRaf = requestAnimationFrame(tick);
-  };
-
-  dragEdgeScrollRaf = requestAnimationFrame(tick);
-}
-
-function stopDragEdgeAutoScroll() {
-  dragEdgePointer = null;
-
-  if (dragEdgeScrollRaf) {
-    cancelAnimationFrame(dragEdgeScrollRaf);
-    dragEdgeScrollRaf = null;
-  }
-}
-
-function handleDragWheelScroll(event) {
-  if (!isDragging) return;
-
-  event.preventDefault();
-  scrollPageByDelta(event.deltaX, event.deltaY);
-}
-
-function attachDragWheelHandler() {
-  if (dragWheelHandlerAttached) return;
-  window.addEventListener('wheel', handleDragWheelScroll, { passive: false, capture: true });
-  dragWheelHandlerAttached = true;
-}
-
-function detachDragWheelHandler() {
-  if (!dragWheelHandlerAttached) return;
-  window.removeEventListener('wheel', handleDragWheelScroll, { capture: true });
-  dragWheelHandlerAttached = false;
-}
-let desktopAutoScrollRAF = null;
-let desktopAutoScrollPointerY = null;
-
-function updateDesktopAutoScroll(pointerY) {
-  desktopAutoScrollPointerY = Number(pointerY || 0);
-
-  if (desktopAutoScrollRAF) return;
-
-  const tick = () => {
-    if (desktopAutoScrollPointerY == null) {
-      desktopAutoScrollRAF = null;
-      return;
-    }
-
-    const viewportH = window.innerHeight || document.documentElement.clientHeight || 0;
-    const edge = 120;
-    let delta = 0;
-
-    if (desktopAutoScrollPointerY < edge) {
-      delta = -Math.max(8, Math.round((edge - desktopAutoScrollPointerY) * 0.22));
-    } else if (desktopAutoScrollPointerY > viewportH - edge) {
-      delta = Math.max(8, Math.round((desktopAutoScrollPointerY - (viewportH - edge)) * 0.22));
-    }
-
-    if (delta !== 0) {
-      window.scrollBy(0, delta);
-      desktopAutoScrollRAF = requestAnimationFrame(tick);
-    } else {
-      desktopAutoScrollRAF = null;
-    }
-  };
-
-  desktopAutoScrollRAF = requestAnimationFrame(tick);
-}
-
-function stopDesktopAutoScroll() {
-  desktopAutoScrollPointerY = null;
-  if (desktopAutoScrollRAF) {
-    cancelAnimationFrame(desktopAutoScrollRAF);
-    desktopAutoScrollRAF = null;
-  }
-}
-function isTouchDevice() {
-  return window.matchMedia('(pointer: coarse)').matches
-    || 'ontouchstart' in window
-    || navigator.maxTouchPoints > 0;
-}
-
 function markCardPointerDown(event) {
   if (!event) return;
   pointerDownInfo = {
@@ -871,6 +705,7 @@ window.addEventListener('pointermove', (event) => {
 function resetDragState() {
   isDragging = false;
   dragJustEnded = false;
+  document.body.classList.remove('is-dragging');
 
   document.querySelectorAll('.sortable-drag').forEach(el => {
     el.classList.remove('sortable-drag');
@@ -880,6 +715,7 @@ function resetDragState() {
     el.classList.remove('sortable-ghost');
   });
 }
+
 ['pointerup', 'mouseup', 'touchend', 'dragend', 'blur'].forEach(evt => {
   window.addEventListener(evt, () => {
     setTimeout(resetDragState, 0);
@@ -2672,7 +2508,6 @@ function handleCardClick(event, id, isRecommended = false) {
     }
     return;
   }
-
   openDetailModal(id, isRecommended);
 }
 
@@ -2930,7 +2765,6 @@ function setupDragAndDrop() {
       group: 'tierList',
       animation: 220,
 
-      // 백업.html 느낌 유지
       delay: 150,
       delayOnTouchOnly: true,
       touchStartThreshold: 8,
@@ -2938,16 +2772,18 @@ function setupDragAndDrop() {
 
       ghostClass: 'sortable-ghost',
       dragClass: 'sortable-drag',
+      fallbackClass: 'sortable-drag', // forceFallback 시 드래그 중인 카드 스타일 유지
 
-      // 핵심: 백업 방식처럼 자연스럽게
-      forceFallback: false,
-      fallbackOnBody: false,
+      // 중요: Native HTML5 Drag and Drop 기능을 비활성화 (순수 JS 이벤트로 대체)
+      // 이 옵션을 켜면 마우스가 화면 밖(작업 관리자, 탭 영역)으로 나가도 브라우저가 개입하지 않고 이벤트가 유지됩니다.
+      forceFallback: true, 
+      fallbackOnBody: true,
 
-      // 기본 스크롤 옵션은 두되, 가장자리/휠은 수동 보조
+      // SortableJS 내장 스크롤 기능 활성화
       scroll: true,
       bubbleScroll: true,
-      scrollSensitivity: 80,
-      scrollSpeed: 18,
+      scrollSensitivity: 100, // 스크롤이 시작되는 화면 가장자리 감지 영역 크기
+      scrollSpeed: 15, // 일정하고 부드러운 스크롤 속도
 
       filter: 'button, #rec-empty-state',
       preventOnFilter: false,
@@ -2957,22 +2793,12 @@ function setupDragAndDrop() {
         dragJustEnded = false;
         suppressNextCardClickUntil = Date.now() + 260;
         clearTimeout(dragUnlockTimer);
-
-        attachDragWheelHandler();
-
-        if (evt?.originalEvent) {
-          updateDragEdgePointerFromEvent(evt.originalEvent);
-        }
-      },
-
-      onMove: (evt) => {
-        updateDragEdgePointerFromEvent(evt);
+        document.body.classList.add('is-dragging');
       },
 
       onEnd: async (evt) => {
-        stopDragEdgeAutoScroll();
-        detachDragWheelHandler();
-
+        document.body.classList.remove('is-dragging');
+        
         const movedId = evt.item.getAttribute('data-id');
         const fromTier = evt.from.id.split('-').pop().toUpperCase();
         const toTier = evt.to.id.split('-').pop().toUpperCase();
