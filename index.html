@@ -2718,7 +2718,7 @@ function setupDragAndDrop() {
   animation: 220,
 
   // 모바일에서는 길게 눌렀을 때만 드래그 시작
-  delay: 250,
+  delay: 150,
 touchStartThreshold: 10,
 fallbackTolerance: 14,
   delayOnTouchOnly: true,
@@ -2732,6 +2732,11 @@ fallbackTolerance: 14,
 
   // 손가락이 조금 움직인 정도로는 드래그 시작 안 되게
   fallbackTolerance: 12,
+
+scroll: true,
+  bubbleScroll: true,
+  scrollSensitivity: 80,
+  scrollSpeed: 18,
 
   filter: 'button, #rec-empty-state',
   preventOnFilter: false,
