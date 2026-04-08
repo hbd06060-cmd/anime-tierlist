@@ -93,7 +93,7 @@ animation: spin 1s linear infinite;
 
 /* SortableJS 전용 애니메이션 상태 */
 .sortable-ghost { 
-  opacity: 0 !important; 
+  opacity: 0.32 !important; 
 }
 
 .sortable-drag { 
@@ -692,6 +692,151 @@ let dragUnlockTimer = null;
 let pointerDownInfo = null;
 let suppressNextCardClickUntil = 0;
 
+let dragEdgePointer = null;
+let dragEdgeScrollRaf = null;
+let dragWheelHandlerAttached = false;
+
+function getPageScrollTarget() {
+  return document.scrollingElement || document.documentElement;
+}
+
+function scrollPageByDelta(dx = 0, dy = 0) {
+  const target = getPageScrollTarget();
+  if (!target) return;
+
+  if (typeof target.scrollBy === 'function') {
+    target.scrollBy({
+      left: dx,
+      top: dy,
+      behavior: 'auto'
+    });
+  } else {
+    target.scrollLeft += dx;
+    target.scrollTop += dy;
+  }
+}
+
+function updateDragEdgePointerFromEvent(evt) {
+  const raw = evt?.originalEvent || evt;
+  if (!raw) return;
+
+  dragEdgePointer = {
+    x: Number(raw.clientX || 0),
+    y: Number(raw.clientY || 0)
+  };
+
+  startDragEdgeAutoScroll();
+}
+
+function startDragEdgeAutoScroll() {
+  if (dragEdgeScrollRaf) return;
+
+  const tick = () => {
+    if (!isDragging || !dragEdgePointer) {
+      dragEdgeScrollRaf = null;
+      return;
+    }
+
+    const vw = window.innerWidth || document.documentElement.clientWidth || 0;
+    const vh = window.innerHeight || document.documentElement.clientHeight || 0;
+
+    const edgeX = 90;
+    const edgeY = 110;
+
+    let dx = 0;
+    let dy = 0;
+
+    if (dragEdgePointer.x <= edgeX) {
+      dx = -Math.max(10, Math.round((edgeX - dragEdgePointer.x) * 0.35));
+    } else if (dragEdgePointer.x >= vw - edgeX) {
+      dx = Math.max(10, Math.round((dragEdgePointer.x - (vw - edgeX)) * 0.35));
+    }
+
+    if (dragEdgePointer.y <= edgeY) {
+      dy = -Math.max(12, Math.round((edgeY - dragEdgePointer.y) * 0.4));
+    } else if (dragEdgePointer.y >= vh - edgeY) {
+      dy = Math.max(12, Math.round((dragEdgePointer.y - (vh - edgeY)) * 0.4));
+    }
+
+    if (dx !== 0 || dy !== 0) {
+      scrollPageByDelta(dx, dy);
+    }
+
+    dragEdgeScrollRaf = requestAnimationFrame(tick);
+  };
+
+  dragEdgeScrollRaf = requestAnimationFrame(tick);
+}
+
+function stopDragEdgeAutoScroll() {
+  dragEdgePointer = null;
+
+  if (dragEdgeScrollRaf) {
+    cancelAnimationFrame(dragEdgeScrollRaf);
+    dragEdgeScrollRaf = null;
+  }
+}
+
+function handleDragWheelScroll(event) {
+  if (!isDragging) return;
+
+  event.preventDefault();
+  scrollPageByDelta(event.deltaX, event.deltaY);
+}
+
+function attachDragWheelHandler() {
+  if (dragWheelHandlerAttached) return;
+  window.addEventListener('wheel', handleDragWheelScroll, { passive: false, capture: true });
+  dragWheelHandlerAttached = true;
+}
+
+function detachDragWheelHandler() {
+  if (!dragWheelHandlerAttached) return;
+  window.removeEventListener('wheel', handleDragWheelScroll, { capture: true });
+  dragWheelHandlerAttached = false;
+}
+let desktopAutoScrollRAF = null;
+let desktopAutoScrollPointerY = null;
+
+function updateDesktopAutoScroll(pointerY) {
+  desktopAutoScrollPointerY = Number(pointerY || 0);
+
+  if (desktopAutoScrollRAF) return;
+
+  const tick = () => {
+    if (desktopAutoScrollPointerY == null) {
+      desktopAutoScrollRAF = null;
+      return;
+    }
+
+    const viewportH = window.innerHeight || document.documentElement.clientHeight || 0;
+    const edge = 120;
+    let delta = 0;
+
+    if (desktopAutoScrollPointerY < edge) {
+      delta = -Math.max(8, Math.round((edge - desktopAutoScrollPointerY) * 0.22));
+    } else if (desktopAutoScrollPointerY > viewportH - edge) {
+      delta = Math.max(8, Math.round((desktopAutoScrollPointerY - (viewportH - edge)) * 0.22));
+    }
+
+    if (delta !== 0) {
+      window.scrollBy(0, delta);
+      desktopAutoScrollRAF = requestAnimationFrame(tick);
+    } else {
+      desktopAutoScrollRAF = null;
+    }
+  };
+
+  desktopAutoScrollRAF = requestAnimationFrame(tick);
+}
+
+function stopDesktopAutoScroll() {
+  desktopAutoScrollPointerY = null;
+  if (desktopAutoScrollRAF) {
+    cancelAnimationFrame(desktopAutoScrollRAF);
+    desktopAutoScrollRAF = null;
+  }
+}
 function isTouchDevice() {
   return window.matchMedia('(pointer: coarse)').matches
     || 'ontouchstart' in window
@@ -2776,7 +2921,6 @@ async function refreshMissingAnimeMetadata(btn) {
 // ==========================================
 function setupDragAndDrop() {
   const grids = ['grid-tier-ss','grid-tier-s','grid-tier-a','grid-tier-b','grid-tier-c','grid-tier-d','grid-tier-recommended'];
-  const touchMode = isTouchDevice();
 
   grids.forEach(id => {
     const grid = document.getElementById(id);
@@ -2785,39 +2929,28 @@ function setupDragAndDrop() {
     new Sortable(grid, {
       group: 'tierList',
       animation: 220,
-      easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
 
-      // 모바일 롱프레스 시간 단축
-      delay: touchMode ? 110 : 0,
+      // 백업.html 느낌 유지
+      delay: 150,
       delayOnTouchOnly: true,
-      touchStartThreshold: 14,
-      fallbackTolerance: 6,
+      touchStartThreshold: 8,
+      fallbackTolerance: 12,
 
       ghostClass: 'sortable-ghost',
       dragClass: 'sortable-drag',
-      chosenClass: 'sortable-chosen',
 
-      // PC에서는 fallback 강제해서 자동 스크롤 복구
-      forceFallback: !touchMode,
-      fallbackOnBody: true,
+      // 핵심: 백업 방식처럼 자연스럽게
+      forceFallback: false,
+      fallbackOnBody: false,
 
+      // 기본 스크롤 옵션은 두되, 가장자리/휠은 수동 보조
       scroll: true,
       bubbleScroll: true,
-      scrollSensitivity: 110,
-      scrollSpeed: 22,
-      forceAutoScrollFallback: true,
+      scrollSensitivity: 80,
+      scrollSpeed: 18,
 
       filter: 'button, #rec-empty-state',
       preventOnFilter: false,
-
-      onChoose: (evt) => {
-        evt.item.classList.add('drag-press-armed');
-      },
-
-      onUnchoose: (evt) => {
-        evt.item.classList.remove('drag-press-armed');
-        evt.item.classList.remove('drag-active-feedback');
-      },
 
       onStart: (evt) => {
         isDragging = true;
@@ -2825,17 +2958,24 @@ function setupDragAndDrop() {
         suppressNextCardClickUntil = Date.now() + 260;
         clearTimeout(dragUnlockTimer);
 
-        evt.item.classList.remove('drag-press-armed');
-        evt.item.classList.add('drag-active-feedback');
+        attachDragWheelHandler();
+
+        if (evt?.originalEvent) {
+          updateDragEdgePointerFromEvent(evt.originalEvent);
+        }
+      },
+
+      onMove: (evt) => {
+        updateDragEdgePointerFromEvent(evt);
       },
 
       onEnd: async (evt) => {
+        stopDragEdgeAutoScroll();
+        detachDragWheelHandler();
+
         const movedId = evt.item.getAttribute('data-id');
         const fromTier = evt.from.id.split('-').pop().toUpperCase();
         const toTier = evt.to.id.split('-').pop().toUpperCase();
-
-        evt.item.classList.remove('drag-press-armed');
-        evt.item.classList.remove('drag-active-feedback');
 
         try {
           if (fromTier === 'RECOMMENDED' && toTier === 'RECOMMENDED') {
@@ -2901,7 +3041,7 @@ function setupDragAndDrop() {
           clearTimeout(dragUnlockTimer);
           dragUnlockTimer = setTimeout(() => {
             resetDragState();
-          }, 160);
+          }, 120);
         }
       }
     });
