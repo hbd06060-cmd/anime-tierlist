@@ -11,108 +11,78 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;700;900&display=swap" rel="stylesheet">
 <style>
 body {
-font-family: 'Noto Sans KR', sans-serif;
-background-color: #111827;
-color: #e5e7eb;
+  font-family: 'Noto Sans KR', sans-serif;
+  /* 깊이감 있는 방사형 그라데이션 배경 */
+  background: radial-gradient(circle at 50% 0%, #1e293b 0%, #020617 70%, #000000 100%);
+  color: #f1f5f9;
+  min-height: 100vh;
 }
 ::-webkit-scrollbar { width: 8px; }
-::-webkit-scrollbar-track { background: #1f2937; }
-::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #475569; }
 
-/* 카드 영역: 텍스트 선택 및 이미지 드래그 금지 */
+/* 텍스트 선택 금지 및 드래그 방지 */
 .anime-card-container {
-  transition: box-shadow 0.2s ease, filter 0.2s ease;
-  will-change: transform;
   touch-action: pan-y;
   cursor: grab;
-  user-select: none; /* 텍스트 선택 방지 */
+  user-select: none;
   -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
+.anime-card-container img { user-drag: none; -webkit-user-drag: none; }
+.anime-card-container:active { cursor: grabbing; transform: scale(0.98); }
+body.is-dragging, body.is-dragging * { cursor: grabbing !important; user-select: none !important; }
+#detailModal { user-select: text !important; -webkit-user-select: text !important; }
 
-.anime-card-container img {
-  -webkit-user-drag: none; /* 이미지 드래그 복사 방지 */
-  user-drag: none;
-}
+/* 티어별 프리미엄 네온 호버 효과 */
+.tier-ss:hover { box-shadow: 0 10px 30px -10px rgba(253, 224, 71, 0.5); border-color: rgba(253, 224, 71, 0.8); }
+.tier-s:hover  { box-shadow: 0 10px 30px -10px rgba(245, 158, 11, 0.5); border-color: rgba(245, 158, 11, 0.8); }
+.tier-a:hover  { box-shadow: 0 10px 30px -10px rgba(239, 68, 68, 0.5); border-color: rgba(239, 68, 68, 0.8); }
+.tier-b:hover  { box-shadow: 0 10px 30px -10px rgba(59, 130, 246, 0.5); border-color: rgba(59, 130, 246, 0.8); }
+.tier-c:hover  { box-shadow: 0 10px 30px -10px rgba(156, 163, 175, 0.3); border-color: rgba(156, 163, 175, 0.6); }
+.tier-d:hover  { box-shadow: 0 10px 30px -10px rgba(107, 114, 128, 0.3); border-color: rgba(107, 114, 128, 0.6); }
+.tier-recommended:hover { box-shadow: 0 10px 40px -10px rgba(168, 85, 247, 0.6); border-color: rgba(168, 85, 247, 1); }
 
-.anime-card-container:active {
-  cursor: grabbing;
-}
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
+.line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.line-clamp-1 { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
 
-/* 드래그 중 텍스트 선택 및 불필요한 이벤트 방지 */
-body.is-dragging, body.is-dragging * {
-  cursor: grabbing !important;
-  user-select: none !important;
-  -webkit-user-select: none !important;
-}
-
-/* 상세 모달: 텍스트 선택 가능하도록 설정 */
-#detailModal {
-  user-select: text !important;
-  -webkit-user-select: text !important;
-  -moz-user-select: text !important;
-  -ms-user-select: text !important;
-}
-
-.tier-ss:hover { box-shadow: 0 0 15px rgba(253, 224, 71, 0.5); border-color: rgba(253, 224, 71, 0.9); }
-.tier-s:hover { box-shadow: 0 0 15px rgba(234, 179, 8, 0.4); border-color: rgba(234, 179, 8, 0.8); }
-.tier-a:hover { box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); border-color: rgba(239, 68, 68, 0.8); }
-.tier-b:hover { box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); border-color: rgba(59, 130, 246, 0.8); }
-.tier-c:hover { box-shadow: 0 0 15px rgba(107, 114, 128, 0.4); border-color: rgba(107, 114, 128, 0.8); }
-.tier-d:hover { box-shadow: 0 0 15px rgba(75, 85, 99, 0.4); border-color: rgba(107, 114, 128, 0.8); }
-.tier-recommended:hover { box-shadow: 0 0 15px rgba(168, 85, 247, 0.4); border-color: rgba(168, 85, 247, 0.8); }
-
-.rec-card { background: linear-gradient(145deg, #1f2937, #111827); }
-
-@keyframes fadeIn {
-from { opacity: 0; transform: translateY(20px); }
-to { opacity: 1; transform: translateY(0); }
-}
-.animate-fade-in { animation: fadeIn 0.6s ease-out forwards; }
-
-.line-clamp-2 {
-display: -webkit-box;
--webkit-line-clamp: 2;
--webkit-box-orient: vertical;  
-overflow: hidden;
-}
-.line-clamp-1 {
-display: -webkit-box;
--webkit-line-clamp: 1;
--webkit-box-orient: vertical;  
-overflow: hidden;
-}
-.loader {
-border: 3px solid #374151;
-border-top: 3px solid #8b5cf6;
-border-radius: 50%;
-width: 20px;
-height: 20px;
-animation: spin 1s linear infinite;
-}
+.loader { border: 3px solid #334155; border-top: 3px solid #a855f7; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-.custom-scrollbar::-webkit-scrollbar { width: 6px; }
-.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-.custom-scrollbar::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 3px; }
-
-/* SortableJS 전용 애니메이션 상태 */
+/* SortableJS 코드펜 스타일 반영 */
 .sortable-ghost { 
-  opacity: 0.32 !important; 
+  opacity: 0.2 !important; 
 }
 
 .sortable-drag { 
-  opacity: 1 !important; 
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 1), 0 0 0 2px rgba(96, 165, 250, 0.8) !important;
+  opacity: 0.8 !important; 
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.8) !important;
   cursor: grabbing !important;
   z-index: 9999 !important;
-  transition: none !important; /* 마우스 포인터 뒤처짐 현상을 완벽히 해결하는 핵심 코드 */
+  transition: none !important; 
 }
 
-.sortable-chosen {
-  opacity: 0.9;
+/* 드래그 중인 카드는 이미지 확대 등 다른 간섭을 모두 무시하게 강제 */
+.sortable-drag * {
+  pointer-events: none !important;
+  transition: none !important;
+}
+
+/* 드래그 중일 때 모든 카드의 호버/줌인 애니메이션을 정지하여 덜컥거림 방지 */
+body.is-dragging .anime-card-container,
+body.is-dragging .anime-card-container * {
+  transition: none !important;
+}
+
+/* 글래스모피즘 유틸리티 */
+.glass-panel {
+  background: rgba(30, 41, 59, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 </style>
 </head>
@@ -149,70 +119,42 @@ animation: spin 1s linear infinite;
 </div>
 
 <div id="main-content">
-<header class="max-w-7xl mx-auto mb-12 border-b border-gray-700 pb-8">
-<div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-<div class="flex-1 min-w-0">
-<h2 class="text-blue-400 font-bold tracking-widest text-sm mb-1">ANIME TIER LIST</h2>
-<h1 id="report-title" class="text-4xl md:text-5xl font-black text-white mb-4">사용자님의 티어리스트</h1>
-
-<div class="bg-gray-800/60 p-4 rounded-xl border border-gray-700/50 flex flex-col md:flex-row md:items-start gap-3">
-<div class="flex-1 min-w-0">
-<p class="text-gray-300 text-sm md:text-base font-bold mb-1">성향 분석 : <span class="text-yellow-400 text-base md:text-lg" id="taste-profile-title">아직 분석되지 않음</span></p>
-<p id="taste-profile-desc" class="text-xs text-gray-500 leading-relaxed">티어리스트를 채우고 분석해보세요.</p>
-</div>
-<button id="tasteProfileBtn" onclick="generateTasteProfile(this)" class="text-gray-400 hover:text-white transition bg-gray-700/50 hover:bg-gray-600 p-2 rounded-lg flex-shrink-0 flex items-center justify-center self-start" title="전체 취향 분석 새로고침">
-<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-</button>
-</div>
-</div>
-<div class="flex-shrink-0 w-full md:w-auto text-right flex flex-col items-end gap-2">
-<div class="flex gap-2 mb-1 flex-wrap justify-end">
-<button onclick="openExportCodeModal()" class="text-xs px-3 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white transition-colors">
-백업 코드 생성
-</button>
-<button onclick="openImportCodeModal()" class="text-xs px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-colors">
-백업 코드 불러오기
-</button>
-<button id="refreshMissingBtn" onclick="refreshMissingAnimeMetadata(this)" class="text-xs px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition-colors">
-작품 정보 보정
-</button>
-<button onclick="openShareModal()" class="text-xs px-3 py-2 rounded-lg bg-pink-600 hover:bg-pink-500 text-white transition-colors">
-공유하기
-</button>
-<button onclick="openSettingsModal()" class="text-xs px-3 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white transition-colors">
-설정
-</button>
-</div>
-<button id="logoutBtn" onclick="handleLogout()" class="text-xs text-gray-400 hover:text-white transition-colors underline mb-1">
-이름 변경 (로그아웃)
-</button>
-<div class="bg-gray-800 rounded-lg p-4 px-6 text-sm text-gray-300 shadow-lg border border-gray-700 min-w-[160px] text-center">
-<p class="text-sm text-blue-400 font-black mb-1">🎯 총 등록된 작품</p>
-<p class="text-white text-2xl font-bold"><span id="total-count">0</span><span class="text-base text-gray-400 ml-1">편</span></p>
-</div>
-<div id="account-link-box" class="hidden bg-gray-800 rounded-lg p-4 px-5 text-sm text-gray-300 shadow-lg border border-gray-700 min-w-[260px] text-left">
-  <p class="text-sm text-purple-400 font-black mb-3">🔗 계정 연결</p>
-
-  <div class="space-y-2">
-    <div class="flex items-center justify-between gap-3">
-      <span class="text-gray-200">Google</span>
-      <span id="google-link-status" class="text-xs text-gray-400">확인 중...</span>
+<header class="max-w-7xl mx-auto mb-12 border-b border-white/10 pb-8 pt-4">
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+    <div class="flex-1 min-w-0">
+      <h2 class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 font-black tracking-widest text-sm mb-2">ANIME TIER LIST</h2>
+      <h1 id="report-title" class="text-4xl md:text-5xl font-black text-white mb-6 tracking-tight drop-shadow-md">사용자님의 티어리스트</h1>
+      
+      <div class="glass-panel p-4 rounded-2xl flex flex-col md:flex-row md:items-center gap-4 shadow-lg shadow-black/20">
+        <div class="flex-1 min-w-0">
+          <p class="text-gray-400 text-sm md:text-base font-bold mb-1 flex items-center gap-2">
+            ✨ 성향 분석 <span class="w-1 h-1 rounded-full bg-gray-500 inline-block"></span> 
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-orange-400 text-base md:text-lg font-black" id="taste-profile-title">아직 분석되지 않음</span>
+          </p>
+          <p id="taste-profile-desc" class="text-xs text-gray-500 leading-relaxed mt-1">티어리스트를 채우고 분석해보세요.</p>
+        </div>
+        <button id="tasteProfileBtn" onclick="generateTasteProfile(this)" class="text-gray-300 hover:text-white hover:bg-white/10 transition-all p-2.5 rounded-xl flex-shrink-0 flex items-center justify-center border border-white/5 bg-white/5" title="전체 취향 분석 새로고침">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+        </button>
+      </div>
     </div>
-
-    <div class="flex items-center justify-between gap-3">
-      <span class="text-gray-200">Kakao</span>
-      <span id="kakao-link-status" class="text-xs text-gray-400">확인 중...</span>
+    <div class="flex-shrink-0 w-full md:w-auto text-right flex flex-col items-end gap-3">
+      <div class="flex gap-2 mb-2 flex-wrap justify-end">
+        <button onclick="openExportCodeModal()" class="text-xs px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-gray-300 hover:text-white transition-all shadow-sm">백업 코드</button>
+        <button onclick="openImportCodeModal()" class="text-xs px-3.5 py-2.5 rounded-xl bg-indigo-500/20 border border-indigo-500/30 hover:bg-indigo-500/40 text-indigo-300 hover:text-indigo-200 transition-all shadow-sm">불러오기</button>
+        <button id="refreshMissingBtn" onclick="refreshMissingAnimeMetadata(this)" class="text-xs px-3.5 py-2.5 rounded-xl bg-emerald-500/20 border border-emerald-500/30 hover:bg-emerald-500/40 text-emerald-300 hover:text-emerald-200 transition-all shadow-sm">정보 보정</button>
+        <button onclick="openShareModal()" class="text-xs px-3.5 py-2.5 rounded-xl bg-pink-500/20 border border-pink-500/30 hover:bg-pink-500/40 text-pink-300 hover:text-pink-200 transition-all shadow-sm">공유하기</button>
+        <button onclick="openSettingsModal()" class="text-xs px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-gray-300 hover:text-white transition-all shadow-sm">설정</button>
+      </div>
+      <button id="logoutBtn" onclick="handleLogout()" class="text-xs text-gray-500 hover:text-gray-300 transition-colors underline mb-2 tracking-wide">이름 변경 (로그아웃)</button>
+      
+      <div class="glass-panel rounded-2xl p-5 text-sm text-gray-300 shadow-xl min-w-[180px] text-center border-t border-white/10 relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 opacity-50"></div>
+        <p class="text-xs text-blue-300 font-black mb-1 relative z-10 tracking-widest">TOTAL ANIME</p>
+        <p class="text-white text-3xl font-black relative z-10 drop-shadow-md"><span id="total-count">0</span><span class="text-sm text-gray-400 ml-1 font-bold">편</span></p>
+      </div>
     </div>
-
   </div>
-
-  <p class="text-[11px] text-gray-500 mt-3 leading-relaxed">
-    현재 로그인된 계정에 다른 로그인 수단을 연결할 수 있습니다.
-  </p>
-</div>
-
-</div>
-</div>
 </header>
 <div id="migration-banner" class="hidden max-w-7xl mx-auto mb-6">
   <div class="bg-indigo-900/40 border border-indigo-500/40 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
@@ -1636,107 +1578,105 @@ function updateRecButtonUI() {
 }
 
 function createCardHtml(anime, isRecommended = false) {
-const { id, title, imgSrc, tier, genres, rating, rank, recommendationReason } = anime;
-const displayReview = isRecommended 
-? recommendationReason 
-: (anime.userReview || anime.aiReview || '리뷰 없음');
+  const { id, title, imgSrc, tier, genres, rating, rank, recommendationReason } = anime;
+  const displayReview = isRecommended 
+    ? recommendationReason 
+    : (anime.userReview || anime.aiReview || '리뷰 없음');
 
-const cardTier = isRecommended ? 'recommended' : tier.toLowerCase();
-let baseClass = `anime-card-container tier-${cardTier} bg-gray-800 rounded-lg overflow-hidden border border-gray-700 relative group flex flex-col`;
+  const cardTier = isRecommended ? 'recommended' : tier.toLowerCase();
+  
+  // 🌟 핵심 해결: w-full 속성을 제거하여 드래그 시 카드가 화면 전체로 폭주하는 현상 차단
+  let baseClass = `anime-card-container tier-${cardTier} glass-panel rounded-2xl overflow-hidden relative group flex flex-col transform hover:-translate-y-2 z-10 hover:z-20`;
 
-if (!isRecommended && tier === 'C') {
-baseClass = `anime-card-container tier-c bg-gray-900 rounded border border-gray-700 opacity-60 hover:opacity-100 relative group flex flex-col`;
-}
+  if (!isRecommended && tier === 'C') {
+    baseClass = `anime-card-container tier-c bg-gray-900/40 rounded-2xl overflow-hidden border border-white/5 opacity-60 hover:opacity-100 relative group flex flex-col transform hover:-translate-y-1 transition-all`;
+  } else if (!isRecommended && tier === 'D') {
+    baseClass = `anime-card-container tier-d bg-black/40 rounded-2xl overflow-hidden border border-white/5 opacity-50 hover:opacity-100 relative group flex flex-col transform hover:-translate-y-1 transition-all`;
+  }
 
-const safeTitle = (title || '').replace(/"/g, '&quot;');
-const safeReview = (displayReview || '').replace(/"/g, '&quot;');
-const fallbackImg = getPlaceholderUrl(safeTitle);
+  const safeTitle = (title || '').replace(/"/g, '&quot;');
+  const safeReview = (displayReview || '').replace(/"/g, '&quot;');
+  const fallbackImg = getPlaceholderUrl(safeTitle);
 
-let dataAttrs = `data-id="${id}" data-tier="${isRecommended ? 'RECOMMENDED' : tier}" onpointerdown="markCardPointerDown(event)" onclick="handleCardClick(event, '${id}', ${isRecommended})"`;
-let deleteBtn = isRecommended ? '' : `<button onclick="deleteAnime(this, event, '${id}', '${tier}')" class="absolute top-2 right-2 bg-red-600/90 hover:bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20 text-xs font-bold shadow-lg" title="삭제">✕</button>`;
-let rankBadge = isRecommended ? `<div class="absolute top-0 right-0 bg-purple-600 text-white text-xs font-bold px-3 py-1 rounded-bl-lg z-10">NO. ${rank}</div>` : '';
+  let dataAttrs = `data-id="${id}" data-tier="${isRecommended ? 'RECOMMENDED' : tier}" onpointerdown="markCardPointerDown(event)" onclick="handleCardClick(event, '${id}', ${isRecommended})"`;
+  
+  let deleteBtn = isRecommended ? '' : `<button onclick="deleteAnime(this, event, '${id}', '${tier}')" class="absolute top-2 right-2 bg-red-500/80 backdrop-blur-md hover:bg-red-500 text-white rounded-full w-7 h-7 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 z-30 text-xs font-bold shadow-lg hover:scale-110 border border-white/20" title="삭제">✕</button>`;
+  
+  let rankBadge = isRecommended ? `<div class="absolute top-0 right-0 bg-gradient-to-bl from-purple-600 to-indigo-600 text-white text-xs font-black px-3.5 py-1.5 rounded-bl-xl z-20 shadow-lg border-b border-l border-white/10">NO.${rank}</div>` : '';
 
-const imgTagAttr = `src="${imgSrc}" onerror="this.onerror=null; this.src='${fallbackImg}';" alt="${safeTitle}"`;
+  const imgTagAttr = `src="${imgSrc}" onerror="this.onerror=null; this.src='${fallbackImg}';" alt="${safeTitle}"`;
 
-let genreBadge = '';
-const filteredGenres = (genres || []).filter(g => g && g !== '애니메이션');
-if (filteredGenres && filteredGenres.length > 0) {
-const displayGenres = filteredGenres.slice(0, 2).join(', ');
-genreBadge = `<span class="inline-block bg-gray-700 text-gray-300 text-[10px] px-1.5 py-0.5 rounded border border-gray-600 truncate max-w-full">${displayGenres}</span>`;
-}
+  let genreBadge = '';
+  const filteredGenres = (genres || []).filter(g => g && g !== '애니메이션');
+  if (filteredGenres && filteredGenres.length > 0) {
+    const displayGenres = filteredGenres.slice(0, 2).join(', ');
+    genreBadge = `<span class="inline-block bg-black/50 backdrop-blur-md text-gray-200 text-[10px] px-2 py-1 rounded-lg border border-white/10 truncate max-w-full font-medium shadow-sm">${displayGenres}</span>`;
+  }
 
-const ratingNum = Number(rating);
-const ratingDisplay = ratingNum ? `⭐ ${ratingNum.toFixed(1)}` : '';
+  const ratingNum = Number(rating);
+  const ratingDisplay = ratingNum ? `⭐ ${ratingNum.toFixed(1)}` : '';
 
-let innerHtml = '';
-if (isRecommended || tier === 'SS' || tier === 'S') {
-innerHtml = `
-                   ${deleteBtn}
-                   ${rankBadge}
-                   <div class="relative h-48 md:h-60 flex-shrink-0">
-                       <img ${imgTagAttr} class="w-full h-full object-cover object-top opacity-90 group-hover:opacity-100 transition-opacity pointer-events-none">
-                   </div>
-                   <div class="p-3 pointer-events-none flex flex-col flex-grow justify-end">
-                       <div class="flex justify-between items-start gap-2 mb-1 w-full overflow-hidden">
-                           <div class="flex-1 min-w-0 flex items-center">
-                               ${genreBadge}
-                           </div>
-                           <div class="flex-shrink-0 whitespace-nowrap text-yellow-400 text-xs font-bold pt-0.5">
-                               ${ratingDisplay}
-                           </div>
-                       </div>
-                       <h4 class="font-bold text-white text-lg leading-tight line-clamp-2">${safeTitle}</h4>
-                       <p class="text-xs ${isRecommended ? 'text-purple-400' : 'text-yellow-500'} mt-1 line-clamp-2">${safeReview}</p>
-                   </div>`;
-} else if (tier === 'A') {
-innerHtml = `
-                   ${deleteBtn}
-                   <div class="relative h-40 flex-shrink-0">
-                       <img ${imgTagAttr} class="w-full h-full object-cover object-top opacity-80 group-hover:opacity-100 transition-opacity pointer-events-none">
-                   </div>
-                   <div class="p-3 pointer-events-none flex flex-col flex-grow justify-end">
-                       <div class="flex justify-between items-start gap-2 mb-1 w-full overflow-hidden">
-                           <div class="flex-1 min-w-0 flex items-center">
-                               ${genreBadge}
-                           </div>
-                           <div class="flex-shrink-0 whitespace-nowrap text-yellow-400 text-xs font-bold pt-0.5">
-                               ${ratingDisplay}
-                           </div>
-                       </div>
-                       <h4 class="font-bold text-gray-200 text-sm md:text-base line-clamp-1">${safeTitle}</h4>
-                       <p class="text-xs text-red-400 mt-1 line-clamp-2">${safeReview}</p>
-                   </div>`;
-} else if (tier === 'B') {
-innerHtml = `
-                   ${deleteBtn}
-                   <div class="relative h-32 flex-shrink-0">
-                       <img ${imgTagAttr} class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity pointer-events-none">
-                   </div>
-                   <div class="p-2 pointer-events-none flex flex-col flex-grow justify-center">
-                       <div class="flex justify-between items-start gap-1 mb-1 w-full overflow-hidden">
-                           <div class="flex-1 min-w-0 flex items-center text-left">
-                               ${genreBadge}
-                           </div>
-                           <div class="flex-shrink-0 whitespace-nowrap text-yellow-400 text-[10px] font-bold">
-                               ${ratingDisplay}
-                           </div>
-                       </div>
-                       <h4 class="font-medium text-gray-300 text-xs md:text-sm w-full line-clamp-1">${safeTitle}</h4>
-                       <p class="text-[10px] text-gray-400 w-full line-clamp-1 mt-0.5">${safeReview}</p>
-                   </div>`;
-} else if (tier === 'C' || tier === 'D') {
-innerHtml = `
-                   ${deleteBtn}
-                   <div class="relative h-24 flex-shrink-0">
-                       <img ${imgTagAttr} class="w-full h-full object-cover filter grayscale hover:grayscale-0 transition-all pointer-events-none">
-                   </div>
-                   <div class="p-2 text-center pointer-events-none flex flex-col flex-grow justify-center items-center">
-                       <span class="text-xs text-gray-400 w-full line-clamp-1">${safeTitle}</span>
-                       <p class="text-[9px] text-gray-600 mt-1 w-full line-clamp-1">${safeReview}</p>
-                   </div>`;
-}
+  let innerHtml = '';
+  
+  // SS, S, RECOMMENDED 카드 (min-h-[300px])
+  if (isRecommended || tier === 'SS' || tier === 'S') {
+    innerHtml = `
+      ${deleteBtn}
+      ${rankBadge}
+      <img ${imgTagAttr} class="absolute inset-0 w-full h-full object-cover object-center transform transition-transform duration-700 group-hover:scale-110 z-0 pointer-events-none">
+      <div class="absolute inset-0 bg-gradient-to-t from-[#020617] via-[#020617]/60 to-transparent opacity-90 group-hover:opacity-100 transition-opacity duration-300 z-10 pointer-events-none"></div>
+      <div class="relative z-20 p-4 flex flex-col justify-end h-full min-h-[300px] pointer-events-none transform transition-transform duration-300 group-hover:-translate-y-1">
+          <div class="flex justify-between items-end gap-2 mb-2 w-full">
+              <div class="flex-1 min-w-0 flex items-center gap-1">${genreBadge}</div>
+              <div class="flex-shrink-0 text-yellow-400 text-xs font-black drop-shadow-md pb-0.5">${ratingDisplay}</div>
+          </div>
+          <h4 class="font-black text-white text-lg leading-tight line-clamp-2 drop-shadow-lg">${safeTitle}</h4>
+          <p class="text-xs ${isRecommended ? 'text-purple-300' : 'text-gray-300'} mt-1.5 line-clamp-2 leading-relaxed opacity-90 group-hover:opacity-100">${safeReview}</p>
+      </div>`;
+  } 
+  // A 등급 카드 (min-h-[220px])
+  else if (tier === 'A') {
+    innerHtml = `
+      ${deleteBtn}
+      <img ${imgTagAttr} class="absolute inset-0 w-full h-full object-cover object-center transform transition-transform duration-500 group-hover:scale-110 z-0 pointer-events-none">
+      <div class="absolute inset-0 bg-gradient-to-t from-[#020617] via-[#020617]/40 to-transparent z-10 pointer-events-none"></div>
+      <div class="relative z-20 p-3 flex flex-col justify-end h-full min-h-[220px] pointer-events-none">
+          <div class="flex justify-between items-center gap-2 mb-1.5 w-full">
+              <div class="flex-1 min-w-0">${genreBadge}</div>
+              <div class="text-yellow-400 text-[11px] font-bold drop-shadow-md">${ratingDisplay}</div>
+          </div>
+          <h4 class="font-bold text-gray-100 text-sm md:text-base line-clamp-1 drop-shadow-md">${safeTitle}</h4>
+          <p class="text-[11px] text-red-300/90 mt-1 line-clamp-2 leading-relaxed drop-shadow-md">${safeReview}</p>
+      </div>`;
+  } 
+  // B 등급 카드 (min-h-[170px])
+  else if (tier === 'B') {
+    innerHtml = `
+      ${deleteBtn}
+      <img ${imgTagAttr} class="absolute inset-0 w-full h-full object-cover object-center transform transition-transform duration-500 group-hover:scale-110 z-0 pointer-events-none opacity-80 group-hover:opacity-100">
+      <div class="absolute inset-0 bg-gradient-to-t from-[#020617] to-transparent opacity-90 z-10 pointer-events-none"></div>
+      <div class="relative z-20 p-2.5 flex flex-col justify-end h-full min-h-[170px] pointer-events-none">
+          <div class="flex justify-between items-center w-full mb-1">
+             <div class="flex-1 min-w-0">${genreBadge}</div>
+             <div class="text-yellow-400 text-[10px] font-bold drop-shadow-md">${ratingDisplay}</div>
+          </div>
+          <h4 class="font-medium text-gray-200 text-xs md:text-sm line-clamp-1 drop-shadow-md">${safeTitle}</h4>
+          <p class="text-[10px] text-gray-400 line-clamp-1 mt-0.5 drop-shadow-md">${safeReview}</p>
+      </div>`;
+  } 
+  // C, D 등급 카드 (min-h-[140px])
+  else if (tier === 'C' || tier === 'D') {
+    innerHtml = `
+      ${deleteBtn}
+      <img ${imgTagAttr} class="absolute inset-0 w-full h-full object-cover object-center filter grayscale hover:grayscale-0 transition-all duration-500 z-0 pointer-events-none opacity-70 group-hover:opacity-100">
+      <div class="absolute inset-0 bg-gradient-to-t from-[#020617] to-[#020617]/60 z-10 pointer-events-none transition-colors group-hover:from-[#020617]/80"></div>
+      <div class="relative z-20 p-2 flex flex-col justify-center items-center h-full min-h-[140px] text-center pointer-events-none">
+          <span class="text-xs font-bold text-gray-300 w-full line-clamp-1 drop-shadow-md">${safeTitle}</span>
+          <p class="text-[9px] text-gray-400 mt-1 w-full line-clamp-2 drop-shadow-md">${safeReview}</p>
+      </div>`;
+  }
 
-return `<div class="${baseClass}" ${dataAttrs}>${innerHtml}</div>`;
+  return `<div class="${baseClass}" ${dataAttrs}>${innerHtml}</div>`;
 }
 
 // ==========================================
@@ -2762,31 +2702,19 @@ function setupDragAndDrop() {
     if (!grid) return;
 
     new Sortable(grid, {
-      group: 'tierList',
-      animation: 220,
+          group: 'tierList',
+          animation: 300,        // 코드펜과 동일
+          delay: 150,            // 코드펜과 동일
+          delayOnTouchOnly: true, // 코드펜과 동일
+          
+          ghostClass: 'sortable-ghost',
+          dragClass: 'sortable-drag',
+          forceFallback: true,   // 코드펜과 동일
+          
+          // 카드가 거대해지는 원인이었던 fallbackOnBody 삭제 완료
 
-      delay: 150,
-      delayOnTouchOnly: true,
-      touchStartThreshold: 8,
-      fallbackTolerance: 12,
-
-      ghostClass: 'sortable-ghost',
-      dragClass: 'sortable-drag',
-      fallbackClass: 'sortable-drag', // forceFallback 시 드래그 중인 카드 스타일 유지
-
-      // 중요: Native HTML5 Drag and Drop 기능을 비활성화 (순수 JS 이벤트로 대체)
-      // 이 옵션을 켜면 마우스가 화면 밖(작업 관리자, 탭 영역)으로 나가도 브라우저가 개입하지 않고 이벤트가 유지됩니다.
-      forceFallback: true, 
-      fallbackOnBody: true,
-
-      // SortableJS 내장 스크롤 기능 활성화
-      scroll: true,
-      bubbleScroll: true,
-      scrollSensitivity: 100, // 스크롤이 시작되는 화면 가장자리 감지 영역 크기
-      scrollSpeed: 15, // 일정하고 부드러운 스크롤 속도
-
-      filter: 'button, #rec-empty-state',
-      preventOnFilter: false,
+          filter: 'button, #rec-empty-state',
+          preventOnFilter: false,
 
       onStart: (evt) => {
         isDragging = true;
@@ -3147,38 +3075,33 @@ async function generateRecommendations(btn) {
   document.getElementById('rec-loading').classList.remove('hidden');
 
   try {
-    // 모든 작품의 제목과 리뷰를 하나도 빠짐없이 묶어주는 함수 (자르지 않음)
-    const formatTier = (items) => items.map(a => a.title + (a.userReview ? ' - ' + a.userReview : '')).join(', ');
-
     const response = await fetchWithTimeout('/api/recommend', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        // 1. 중복 방지용: AI가 이거 다 봤구나 하고 바로 알 수 있게 제목만 싹 다 모아서 보냅니다.
-        titles: allItems.map(a => a.title).join(', '), 
-        // 2. 취향 분석용: 자르는 것 없이 유저님의 깐깐한 오답 노트까지 100% 전부 보냅니다.
-        ss: formatTier(appState.tierList.SS),
-        s: formatTier(appState.tierList.S),
-        a: formatTier(appState.tierList.A),
-        b: formatTier(appState.tierList.B),
-        c: formatTier(appState.tierList.C),
-        d: formatTier(appState.tierList.D)
-      })
-    }, 20000);
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    titles: allItems.map(a => a.title).join(','),
+    ss: appState.tierList.SS.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
+    s: appState.tierList.S.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
+    a: appState.tierList.A.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
+    b: appState.tierList.B.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
+    c: appState.tierList.C.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
+    d: appState.tierList.D.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', ')
+  })
+}, 20000);
 
     if (!response.ok) {
-      let errBody = null;
-      try {
-        errBody = await response.json();
-      } catch (_) {
-        errBody = await response.text().catch(() => '');
-      }
-      console.error('recommend api error body:', errBody);
-      throw new Error(`recommend failed: ${response.status}`);
-    }
+  let errBody = null;
+  try {
+    errBody = await response.json();
+  } catch (_) {
+    errBody = await response.text().catch(() => '');
+  }
+  console.error('recommend api error body:', errBody);
+  throw new Error(`recommend failed: ${response.status}`);
+}
 
-    const recs = await response.json();
-    incrementAiUsage('recommend', 1);
+const recs = await response.json();
+incrementAiUsage('recommend', 1);
 
     // 1차: 내가 이미 본 작품 제목 모으기
     const watchedSet = new Set();
@@ -3194,29 +3117,29 @@ async function generateRecommendations(btn) {
         r.title,
         r.originalTitle,
         r.original_title
-      ].filter(Boolean).map(normalizeAnimeTitle);
+      ]
+        .filter(Boolean)
+        .map(normalizeAnimeTitle);
 
       return !candidates.some(t => watchedSet.has(t));
     });
 
-    // 3차: TMDb 정보 보강 (변경 2: 병렬 처리로 대기 시간 단축)
+    // 3차: TMDb 정보 보강
     const enriched = await Promise.all(
       firstPass.map(async (r, i) => {
         try {
           const queries = [r.title, r.originalTitle].filter(Boolean);
           let best = null;
 
-          const fetchPromises = queries.map(q => 
-            fetchWithTimeout('/api/search-anime', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ query: q })
-            }, 10000).then(res => res.json()).catch(() => null)
-          );
+          for (const q of queries) {
+            const res = await fetchWithTimeout('/api/search-anime', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ query: q })
+}, 15000);
 
-          const searchResults = await Promise.all(fetchPromises);
-          
-          for (const data of searchResults) {
+            const data = await res.json();
+
             if (data?.results?.[0]) {
               best = data.results[0];
               break;
@@ -3260,7 +3183,9 @@ async function generateRecommendations(btn) {
         rec.title,
         rec.originalTitle,
         rec.original_title
-      ].filter(Boolean).map(normalizeAnimeTitle);
+      ]
+        .filter(Boolean)
+        .map(normalizeAnimeTitle);
 
       return !candidates.some(t => watchedSet.has(t));
     });
