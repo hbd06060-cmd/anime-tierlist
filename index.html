@@ -3148,32 +3148,32 @@ async function generateRecommendations(btn) {
 
   try {
     const response = await fetchWithTimeout('/api/recommend', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    titles: allItems.map(a => a.title).join(','),
-    ss: appState.tierList.SS.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
-    s: appState.tierList.S.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
-    a: appState.tierList.A.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
-    b: appState.tierList.B.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
-    c: appState.tierList.C.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
-    d: appState.tierList.D.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', ')
-  })
-}, 20000);
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        titles: "", // 변경 1: 불필요한 전체 목록 전송 제거
+        ss: appState.tierList.SS.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
+        s: appState.tierList.S.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
+        a: appState.tierList.A.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
+        b: appState.tierList.B.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
+        c: appState.tierList.C.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
+        d: appState.tierList.D.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', ')
+      })
+    }, 20000);
 
     if (!response.ok) {
-  let errBody = null;
-  try {
-    errBody = await response.json();
-  } catch (_) {
-    errBody = await response.text().catch(() => '');
-  }
-  console.error('recommend api error body:', errBody);
-  throw new Error(`recommend failed: ${response.status}`);
-}
+      let errBody = null;
+      try {
+        errBody = await response.json();
+      } catch (_) {
+        errBody = await response.text().catch(() => '');
+      }
+      console.error('recommend api error body:', errBody);
+      throw new Error(`recommend failed: ${response.status}`);
+    }
 
-const recs = await response.json();
-incrementAiUsage('recommend', 1);
+    const recs = await response.json();
+    incrementAiUsage('recommend', 1);
 
     // 1차: 내가 이미 본 작품 제목 모으기
     const watchedSet = new Set();
@@ -3189,29 +3189,29 @@ incrementAiUsage('recommend', 1);
         r.title,
         r.originalTitle,
         r.original_title
-      ]
-        .filter(Boolean)
-        .map(normalizeAnimeTitle);
+      ].filter(Boolean).map(normalizeAnimeTitle);
 
       return !candidates.some(t => watchedSet.has(t));
     });
 
-    // 3차: TMDb 정보 보강
+    // 3차: TMDb 정보 보강 (변경 2: 병렬 처리로 대기 시간 단축)
     const enriched = await Promise.all(
       firstPass.map(async (r, i) => {
         try {
           const queries = [r.title, r.originalTitle].filter(Boolean);
           let best = null;
 
-          for (const q of queries) {
-            const res = await fetchWithTimeout('/api/search-anime', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ query: q })
-}, 15000);
+          const fetchPromises = queries.map(q => 
+            fetchWithTimeout('/api/search-anime', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ query: q })
+            }, 10000).then(res => res.json()).catch(() => null)
+          );
 
-            const data = await res.json();
-
+          const searchResults = await Promise.all(fetchPromises);
+          
+          for (const data of searchResults) {
             if (data?.results?.[0]) {
               best = data.results[0];
               break;
@@ -3255,9 +3255,7 @@ incrementAiUsage('recommend', 1);
         rec.title,
         rec.originalTitle,
         rec.original_title
-      ]
-        .filter(Boolean)
-        .map(normalizeAnimeTitle);
+      ].filter(Boolean).map(normalizeAnimeTitle);
 
       return !candidates.some(t => watchedSet.has(t));
     });
