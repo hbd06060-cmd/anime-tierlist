@@ -3147,17 +3147,22 @@ async function generateRecommendations(btn) {
   document.getElementById('rec-loading').classList.remove('hidden');
 
   try {
+    // 모든 작품의 제목과 리뷰를 하나도 빠짐없이 묶어주는 함수 (자르지 않음)
+    const formatTier = (items) => items.map(a => a.title + (a.userReview ? ' - ' + a.userReview : '')).join(', ');
+
     const response = await fetchWithTimeout('/api/recommend', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        titles: "", // 변경 1: 불필요한 전체 목록 전송 제거
-        ss: appState.tierList.SS.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
-        s: appState.tierList.S.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
-        a: appState.tierList.A.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
-        b: appState.tierList.B.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
-        c: appState.tierList.C.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
-        d: appState.tierList.D.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', ')
+        // 1. 중복 방지용: AI가 이거 다 봤구나 하고 바로 알 수 있게 제목만 싹 다 모아서 보냅니다.
+        titles: allItems.map(a => a.title).join(', '), 
+        // 2. 취향 분석용: 자르는 것 없이 유저님의 깐깐한 오답 노트까지 100% 전부 보냅니다.
+        ss: formatTier(appState.tierList.SS),
+        s: formatTier(appState.tierList.S),
+        a: formatTier(appState.tierList.A),
+        b: formatTier(appState.tierList.B),
+        c: formatTier(appState.tierList.C),
+        d: formatTier(appState.tierList.D)
       })
     }, 20000);
 
