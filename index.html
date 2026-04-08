@@ -102,6 +102,33 @@ animation: spin 1s linear infinite;
   cursor: grabbing !important;
   z-index: 9999 !important;
 }
+
+.sortable-chosen {
+  transform: scale(0.985);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.drag-press-armed {
+  animation: pressArmedPulse 0.9s ease-in-out infinite;
+}
+
+.drag-active-feedback {
+  animation: dragActiveWiggle 0.18s ease-in-out 2;
+}
+
+@keyframes pressArmedPulse {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(0.97); box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.55); }
+  100% { transform: scale(1); }
+}
+
+@keyframes dragActiveWiggle {
+  0%   { transform: rotate(0deg) scale(0.99); }
+  25%  { transform: rotate(-0.8deg) scale(0.99); }
+  50%  { transform: rotate(0.8deg) scale(0.99); }
+  75%  { transform: rotate(-0.6deg) scale(0.99); }
+  100% { transform: rotate(0deg) scale(0.99); }
+}
 </style>
 </head>
 <body id="main-body" class="p-4 md:p-8 min-h-screen overflow-hidden">
@@ -661,6 +688,40 @@ let aiAbortController = null;
 let isDragging = false;
 let dragJustEnded = false;
 let dragUnlockTimer = null;
+
+let pointerDownInfo = null;
+let suppressNextCardClickUntil = 0;
+
+function isTouchDevice() {
+  return window.matchMedia('(pointer: coarse)').matches
+    || 'ontouchstart' in window
+    || navigator.maxTouchPoints > 0;
+}
+
+function markCardPointerDown(event) {
+  if (!event) return;
+  pointerDownInfo = {
+    x: Number(event.clientX || 0),
+    y: Number(event.clientY || 0)
+  };
+}
+
+window.addEventListener('pointermove', (event) => {
+  if (!pointerDownInfo) return;
+
+  const dx = Math.abs(Number(event.clientX || 0) - pointerDownInfo.x);
+  const dy = Math.abs(Number(event.clientY || 0) - pointerDownInfo.y);
+
+  if (dx > 6 || dy > 6) {
+    suppressNextCardClickUntil = Date.now() + 260;
+  }
+}, true);
+
+['pointerup', 'pointercancel', 'mouseup', 'touchend'].forEach(evt => {
+  window.addEventListener(evt, () => {
+    pointerDownInfo = null;
+  }, true);
+});
 
 function resetDragState() {
   isDragging = false;
@@ -1610,7 +1671,7 @@ const safeTitle = (title || '').replace(/"/g, '&quot;');
 const safeReview = (displayReview || '').replace(/"/g, '&quot;');
 const fallbackImg = getPlaceholderUrl(safeTitle);
 
-let dataAttrs = `data-id="${id}" data-tier="${isRecommended ? 'RECOMMENDED' : tier}" onclick="handleCardClick(event, '${id}', ${isRecommended})"`;
+let dataAttrs = `data-id="${id}" data-tier="${isRecommended ? 'RECOMMENDED' : tier}" onpointerdown="markCardPointerDown(event)" onclick="handleCardClick(event, '${id}', ${isRecommended})"`;
 let deleteBtn = isRecommended ? '' : `<button onclick="deleteAnime(this, event, '${id}', '${tier}')" class="absolute top-2 right-2 bg-red-600/90 hover:bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20 text-xs font-bold shadow-lg" title="삭제">✕</button>`;
 let rankBadge = isRecommended ? `<div class="absolute top-0 right-0 bg-purple-600 text-white text-xs font-bold px-3 py-1 rounded-bl-lg z-10">NO. ${rank}</div>` : '';
 
@@ -2459,7 +2520,14 @@ currentDetailId = null;
 }
 
 function handleCardClick(event, id, isRecommended = false) {
-  if (isDragging || dragJustEnded) return;
+  if (isDragging || dragJustEnded || Date.now() < suppressNextCardClickUntil) {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    return;
+  }
+
   openDetailModal(id, isRecommended);
 }
 
@@ -2708,49 +2776,66 @@ async function refreshMissingAnimeMetadata(btn) {
 // ==========================================
 function setupDragAndDrop() {
   const grids = ['grid-tier-ss','grid-tier-s','grid-tier-a','grid-tier-b','grid-tier-c','grid-tier-d','grid-tier-recommended'];
+  const touchMode = isTouchDevice();
 
   grids.forEach(id => {
     const grid = document.getElementById(id);
     if (!grid) return;
 
     new Sortable(grid, {
-  group: 'tierList',
-  animation: 220,
+      group: 'tierList',
+      animation: 220,
+      easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
 
-  // 모바일에서는 길게 눌렀을 때만 드래그 시작
-  delay: 150,
-touchStartThreshold: 10,
-fallbackTolerance: 14,
-  delayOnTouchOnly: true,
-  touchStartThreshold: 8,
+      // 모바일 롱프레스 시간 단축
+      delay: touchMode ? 110 : 0,
+      delayOnTouchOnly: true,
+      touchStartThreshold: 14,
+      fallbackTolerance: 6,
 
-  ghostClass: 'sortable-ghost',
-  dragClass: 'sortable-drag',
+      ghostClass: 'sortable-ghost',
+      dragClass: 'sortable-drag',
+      chosenClass: 'sortable-chosen',
 
-  forceFallback: false,
-  fallbackOnBody: false,
+      // PC에서는 fallback 강제해서 자동 스크롤 복구
+      forceFallback: !touchMode,
+      fallbackOnBody: true,
 
-  // 손가락이 조금 움직인 정도로는 드래그 시작 안 되게
-  fallbackTolerance: 12,
+      scroll: true,
+      bubbleScroll: true,
+      scrollSensitivity: 110,
+      scrollSpeed: 22,
+      forceAutoScrollFallback: true,
 
-scroll: true,
-  bubbleScroll: true,
-  scrollSensitivity: 80,
-  scrollSpeed: 18,
+      filter: 'button, #rec-empty-state',
+      preventOnFilter: false,
 
-  filter: 'button, #rec-empty-state',
-  preventOnFilter: false,
+      onChoose: (evt) => {
+        evt.item.classList.add('drag-press-armed');
+      },
 
-      onStart: () => {
+      onUnchoose: (evt) => {
+        evt.item.classList.remove('drag-press-armed');
+        evt.item.classList.remove('drag-active-feedback');
+      },
+
+      onStart: (evt) => {
         isDragging = true;
         dragJustEnded = false;
+        suppressNextCardClickUntil = Date.now() + 260;
         clearTimeout(dragUnlockTimer);
+
+        evt.item.classList.remove('drag-press-armed');
+        evt.item.classList.add('drag-active-feedback');
       },
 
       onEnd: async (evt) => {
         const movedId = evt.item.getAttribute('data-id');
         const fromTier = evt.from.id.split('-').pop().toUpperCase();
         const toTier = evt.to.id.split('-').pop().toUpperCase();
+
+        evt.item.classList.remove('drag-press-armed');
+        evt.item.classList.remove('drag-active-feedback');
 
         try {
           if (fromTier === 'RECOMMENDED' && toTier === 'RECOMMENDED') {
@@ -2812,10 +2897,11 @@ scroll: true,
           updateRecButtonUI();
         } finally {
           dragJustEnded = true;
+          suppressNextCardClickUntil = Date.now() + 280;
           clearTimeout(dragUnlockTimer);
           dragUnlockTimer = setTimeout(() => {
             resetDragState();
-          }, 120);
+          }, 160);
         }
       }
     });
