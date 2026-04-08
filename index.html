@@ -93,7 +93,7 @@ animation: spin 1s linear infinite;
 
 /* SortableJS 전용 애니메이션 상태 */
 .sortable-ghost { 
-  opacity: 0.32 !important; 
+  opacity: 0 !important; 
 }
 
 .sortable-drag { 
@@ -101,33 +101,6 @@ animation: spin 1s linear infinite;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 1), 0 0 0 2px rgba(96, 165, 250, 0.8) !important;
   cursor: grabbing !important;
   z-index: 9999 !important;
-}
-
-.sortable-chosen {
-  transform: scale(0.985);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.drag-press-armed {
-  animation: pressArmedPulse 0.9s ease-in-out infinite;
-}
-
-.drag-active-feedback {
-  animation: dragActiveWiggle 0.18s ease-in-out 2;
-}
-
-@keyframes pressArmedPulse {
-  0%   { transform: scale(1); }
-  50%  { transform: scale(0.97); box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.55); }
-  100% { transform: scale(1); }
-}
-
-@keyframes dragActiveWiggle {
-  0%   { transform: rotate(0deg) scale(0.99); }
-  25%  { transform: rotate(-0.8deg) scale(0.99); }
-  50%  { transform: rotate(0.8deg) scale(0.99); }
-  75%  { transform: rotate(-0.6deg) scale(0.99); }
-  100% { transform: rotate(0deg) scale(0.99); }
 }
 </style>
 </head>
@@ -688,185 +661,6 @@ let aiAbortController = null;
 let isDragging = false;
 let dragJustEnded = false;
 let dragUnlockTimer = null;
-
-let pointerDownInfo = null;
-let suppressNextCardClickUntil = 0;
-
-let dragEdgePointer = null;
-let dragEdgeScrollRaf = null;
-let dragWheelHandlerAttached = false;
-
-function getPageScrollTarget() {
-  return document.scrollingElement || document.documentElement;
-}
-
-function scrollPageByDelta(dx = 0, dy = 0) {
-  const target = getPageScrollTarget();
-  if (!target) return;
-
-  if (typeof target.scrollBy === 'function') {
-    target.scrollBy({
-      left: dx,
-      top: dy,
-      behavior: 'auto'
-    });
-  } else {
-    target.scrollLeft += dx;
-    target.scrollTop += dy;
-  }
-}
-
-function updateDragEdgePointerFromEvent(evt) {
-  const raw = evt?.originalEvent || evt;
-  if (!raw) return;
-
-  dragEdgePointer = {
-    x: Number(raw.clientX || 0),
-    y: Number(raw.clientY || 0)
-  };
-
-  startDragEdgeAutoScroll();
-}
-
-function startDragEdgeAutoScroll() {
-  if (dragEdgeScrollRaf) return;
-
-  const tick = () => {
-    if (!isDragging || !dragEdgePointer) {
-      dragEdgeScrollRaf = null;
-      return;
-    }
-
-    const vw = window.innerWidth || document.documentElement.clientWidth || 0;
-    const vh = window.innerHeight || document.documentElement.clientHeight || 0;
-
-    const edgeX = 90;
-    const edgeY = 110;
-
-    let dx = 0;
-    let dy = 0;
-
-    if (dragEdgePointer.x <= edgeX) {
-      dx = -Math.max(10, Math.round((edgeX - dragEdgePointer.x) * 0.35));
-    } else if (dragEdgePointer.x >= vw - edgeX) {
-      dx = Math.max(10, Math.round((dragEdgePointer.x - (vw - edgeX)) * 0.35));
-    }
-
-    if (dragEdgePointer.y <= edgeY) {
-      dy = -Math.max(12, Math.round((edgeY - dragEdgePointer.y) * 0.4));
-    } else if (dragEdgePointer.y >= vh - edgeY) {
-      dy = Math.max(12, Math.round((dragEdgePointer.y - (vh - edgeY)) * 0.4));
-    }
-
-    if (dx !== 0 || dy !== 0) {
-      scrollPageByDelta(dx, dy);
-    }
-
-    dragEdgeScrollRaf = requestAnimationFrame(tick);
-  };
-
-  dragEdgeScrollRaf = requestAnimationFrame(tick);
-}
-
-function stopDragEdgeAutoScroll() {
-  dragEdgePointer = null;
-
-  if (dragEdgeScrollRaf) {
-    cancelAnimationFrame(dragEdgeScrollRaf);
-    dragEdgeScrollRaf = null;
-  }
-}
-
-function handleDragWheelScroll(event) {
-  if (!isDragging) return;
-
-  event.preventDefault();
-  scrollPageByDelta(event.deltaX, event.deltaY);
-}
-
-function attachDragWheelHandler() {
-  if (dragWheelHandlerAttached) return;
-  window.addEventListener('wheel', handleDragWheelScroll, { passive: false, capture: true });
-  dragWheelHandlerAttached = true;
-}
-
-function detachDragWheelHandler() {
-  if (!dragWheelHandlerAttached) return;
-  window.removeEventListener('wheel', handleDragWheelScroll, { capture: true });
-  dragWheelHandlerAttached = false;
-}
-let desktopAutoScrollRAF = null;
-let desktopAutoScrollPointerY = null;
-
-function updateDesktopAutoScroll(pointerY) {
-  desktopAutoScrollPointerY = Number(pointerY || 0);
-
-  if (desktopAutoScrollRAF) return;
-
-  const tick = () => {
-    if (desktopAutoScrollPointerY == null) {
-      desktopAutoScrollRAF = null;
-      return;
-    }
-
-    const viewportH = window.innerHeight || document.documentElement.clientHeight || 0;
-    const edge = 120;
-    let delta = 0;
-
-    if (desktopAutoScrollPointerY < edge) {
-      delta = -Math.max(8, Math.round((edge - desktopAutoScrollPointerY) * 0.22));
-    } else if (desktopAutoScrollPointerY > viewportH - edge) {
-      delta = Math.max(8, Math.round((desktopAutoScrollPointerY - (viewportH - edge)) * 0.22));
-    }
-
-    if (delta !== 0) {
-      window.scrollBy(0, delta);
-      desktopAutoScrollRAF = requestAnimationFrame(tick);
-    } else {
-      desktopAutoScrollRAF = null;
-    }
-  };
-
-  desktopAutoScrollRAF = requestAnimationFrame(tick);
-}
-
-function stopDesktopAutoScroll() {
-  desktopAutoScrollPointerY = null;
-  if (desktopAutoScrollRAF) {
-    cancelAnimationFrame(desktopAutoScrollRAF);
-    desktopAutoScrollRAF = null;
-  }
-}
-function isTouchDevice() {
-  return window.matchMedia('(pointer: coarse)').matches
-    || 'ontouchstart' in window
-    || navigator.maxTouchPoints > 0;
-}
-
-function markCardPointerDown(event) {
-  if (!event) return;
-  pointerDownInfo = {
-    x: Number(event.clientX || 0),
-    y: Number(event.clientY || 0)
-  };
-}
-
-window.addEventListener('pointermove', (event) => {
-  if (!pointerDownInfo) return;
-
-  const dx = Math.abs(Number(event.clientX || 0) - pointerDownInfo.x);
-  const dy = Math.abs(Number(event.clientY || 0) - pointerDownInfo.y);
-
-  if (dx > 6 || dy > 6) {
-    suppressNextCardClickUntil = Date.now() + 260;
-  }
-}, true);
-
-['pointerup', 'pointercancel', 'mouseup', 'touchend'].forEach(evt => {
-  window.addEventListener(evt, () => {
-    pointerDownInfo = null;
-  }, true);
-});
 
 function resetDragState() {
   isDragging = false;
@@ -1816,7 +1610,7 @@ const safeTitle = (title || '').replace(/"/g, '&quot;');
 const safeReview = (displayReview || '').replace(/"/g, '&quot;');
 const fallbackImg = getPlaceholderUrl(safeTitle);
 
-let dataAttrs = `data-id="${id}" data-tier="${isRecommended ? 'RECOMMENDED' : tier}" onpointerdown="markCardPointerDown(event)" onclick="handleCardClick(event, '${id}', ${isRecommended})"`;
+let dataAttrs = `data-id="${id}" data-tier="${isRecommended ? 'RECOMMENDED' : tier}" onclick="handleCardClick(event, '${id}', ${isRecommended})"`;
 let deleteBtn = isRecommended ? '' : `<button onclick="deleteAnime(this, event, '${id}', '${tier}')" class="absolute top-2 right-2 bg-red-600/90 hover:bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20 text-xs font-bold shadow-lg" title="삭제">✕</button>`;
 let rankBadge = isRecommended ? `<div class="absolute top-0 right-0 bg-purple-600 text-white text-xs font-bold px-3 py-1 rounded-bl-lg z-10">NO. ${rank}</div>` : '';
 
@@ -2665,14 +2459,7 @@ currentDetailId = null;
 }
 
 function handleCardClick(event, id, isRecommended = false) {
-  if (isDragging || dragJustEnded || Date.now() < suppressNextCardClickUntil) {
-    if (event) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
-    return;
-  }
-
+  if (isDragging || dragJustEnded) return;
   openDetailModal(id, isRecommended);
 }
 
@@ -2927,52 +2714,35 @@ function setupDragAndDrop() {
     if (!grid) return;
 
     new Sortable(grid, {
-      group: 'tierList',
-      animation: 220,
+  group: 'tierList',
+  animation: 220,
 
-      // 백업.html 느낌 유지
-      delay: 150,
-      delayOnTouchOnly: true,
-      touchStartThreshold: 8,
-      fallbackTolerance: 12,
+  // 모바일에서는 길게 눌렀을 때만 드래그 시작
+  delay: 250,
+touchStartThreshold: 10,
+fallbackTolerance: 14,
+  delayOnTouchOnly: true,
+  touchStartThreshold: 8,
 
-      ghostClass: 'sortable-ghost',
-      dragClass: 'sortable-drag',
+  ghostClass: 'sortable-ghost',
+  dragClass: 'sortable-drag',
 
-      // 핵심: 백업 방식처럼 자연스럽게
-      forceFallback: false,
-      fallbackOnBody: false,
+  forceFallback: false,
+  fallbackOnBody: false,
 
-      // 기본 스크롤 옵션은 두되, 가장자리/휠은 수동 보조
-      scroll: true,
-      bubbleScroll: true,
-      scrollSensitivity: 80,
-      scrollSpeed: 18,
+  // 손가락이 조금 움직인 정도로는 드래그 시작 안 되게
+  fallbackTolerance: 12,
 
-      filter: 'button, #rec-empty-state',
-      preventOnFilter: false,
+  filter: 'button, #rec-empty-state',
+  preventOnFilter: false,
 
-      onStart: (evt) => {
+      onStart: () => {
         isDragging = true;
         dragJustEnded = false;
-        suppressNextCardClickUntil = Date.now() + 260;
         clearTimeout(dragUnlockTimer);
-
-        attachDragWheelHandler();
-
-        if (evt?.originalEvent) {
-          updateDragEdgePointerFromEvent(evt.originalEvent);
-        }
-      },
-
-      onMove: (evt) => {
-        updateDragEdgePointerFromEvent(evt);
       },
 
       onEnd: async (evt) => {
-        stopDragEdgeAutoScroll();
-        detachDragWheelHandler();
-
         const movedId = evt.item.getAttribute('data-id');
         const fromTier = evt.from.id.split('-').pop().toUpperCase();
         const toTier = evt.to.id.split('-').pop().toUpperCase();
@@ -3037,7 +2807,6 @@ function setupDragAndDrop() {
           updateRecButtonUI();
         } finally {
           dragJustEnded = true;
-          suppressNextCardClickUntil = Date.now() + 280;
           clearTimeout(dragUnlockTimer);
           dragUnlockTimer = setTimeout(() => {
             resetDragState();
