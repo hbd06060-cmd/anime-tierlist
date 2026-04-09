@@ -10,8 +10,33 @@
   <style>
     body {
       font-family: 'Noto Sans KR', sans-serif;
-      background-color: #111827;
-      color: #e5e7eb;
+      background: radial-gradient(circle at 50% 0%, #1e293b 0%, #020617 70%, #000000 100%);
+      color: #f1f5f9;
+      min-height: 100vh;
+    }
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+    .anime-card-container {
+      cursor: pointer;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .anime-card-container img { user-drag: none; -webkit-user-drag: none; }
+
+    .tier-ss:hover { box-shadow: 0 10px 30px -10px rgba(253, 224, 71, 0.5); border-color: rgba(253, 224, 71, 0.8); }
+    .tier-s:hover  { box-shadow: 0 10px 30px -10px rgba(245, 158, 11, 0.5); border-color: rgba(245, 158, 11, 0.8); }
+    .tier-a:hover  { box-shadow: 0 10px 30px -10px rgba(239, 68, 68, 0.5); border-color: rgba(239, 68, 68, 0.8); }
+    .tier-b:hover  { box-shadow: 0 10px 30px -10px rgba(59, 130, 246, 0.5); border-color: rgba(59, 130, 246, 0.8); }
+    .tier-c:hover  { box-shadow: 0 10px 30px -10px rgba(156, 163, 175, 0.3); border-color: rgba(156, 163, 175, 0.6); }
+    .tier-d:hover  { box-shadow: 0 10px 30px -10px rgba(107, 114, 128, 0.3); border-color: rgba(107, 114, 128, 0.6); }
+
+    .glass-panel {
+      background: rgba(30, 41, 59, 0.4);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.05);
     }
     .line-clamp-2 {
       display: -webkit-box;
@@ -48,16 +73,22 @@
 </head>
 <body class="p-4 md:p-8 min-h-screen">
   <div class="max-w-7xl mx-auto">
-    <header class="mb-12 border-b border-gray-700 pb-8">
-      <h2 class="text-blue-400 font-bold tracking-widest text-sm mb-1">SHARED ANIME TIER LIST</h2>
-      <h1 id="report-title" class="text-4xl md:text-5xl font-black text-white mb-4">공유된 티어리스트</h1>
-
-      <div class="bg-gray-800/60 p-4 rounded-xl border border-gray-700/50">
-        <p class="text-gray-300 text-sm md:text-base font-bold mb-1">
-          성향 분석 :
-          <span class="text-yellow-400 text-base md:text-lg" id="taste-profile-title">불러오는 중...</span>
-        </p>
-        <p id="taste-profile-desc" class="text-xs text-gray-500 leading-relaxed">잠시만 기다려주세요.</p>
+    <header class="mb-12 border-b border-white/10 pb-8 pt-4">
+      <div class="flex flex-col md:flex-row justify-between items-start gap-6">
+        <div class="flex-1 min-w-0">
+          <h2 class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 font-black tracking-widest text-sm mb-2">SHARED ANIME TIER LIST</h2>
+          <h1 id="report-title" class="text-4xl md:text-5xl font-black text-white mb-6 tracking-tight drop-shadow-md">공유된 티어리스트</h1>
+          
+          <div class="glass-panel p-4 rounded-2xl flex flex-col md:flex-row md:items-center gap-4 shadow-lg shadow-black/20">
+            <div class="flex-1 min-w-0">
+              <p class="text-gray-400 text-sm md:text-base font-bold mb-1 flex items-center gap-2">
+                ✨ 성향 분석 <span class="w-1 h-1 rounded-full bg-gray-500 inline-block"></span> 
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-orange-400 text-base md:text-lg font-black" id="taste-profile-title">불러오는 중...</span>
+              </p>
+              <p id="taste-profile-desc" class="text-xs text-gray-500 leading-relaxed mt-1">잠시만 기다려주세요.</p>
+            </div>
+          </div>
+        </div>
       </div>
     </header>
 
@@ -88,66 +119,137 @@
   tierList: { SS: [], S: [], A: [], B: [], C: [], D: [] }
 };
 const TIER_THEMES = {
-  SS: { text: 'text-yellow-300', border: 'border-yellow-300/40' },
-  S: { text: 'text-yellow-500', border: 'border-yellow-500/30' },
-  A: { text: 'text-red-500', border: 'border-red-500/30' },
-  B: { text: 'text-blue-400', border: 'border-blue-400/30' },
-  C: { text: 'text-gray-400', border: 'border-gray-600/40' },
-  D: { text: 'text-gray-500', border: 'border-gray-500/40' }
+  SS: { text: 'text-yellow-300', border: 'border-yellow-300/40', bgGradient: 'from-yellow-300/50' },
+  S: { text: 'text-yellow-500', border: 'border-yellow-500/30', bgGradient: 'from-yellow-500/50' },
+  A: { text: 'text-red-500', border: 'border-red-500/30', bgGradient: 'from-red-500/50' },
+  B: { text: 'text-blue-400', border: 'border-blue-400/30', bgGradient: 'from-blue-500/50' },
+  C: { text: 'text-gray-400', border: 'border-gray-600/40', bgGradient: 'from-gray-600/50' },
+  D: { text: 'text-gray-500', border: 'border-gray-500/40', bgGradient: 'from-gray-500/50' }
 };
     function getPlaceholderUrl(title) {
       return `https://placehold.co/300x450/1f2937/9ca3af?text=${encodeURIComponent(title || 'No Image')}&font=roboto`;
     }
 
     function createReadOnlyCardHtml(anime, tier) {
-      const safeTitle = anime.title || '';
-      const safeReview = anime.user_review || anime.ai_review || anime.recommendationReason || '리뷰 없음';
-      const imgSrc = anime.poster_url || anime.imgSrc || getPlaceholderUrl(safeTitle);
+      const safeTitle = (anime.title || '').replace(/"/g, '&quot;');
+      const safeReview = (anime.user_review || anime.ai_review || anime.recommendationReason || '리뷰 없음').replace(/"/g, '&quot;');
+      const fallbackImg = getPlaceholderUrl(safeTitle);
+      const imgSrc = anime.poster_url || anime.imgSrc || fallbackImg;
+      
+      const cardTier = tier.toLowerCase();
+      let baseClass = `anime-card-container tier-${cardTier} glass-panel rounded-2xl overflow-hidden relative group flex flex-col transform hover:-translate-y-2 z-10 hover:z-20 cursor-pointer transition-all`;
+
+      if (tier === 'C') {
+        baseClass = `anime-card-container tier-c bg-gray-900/40 rounded-2xl overflow-hidden border border-white/5 opacity-60 hover:opacity-100 relative group flex flex-col transform hover:-translate-y-1 transition-all cursor-pointer`;
+      } else if (tier === 'D') {
+        baseClass = `anime-card-container tier-d bg-black/40 rounded-2xl overflow-hidden border border-white/5 opacity-50 hover:opacity-100 relative group flex flex-col transform hover:-translate-y-1 transition-all cursor-pointer`;
+      }
+
+      const imgTagAttr = `src="${imgSrc}" onerror="this.onerror=null; this.src='${fallbackImg}';" alt="${safeTitle}"`;
+
       const genres = Array.isArray(anime.genres)
         ? anime.genres
         : String(anime.genres || '').split(',').map(v => v.trim()).filter(Boolean);
-
       const filteredGenres = genres.filter(g => g && g !== '애니메이션');
-      const genreBadge = filteredGenres.length > 0
-        ? `<span class="inline-block bg-gray-700 text-gray-300 text-[10px] px-1.5 py-0.5 rounded border border-gray-600 truncate max-w-full">${filteredGenres.slice(0, 2).join(', ')}</span>`
-        : '';
+      
+      let genreBadge = '';
+      if (filteredGenres && filteredGenres.length > 0) {
+        const displayGenres = filteredGenres.slice(0, 2).join(', ');
+        genreBadge = `<span class="inline-block bg-black/50 backdrop-blur-md text-gray-200 text-[10px] px-2 py-1 rounded-lg border border-white/10 truncate max-w-full font-medium shadow-sm">${displayGenres}</span>`;
+      }
 
       const ratingNum = Number(anime.vote_average || anime.rating || 0);
       const ratingDisplay = ratingNum ? `⭐ ${ratingNum.toFixed(1)}` : '';
 
-      return `
-        <div
-  class="anime-card-container bg-gray-800 rounded-lg overflow-hidden border border-gray-700 relative group flex flex-col"
-  onclick="openDetailModal('${anime.id}', false)"
->
-          <div class="relative h-48 md:h-60 flex-shrink-0">
-            <img src="${imgSrc}" onerror="this.onerror=null; this.src='${getPlaceholderUrl(safeTitle)}';" class="w-full h-full object-cover object-top opacity-90">
-          </div>
-          <div class="p-3 flex flex-col flex-grow justify-end">
-            <div class="flex justify-between items-start gap-2 mb-1 w-full overflow-hidden">
-              <div class="flex-1 min-w-0 flex items-center">${genreBadge}</div>
-              <div class="flex-shrink-0 whitespace-nowrap text-yellow-400 text-xs font-bold pt-0.5">${ratingDisplay}</div>
-            </div>
-            <h4 class="font-bold text-white text-lg leading-tight line-clamp-2">${safeTitle}</h4>
-            <p class="text-xs text-gray-400 mt-1 line-clamp-2">${safeReview}</p>
-          </div>
-        </div>
-      `;
+      let innerHtml = '';
+      
+      if (tier === 'SS' || tier === 'S') {
+        innerHtml = `
+          <img ${imgTagAttr} class="absolute inset-0 w-full h-full object-cover object-center transform transition-transform duration-700 group-hover:scale-110 z-0 pointer-events-none">
+          <div class="absolute inset-0 bg-gradient-to-t from-[#020617] via-[#020617]/60 to-transparent opacity-90 group-hover:opacity-100 transition-opacity duration-300 z-10 pointer-events-none"></div>
+          <div class="relative z-20 p-4 flex flex-col justify-end h-full min-h-[300px] pointer-events-none transform transition-transform duration-300 group-hover:-translate-y-1">
+              <div class="flex justify-between items-end gap-2 mb-2 w-full">
+                  <div class="flex-1 min-w-0 flex items-center gap-1">${genreBadge}</div>
+                  <div class="flex-shrink-0 text-yellow-400 text-xs font-black drop-shadow-md pb-0.5">${ratingDisplay}</div>
+              </div>
+              <div class="h-[44px] flex flex-col justify-center w-full">
+                  <h4 class="font-black text-white text-lg leading-[22px] line-clamp-2 drop-shadow-lg">${safeTitle}</h4>
+              </div>
+              <div class="h-[40px] mt-1.5 flex flex-col justify-center w-full">
+                  <p class="text-xs text-gray-300 line-clamp-2 leading-5 opacity-90 group-hover:opacity-100">${safeReview}</p>
+              </div>
+          </div>`;
+      } 
+      else if (tier === 'A') {
+        innerHtml = `
+          <img ${imgTagAttr} class="absolute inset-0 w-full h-full object-cover object-center transform transition-transform duration-500 group-hover:scale-110 z-0 pointer-events-none">
+          <div class="absolute inset-0 bg-gradient-to-t from-[#020617] via-[#020617]/40 to-transparent z-10 pointer-events-none"></div>
+          <div class="relative z-20 p-3 flex flex-col justify-end h-full min-h-[220px] pointer-events-none">
+              <div class="flex justify-between items-center gap-2 mb-1.5 w-full">
+                  <div class="flex-1 min-w-0">${genreBadge}</div>
+                  <div class="text-yellow-400 text-[11px] font-bold drop-shadow-md">${ratingDisplay}</div>
+              </div>
+              <div class="h-[24px] flex flex-col justify-center w-full">
+                  <h4 class="font-bold text-gray-100 text-sm md:text-base leading-[24px] line-clamp-1 drop-shadow-md">${safeTitle}</h4>
+              </div>
+              <div class="h-[32px] mt-1 flex flex-col justify-center w-full">
+                  <p class="text-[11px] text-red-300/90 line-clamp-2 leading-[16px] drop-shadow-md">${safeReview}</p>
+              </div>
+          </div>`;
+      } 
+      else if (tier === 'B') {
+        innerHtml = `
+          <img ${imgTagAttr} class="absolute inset-0 w-full h-full object-cover object-center transform transition-transform duration-500 group-hover:scale-110 z-0 pointer-events-none opacity-80 group-hover:opacity-100">
+          <div class="absolute inset-0 bg-gradient-to-t from-[#020617] to-transparent opacity-90 z-10 pointer-events-none"></div>
+          <div class="relative z-20 p-2.5 flex flex-col justify-end h-full min-h-[170px] pointer-events-none">
+              <div class="flex justify-between items-center w-full mb-1">
+                 <div class="flex-1 min-w-0">${genreBadge}</div>
+                 <div class="text-yellow-400 text-[10px] font-bold drop-shadow-md">${ratingDisplay}</div>
+              </div>
+              <div class="h-[20px] flex flex-col justify-center w-full">
+                  <h4 class="font-medium text-gray-200 text-xs md:text-sm leading-[20px] line-clamp-1 drop-shadow-md">${safeTitle}</h4>
+              </div>
+              <div class="h-[14px] mt-0.5 flex flex-col justify-center w-full">
+                  <p class="text-[10px] text-gray-400 line-clamp-1 leading-[14px] drop-shadow-md">${safeReview}</p>
+              </div>
+          </div>`;
+      } 
+      else if (tier === 'C' || tier === 'D') {
+        innerHtml = `
+          <img ${imgTagAttr} class="absolute inset-0 w-full h-full object-cover object-center filter grayscale hover:grayscale-0 transition-all duration-500 z-0 pointer-events-none opacity-70 group-hover:opacity-100">
+          <div class="absolute inset-0 bg-gradient-to-t from-[#020617] to-[#020617]/60 z-10 pointer-events-none transition-colors group-hover:from-[#020617]/80"></div>
+          <div class="relative z-20 p-2 flex flex-col justify-center items-center h-full min-h-[140px] text-center pointer-events-none">
+              <div class="h-[16px] w-full flex flex-col justify-center">
+                  <span class="text-xs font-bold text-gray-300 w-full leading-[16px] line-clamp-1 drop-shadow-md">${safeTitle}</span>
+              </div>
+              <div class="h-[24px] mt-1 w-full flex flex-col justify-center">
+                  <p class="text-[9px] text-gray-400 w-full line-clamp-2 leading-[12px] drop-shadow-md">${safeReview}</p>
+              </div>
+          </div>`;
+      }
+
+      return `<div class="${baseClass}" onclick="openDetailModal('${anime.id}', false)">${innerHtml}</div>`;
     }
 
     function renderTierSection(tier, items) {
-  const theme = TIER_THEMES[tier] || {};
+      const theme = TIER_THEMES[tier] || {};
+      const gradientClass = theme.bgGradient || 'from-white/30';
+      
+      let gridClass = 'grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6';
+      if (tier === 'A') gridClass = 'grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 md:gap-6';
+      if (tier === 'B') gridClass = 'grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4';
+      if (tier === 'C' || tier === 'D') gridClass = 'grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3';
 
-  return `
-    <section class="bg-gray-800/50 rounded-xl p-6 border ${theme.border || 'border-gray-700'}">
-      <div class="flex items-center mb-6">
-        <span class="text-4xl font-black ${theme.text || 'text-white'} mr-4 drop-shadow-md">${tier}</span>
-        <div class="h-1 flex-grow bg-gradient-to-r from-white/30 to-transparent rounded"></div>
-        <span class="${theme.text || 'text-gray-300'} font-bold ml-4 text-sm md:text-base">
-          ${TIER_LABELS[tier]} (${items.length}작품)
-        </span>
-      </div>
-          <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
+      return `
+        <section class="bg-gray-800/50 rounded-xl p-6 border ${theme.border || 'border-gray-700'}">
+          <div class="flex items-center mb-6">
+            <span class="text-4xl font-black ${theme.text || 'text-white'} mr-4 drop-shadow-md">${tier}</span>
+            <div class="h-1 flex-grow bg-gradient-to-r ${gradientClass} to-transparent rounded"></div>
+            <span class="${theme.text || 'text-gray-300'} font-bold ml-4 text-sm md:text-base">
+              ${TIER_LABELS[tier]} (${items.length}작품)
+            </span>
+          </div>
+          <div class="${gridClass}">
             ${items.map(item => createReadOnlyCardHtml(item, tier)).join('')}
           </div>
         </section>
