@@ -914,11 +914,23 @@ function applyUiVersion(uiVersion) {
   body.setAttribute('data-ui-version', safeUiVersion);
 
   if (redesignRoot) {
-    redesignRoot.style.display = safeUiVersion === 'redesign' ? '' : 'none';
+    if (safeUiVersion === 'redesign') {
+      redesignRoot.classList.remove('hidden');
+      redesignRoot.style.display = '';
+    } else {
+      redesignRoot.classList.add('hidden');
+      redesignRoot.style.display = 'none';
+    }
   }
 
   if (legacyRoot) {
-    legacyRoot.style.display = safeUiVersion === 'legacy' ? '' : 'none';
+    if (safeUiVersion === 'legacy') {
+      legacyRoot.classList.remove('hidden');
+      legacyRoot.style.display = '';
+    } else {
+      legacyRoot.classList.add('hidden');
+      legacyRoot.style.display = 'none';
+    }
   }
 
   const uiLegacyRadio = document.getElementById('uiLegacyRadio');
