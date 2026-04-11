@@ -86,7 +86,7 @@ body.is-dragging .anime-card-container * {
 }
 </style>
 </head>
-<body id="main-body" class="p-4 md:p-8 min-h-screen overflow-hidden">
+<body id="main-body" class="p-4 md:p-8 min-h-screen">
 
 <div id="name-popup" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-md transition-all duration-500">
 <div id="name-popup-content" class="bg-gray-800 p-8 rounded-2xl border border-gray-600 w-full max-w-md shadow-2xl text-center transform transition-transform duration-500 scale-100 mx-4">
@@ -118,7 +118,7 @@ body.is-dragging .anime-card-container * {
 </div>
 </div>
 
-<div id="main-content">
+<div id="legacy-main-content" class="hidden">
 <header class="max-w-7xl mx-auto mb-12 border-b border-white/10 pb-8 pt-4">
   <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
     <div class="flex-1 min-w-0">
@@ -562,12 +562,39 @@ AI 추천 이유
       사용량 확인 중...
     </p>
   </div>
+  <div class="bg-gray-900 border border-gray-700 rounded-xl p-4">
+  <p class="text-white font-bold">UI 버전 선택</p>
+  <p class="text-xs text-gray-400 mt-1">
+    기존 화면과 새 화면 중 원하는 UI를 선택할 수 있습니다. 마지막으로 사용한 UI는 자동으로 기억됩니다.
+  </p>
+
+  <div class="mt-4 space-y-3">
+    <label class="flex items-center justify-between gap-3 cursor-pointer bg-gray-800 border border-gray-700 rounded-lg px-4 py-3">
+      <div>
+        <p class="text-sm font-bold text-white">기존 UI</p>
+        <p class="text-xs text-gray-400">기존 index 스타일의 익숙한 구성</p>
+      </div>
+      <input id="uiLegacyRadio" type="radio" name="uiVersion" value="legacy" onchange="handleUiVersionChange(this)">
+    </label>
+
+    <label class="flex items-center justify-between gap-3 cursor-pointer bg-gray-800 border border-gray-700 rounded-lg px-4 py-3">
+      <div>
+        <p class="text-sm font-bold text-white">새 UI</p>
+        <p class="text-xs text-gray-400">redesign 레이아웃 기반의 새로운 구성</p>
+      </div>
+      <input id="uiRedesignRadio" type="radio" name="uiVersion" value="redesign" onchange="handleUiVersionChange(this)">
+    </label>
+  </div>
+</div>
 </div>
 
     <div class="flex justify-end gap-3 mt-6">
       <button onclick="closeSettingsModal()" class="px-5 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-gray-700 transition-colors">닫기</button>
     </div>
   </div>
+</div>
+<div id="main-content-new" class="hidden">
+  <h1 style="color:white; padding:20px;">NEW UI 영역 (테스트)</h1>
 </div>
 <script>
 // ==========================================
@@ -855,16 +882,59 @@ function getAnimeSettings() {
   try {
     const raw = localStorage.getItem('anime_settings');
     if (!raw) {
-      return { autoReview: false };
+      return {
+        autoReview: false,
+        uiVersion: 'redesign'
+      };
     }
-    return { autoReview: false, ...JSON.parse(raw) };
+    return {
+      autoReview: false,
+      uiVersion: 'redesign',
+      ...JSON.parse(raw)
+    };
   } catch (e) {
-    return { autoReview: false };
+    return {
+      autoReview: false,
+      uiVersion: 'redesign'
+    };
   }
 }
 
 function saveAnimeSettings(settings) {
   localStorage.setItem('anime_settings', JSON.stringify(settings));
+}
+function applyUiVersion(uiVersion) {
+  const body = document.body;
+  const redesignRoot = document.getElementById('main-content-new');
+  const legacyRoot = document.getElementById('legacy-main-content');
+
+  body.setAttribute('data-ui-version', uiVersion);
+
+  if (redesignRoot) {
+    redesignRoot.style.display = uiVersion === 'redesign' ? '' : 'none';
+  }
+
+  if (legacyRoot) {
+    legacyRoot.style.display = uiVersion === 'legacy' ? '' : 'none';
+  }
+
+  const uiLegacyRadio = document.getElementById('uiLegacyRadio');
+  const uiRedesignRadio = document.getElementById('uiRedesignRadio');
+
+  if (uiLegacyRadio) uiLegacyRadio.checked = uiVersion === 'legacy';
+  if (uiRedesignRadio) uiRedesignRadio.checked = uiVersion === 'redesign';
+}
+
+function setUiVersion(uiVersion, options = {}) {
+  const { silent = false } = options;
+  const settings = getAnimeSettings();
+  settings.uiVersion = uiVersion;
+  saveAnimeSettings(settings);
+  applyUiVersion(uiVersion);
+
+  if (!silent) {
+    showToast(uiVersion === 'legacy' ? '기존 UI로 변경되었습니다.' : '새 UI로 변경되었습니다.');
+  }
 }
 const AI_REVIEW_LIMIT = 5;
 const AI_RECOMMEND_LIMIT = 3;
@@ -1001,19 +1071,25 @@ function syncSettingsUI() {
   const knob = document.getElementById('autoReviewKnob');
   const settings = getAnimeSettings();
 
-  if (!toggle || !knob) return;
+  if (toggle && knob) {
+    toggle.checked = settings.autoReview === true;
 
-  toggle.checked = settings.autoReview === true;
-
-  if (toggle.checked) {
-    knob.style.transform = 'translateX(20px)';
-    knob.parentElement.classList.remove('bg-gray-600');
-    knob.parentElement.classList.add('bg-purple-600');
-  } else {
-    knob.style.transform = 'translateX(0px)';
-    knob.parentElement.classList.remove('bg-purple-600');
-    knob.parentElement.classList.add('bg-gray-600');
+    if (toggle.checked) {
+      knob.style.transform = 'translateX(20px)';
+      knob.parentElement.classList.remove('bg-gray-600');
+      knob.parentElement.classList.add('bg-purple-600');
+    } else {
+      knob.style.transform = 'translateX(0px)';
+      knob.parentElement.classList.remove('bg-purple-600');
+      knob.parentElement.classList.add('bg-gray-600');
+    }
   }
+
+  const uiLegacyRadio = document.getElementById('uiLegacyRadio');
+  const uiRedesignRadio = document.getElementById('uiRedesignRadio');
+
+  if (uiLegacyRadio) uiLegacyRadio.checked = settings.uiVersion === 'legacy';
+  if (uiRedesignRadio) uiRedesignRadio.checked = settings.uiVersion !== 'legacy';
 }
 
 function openSettingsModal() {
@@ -1036,6 +1112,10 @@ function handleAutoReviewToggle(input) {
   saveAnimeSettings(settings);
   syncSettingsUI();
   showToast(input.checked ? 'AI 한줄평 자동 생성을 켰습니다.' : 'AI 한줄평 자동 생성을 껐습니다.');
+}
+function handleUiVersionChange(input) {
+  if (!input || !input.checked) return;
+  setUiVersion(input.value);
 }
 function generatePublicId() {
   return Math.random().toString(36).slice(2, 12);
@@ -1375,7 +1455,10 @@ async function saveUserMetaToDB() {
 // ==========================================
 // 초기화 및 렌더링
 // ==========================================
-document.addEventListener('DOMContentLoaded', () => { initializeApp(); });
+document.addEventListener('DOMContentLoaded', () => {
+  const settings = getAnimeSettings();
+  applyUiVersion(settings.uiVersion || 'redesign');
+});
 
 async function initializeApp() {
 setupDragAndDrop();
@@ -3250,6 +3333,11 @@ document.addEventListener('keydown', (e) => {
       closeShareModal();
       closeSettingsModal();
     }
+});
+// 페이지 최초 로딩 시 UI 적용
+document.addEventListener('DOMContentLoaded', () => {
+  const settings = getAnimeSettings();
+  applyUiVersion(settings.uiVersion);
 });
 </script>
 </body>
