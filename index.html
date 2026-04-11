@@ -884,18 +884,18 @@ function getAnimeSettings() {
     if (!raw) {
       return {
         autoReview: false,
-        uiVersion: 'redesign'
+        uiVersion: 'legacy'
       };
     }
     return {
       autoReview: false,
-      uiVersion: 'redesign',
+      uiVersion: 'legacy',
       ...JSON.parse(raw)
     };
   } catch (e) {
     return {
       autoReview: false,
-      uiVersion: 'redesign'
+      uiVersion: 'legacy'
     };
   }
 }
@@ -908,21 +908,24 @@ function applyUiVersion(uiVersion) {
   const redesignRoot = document.getElementById('main-content-new');
   const legacyRoot = document.getElementById('legacy-main-content');
 
-  body.setAttribute('data-ui-version', uiVersion);
+  // 새 UI가 아직 테스트용이면 강제로 legacy 사용
+  const safeUiVersion = uiVersion === 'redesign' ? 'legacy' : uiVersion;
+
+  body.setAttribute('data-ui-version', safeUiVersion);
 
   if (redesignRoot) {
-    redesignRoot.style.display = uiVersion === 'redesign' ? '' : 'none';
+    redesignRoot.style.display = safeUiVersion === 'redesign' ? '' : 'none';
   }
 
   if (legacyRoot) {
-    legacyRoot.style.display = uiVersion === 'legacy' ? '' : 'none';
+    legacyRoot.style.display = safeUiVersion === 'legacy' ? '' : 'none';
   }
 
   const uiLegacyRadio = document.getElementById('uiLegacyRadio');
   const uiRedesignRadio = document.getElementById('uiRedesignRadio');
 
-  if (uiLegacyRadio) uiLegacyRadio.checked = uiVersion === 'legacy';
-  if (uiRedesignRadio) uiRedesignRadio.checked = uiVersion === 'redesign';
+  if (uiLegacyRadio) uiLegacyRadio.checked = safeUiVersion === 'legacy';
+  if (uiRedesignRadio) uiRedesignRadio.checked = safeUiVersion === 'redesign';
 }
 
 function setUiVersion(uiVersion, options = {}) {
@@ -1455,9 +1458,10 @@ async function saveUserMetaToDB() {
 // ==========================================
 // 초기화 및 렌더링
 // ==========================================
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   const settings = getAnimeSettings();
-  applyUiVersion(settings.uiVersion || 'redesign');
+  applyUiVersion(settings.uiVersion || 'legacy');
+  await initializeApp();
 });
 
 async function initializeApp() {
