@@ -1,0 +1,4339 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>나만의 애니메이션 티어리스트</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<!-- SortableJS 라이브러리 추가 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=SUIT:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0d18;
+  --bg-soft: rgba(255,255,255,0.05);
+  --panel: rgba(16,20,34,0.82);
+  --panel-2: rgba(255,255,255,0.04);
+  --line: rgba(255,255,255,0.09);
+  --text: #f5f7ff;
+  --muted: #98a1bc;
+  --accent: #8b5cf6;
+  --accent-2: #22c55e;
+  --yellow: #ffd84d;
+  --red: #ff5f79;
+  --blue: #64a7ff;
+  --gray: #9aa3b7;
+  --shadow: 0 24px 80px rgba(0,0,0,0.42);
+  --radius-xl: 28px;
+  --radius-lg: 22px;
+  --radius-md: 18px;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+
+body {
+  font-family: 'SUIT', system-ui, sans-serif;
+  background:
+    radial-gradient(circle at 12% 12%, rgba(139,92,246,0.22), transparent 22%),
+    radial-gradient(circle at 85% 20%, rgba(59,130,246,0.18), transparent 24%),
+    radial-gradient(circle at 50% 80%, rgba(236,72,153,0.14), transparent 28%),
+    linear-gradient(180deg, #0a0d18 0%, #090c15 100%);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: #111625; }
+::-webkit-scrollbar-thumb { background: #394158; border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: #4b556f; }
+
+.noise {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: .06;
+  background-image:
+    linear-gradient(rgba(255,255,255,.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.08) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, transparent, black 10%, black 90%, transparent);
+  z-index: 0;
+}
+
+.page-shell {
+  position: relative;
+  z-index: 1;
+  width: min(1440px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 26px 0 60px;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 18px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.brand-mark {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #8b5cf6, #4f46e5 50%, #22d3ee);
+  box-shadow: 0 16px 40px rgba(99,102,241,0.38);
+  position: relative;
+}
+
+.brand-mark::before,
+.brand-mark::after {
+  content: "";
+  position: absolute;
+  inset: 11px;
+  border: 2px solid rgba(255,255,255,0.85);
+  border-radius: 12px;
+  transform: rotate(45deg);
+}
+
+.brand-copy small {
+  display: block;
+  font-size: 11px;
+  letter-spacing: .26em;
+  text-transform: uppercase;
+  color: #8ea0d8;
+  margin-bottom: 6px;
+}
+
+.brand-copy strong {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.top-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.chip-btn {
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.04);
+  color: var(--text);
+  padding: 11px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  backdrop-filter: blur(12px);
+  transition: 0.2s ease;
+}
+
+.chip-btn:hover {
+  background: rgba(255,255,255,0.08);
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: 1.55fr .95fr;
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+}
+
+.hero-main {
+  padding: 34px;
+  position: relative;
+  overflow: hidden;
+  min-height: 320px;
+}
+
+.hero-main::before {
+  content: "";
+  position: absolute;
+  right: -120px;
+  top: -120px;
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(139,92,246,0.32), transparent 65%);
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: #99a5ff;
+  margin-bottom: 16px;
+}
+
+.eyebrow::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #c084fc, #60a5fa);
+  box-shadow: 0 0 0 8px rgba(139,92,246,0.16);
+}
+
+#report-title {
+  margin: 0;
+  font-size: clamp(42px, 6vw, 72px);
+  line-height: .96;
+  letter-spacing: -0.06em;
+  font-weight: 900;
+}
+
+.hero-desc {
+  width: min(720px, 100%);
+  color: var(--muted);
+  margin-top: 16px;
+  line-height: 1.65;
+  font-size: 15px;
+}
+
+.profile-card {
+  margin-top: 28px;
+  display: grid;
+  grid-template-columns: 1.1fr .9fr;
+  gap: 14px;
+}
+
+.profile-box,
+.stat-card,
+.quick-card,
+.tier-row,
+.recommend-panel {
+  background: var(--panel-2);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: var(--radius-lg);
+}
+
+.profile-box {
+  padding: 20px;
+}
+
+.profile-box .label {
+  font-size: 12px;
+  color: #9ba5c1;
+  text-transform: uppercase;
+  letter-spacing: .16em;
+  margin-bottom: 8px;
+  font-weight: 800;
+}
+
+.profile-box .value {
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  margin-bottom: 10px;
+}
+
+.profile-box p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.profile-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.profile-tags span {
+  display: inline-flex;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #dce3ff;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.hero-side {
+  padding: 18px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  align-content: start;
+}
+
+.stat-card {
+  padding: 18px;
+  min-height: 126px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.stat-card .kicker {
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.stat-card strong {
+  font-size: 34px;
+  letter-spacing: -0.05em;
+  line-height: 1;
+}
+
+.stat-card p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #bac5e2;
+}
+
+.quick-card {
+  grid-column: 1 / -1;
+  padding: 18px;
+}
+
+.quick-card h3,
+.recommend-panel h2,
+.section-head h2 {
+  margin: 0;
+  font-size: 20px;
+  letter-spacing: -0.04em;
+}
+
+.quick-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.quick-grid button {
+  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.04);
+  color: white;
+  padding: 14px 12px;
+  border-radius: 16px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.quick-grid button:hover {
+  background: rgba(255,255,255,0.08);
+}
+
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 20px;
+  margin: 14px 0 12px;
+}
+
+.section-head p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.legend {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.legend span {
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.04);
+  color: #d2daf7;
+}
+
+.tiers {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.tier-row {
+  padding: 18px;
+  display: grid;
+  grid-template-columns: 170px 1fr;
+  gap: 18px;
+  align-items: start;
+}
+
+.tier-label {
+  position: sticky;
+  top: 16px;
+}
+
+.tier-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.tier-badge strong {
+  font-size: 52px;
+  line-height: 1;
+  letter-spacing: -0.06em;
+}
+
+.tier-copy h3 {
+  margin: 0 0 6px;
+  font-size: 18px;
+  letter-spacing: -0.03em;
+}
+
+.tier-copy p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.tier-count {
+  margin-top: 14px;
+  display: inline-flex;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+  font-size: 12px;
+  font-weight: 800;
+  color: #dce4ff;
+}
+
+.tier-cards {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.anime-card-container {
+  position: relative;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 20px;
+  overflow: hidden;
+  min-height: 278px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+  transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+  will-change: transform;
+  touch-action: pan-y;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.anime-card-container:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 36px rgba(0,0,0,0.28);
+}
+
+.anime-card-container img {
+  width: 100%;
+  height: 178px;
+  object-fit: cover;
+  display: block;
+  -webkit-user-drag: none;
+  user-drag: none;
+}
+
+.anime-card-container .meta {
+  padding: 14px;
+}
+
+.anime-card-container .top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.genre-pill {
+  max-width: 70%;
+  padding: 7px 10px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 999px;
+  font-size: 11px;
+  color: #d5dcf6;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.score {
+  font-size: 12px;
+  font-weight: 800;
+  color: #ffe27c;
+  white-space: nowrap;
+}
+
+.anime-card-container h4 {
+  margin: 0;
+  font-size: 16px;
+  letter-spacing: -0.03em;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.anime-card-container p {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.add-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 278px;
+  border-style: dashed;
+  color: #90a0c8;
+  font-weight: 800;
+  text-align: center;
+  padding: 20px;
+  cursor: pointer;
+}
+
+.add-card span {
+  display: block;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.tier-ss { border-color: rgba(255,216,77,0.24); }
+.tier-s { border-color: rgba(255,197,61,0.22); }
+.tier-a { border-color: rgba(255,95,121,0.22); }
+.tier-b { border-color: rgba(100,167,255,0.22); }
+.tier-c, .tier-d { border-color: rgba(255,255,255,0.07); }
+.tier-c .anime-card-container img,
+.tier-d .anime-card-container img {
+  filter: grayscale(1);
+  opacity: .74;
+}
+
+.tier-ss .tier-badge strong, .tier-ss .tier-copy h3 { color: var(--yellow); }
+.tier-s .tier-badge strong, .tier-s .tier-copy h3 { color: #ffc93f; }
+.tier-a .tier-badge strong, .tier-a .tier-copy h3 { color: var(--red); }
+.tier-b .tier-badge strong, .tier-b .tier-copy h3 { color: var(--blue); }
+.tier-c .tier-badge strong, .tier-c .tier-copy h3 { color: #b4bccb; }
+.tier-d .tier-badge strong, .tier-d .tier-copy h3 { color: #8f97aa; }
+
+.recommend-panel {
+  margin-top: 20px;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top right, rgba(139,92,246,0.2), transparent 26%),
+    rgba(255,255,255,0.04);
+}
+
+.recommend-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 18px;
+}
+
+.recommend-top p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.cta {
+  border: 0;
+  border-radius: 999px;
+  padding: 14px 20px;
+  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+  color: white;
+  font-weight: 800;
+  font-size: 14px;
+  box-shadow: 0 14px 30px rgba(99,102,241,0.34);
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 34px rgba(99,102,241,0.42);
+}
+
+.recommend-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.recommend-card {
+  border-radius: 22px;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(22,25,40,0.9), rgba(15,18,30,0.96));
+  border: 1px solid rgba(154,92,255,0.18);
+  position: relative;
+}
+
+.recommend-card .rank {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: rgba(139,92,246,0.92);
+  color: white;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .04em;
+  z-index: 2;
+}
+
+.recommend-card img {
+  width: 100%;
+  height: 210px;
+  object-fit: cover;
+  display: block;
+}
+
+.recommend-card .content {
+  padding: 16px;
+}
+
+.recommend-card h4 {
+  margin: 0;
+  font-size: 18px;
+  letter-spacing: -0.03em;
+}
+
+.recommend-card p {
+  margin: 10px 0 0;
+  font-size: 13px;
+  line-height: 1.65;
+  color: #c1c8e4;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.footer-note {
+  margin-top: 24px;
+  color: #7f89a2;
+  text-align: center;
+  font-size: 13px;
+}
+
+.line-clamp-1,
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.line-clamp-1 { -webkit-line-clamp: 1; }
+.line-clamp-2 { -webkit-line-clamp: 2; }
+
+.loader {
+  border: 3px solid #374151;
+  border-top: 3px solid #8b5cf6;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 3px; }
+
+.sortable-ghost { opacity: 0.32 !important; }
+.sortable-drag {
+  opacity: 1 !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 1), 0 0 0 2px rgba(96, 165, 250, 0.8) !important;
+  cursor: grabbing !important;
+  z-index: 9999 !important;
+}
+.sortable-chosen {
+  transform: scale(0.985);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.tier-ss:hover { box-shadow: 0 0 15px rgba(253, 224, 71, 0.5); border-color: rgba(253, 224, 71, 0.9); }
+.tier-s:hover { box-shadow: 0 0 15px rgba(234, 179, 8, 0.4); border-color: rgba(234, 179, 8, 0.8); }
+.tier-a:hover { box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); border-color: rgba(239, 68, 68, 0.8); }
+.tier-b:hover { box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); border-color: rgba(59, 130, 246, 0.8); }
+.tier-c:hover { box-shadow: 0 0 15px rgba(107, 114, 128, 0.4); border-color: rgba(107, 114, 128, 0.8); }
+.tier-d:hover { box-shadow: 0 0 15px rgba(75, 85, 99, 0.4); border-color: rgba(107, 114, 128, 0.8); }
+.tier-recommended:hover { box-shadow: 0 0 15px rgba(168, 85, 247, 0.4); border-color: rgba(168, 85, 247, 0.8); }
+
+.rec-card { background: linear-gradient(145deg, #1f2937, #111827); }
+
+.drag-press-armed {
+  animation: pressArmedPulse 0.9s ease-in-out infinite;
+}
+
+.drag-active-feedback {
+  animation: dragActiveWiggle 0.18s ease-in-out 2;
+}
+
+@keyframes pressArmedPulse {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(0.97); box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.55); }
+  100% { transform: scale(1); }
+}
+
+@keyframes dragActiveWiggle {
+  0%   { transform: rotate(0deg) scale(0.99); }
+  25%  { transform: rotate(-0.8deg) scale(0.99); }
+  50%  { transform: rotate(0.8deg) scale(0.99); }
+  75%  { transform: rotate(-0.6deg) scale(0.99); }
+  100% { transform: rotate(0deg) scale(0.99); }
+}
+#detailModal {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+}
+
+@media (max-width: 1240px) {
+  .hero { grid-template-columns: 1fr; }
+  .tier-cards { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .recommend-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 860px) {
+  .page-shell { width: min(100% - 24px, 1440px); }
+  .topbar { flex-direction: column; align-items: flex-start; }
+  .profile-card { grid-template-columns: 1fr; }
+  .hero-side { grid-template-columns: 1fr 1fr; }
+  .quick-grid { grid-template-columns: repeat(2, 1fr); }
+  .tier-row { grid-template-columns: 1fr; }
+  .tier-label { position: static; }
+  .tier-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 560px) {
+  .hero-main { padding: 24px; }
+  .hero-side { grid-template-columns: 1fr; }
+  .tier-cards,
+  .recommend-grid { grid-template-columns: 1fr; }
+  .section-head { flex-direction: column; align-items: flex-start; }
+  .recommend-top { flex-direction: column; align-items: flex-start; }
+}
+</style>
+</head>
+<body id="main-body" class="overflow-hidden">
+
+<div id="name-popup" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-md transition-all duration-500">
+  <div id="name-popup-content" class="bg-gray-800 p-8 rounded-2xl border border-gray-600 w-full max-w-md shadow-2xl text-center transform transition-transform duration-500 scale-100 mx-4">
+<h2 class="text-3xl text-white font-black mb-2">나만의 티어리스트</h2>
+<p class="text-gray-400 text-sm mb-8">티어리스트의 주인공은 누구인가요?</p>
+<div class="space-y-4">
+  <button onclick="enterDemoMode()" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors shadow-lg text-lg">
+    로그인 없이 체험하기
+  </button>
+
+  <p class="text-xs text-gray-500 leading-relaxed">
+    체험 모드에서는 자유롭게 추가·수정할 수 있지만, 새로고침하거나 나가면 기록은 저장되지 않습니다.
+  </p>
+
+  <div class="flex items-center gap-3 py-1">
+    <div class="h-px flex-1 bg-gray-700"></div>
+    <span class="text-xs text-gray-400 font-bold">또는 소셜 로그인</span>
+    <div class="h-px flex-1 bg-gray-700"></div>
+  </div>
+
+  <button onclick="signInWithGoogle()" class="w-full py-4 bg-white hover:bg-gray-100 text-black font-bold rounded-xl transition-colors shadow-lg text-lg">
+    Google로 로그인
+  </button>
+
+  <button onclick="signInWithKakao()" class="w-full py-4 bg-yellow-300 hover:bg-yellow-400 text-black font-bold rounded-xl transition-colors shadow-lg text-lg">
+    카카오로 로그인
+  </button>
+</div>
+</div>
+</div>
+<div class="noise"></div>
+<div id="main-content" class="page-shell">
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark"></div>
+      <div class="brand-copy">
+        <small>taste-driven archive</small>
+        <strong>Anime Tier List</strong>
+      </div>
+    </div>
+
+    <div class="top-actions">
+      <button onclick="openExportCodeModal()" class="chip-btn">백업 코드 생성</button>
+      <button onclick="openImportCodeModal()" class="chip-btn">백업 코드 불러오기</button>
+      <button id="refreshMissingBtn" onclick="refreshMissingAnimeMetadata(this)" class="chip-btn">작품 정보 보정</button>
+      <button onclick="openShareModal()" class="chip-btn">공유하기</button>
+      <button onclick="openSettingsModal()" class="chip-btn">설정</button>
+      <button id="logoutBtn" onclick="handleLogout()" class="chip-btn">이름 변경 (로그아웃)</button>
+    </div>
+  </div>
+
+  <section class="hero">
+    <div class="panel hero-main">
+      <div class="eyebrow">personal ranking dashboard</div>
+      <h1 id="report-title">사용자님의<br>애니메이션 감상 아카이브</h1>
+
+      <div class="hero-desc">
+        단순히 작품을 줄 세우는 화면이 아니라, 취향의 결을 읽어내는 개인용 아카이브처럼 보이도록 구성했습니다.
+        상단에서 사용자의 취향과 상태가 먼저 보이고, 아래에서 티어별 작품을 편하게 훑는 구조입니다.
+      </div>
+
+      <div class="profile-card">
+        <div class="profile-box">
+          <div class="label">Taste Profile</div>
+          <div class="value" id="taste-profile-title">아직 분석되지 않음</div>
+          <p id="taste-profile-desc">티어리스트를 채우고 분석해보세요.</p>
+          <div class="profile-tags" id="taste-profile-tags">
+            <span>취향 분석 대기</span>
+          </div>
+        </div>
+
+        <div class="profile-box">
+          <div class="label">Quick Insight</div>
+          <p>
+            이 화면은 기존보다 상단 인상을 더 강하게 만들고,
+            사용자의 취향과 현재 상태가 먼저 보이도록 정리한 버전입니다.
+          </p>
+          <div style="margin-top:14px;">
+            <button id="tasteProfileBtn" onclick="generateTasteProfile(this)" class="cta" style="padding:12px 16px; font-size:13px;">
+              전체 취향 분석
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="panel hero-side">
+      <div class="stat-card">
+        <div class="kicker">총 등록 수</div>
+        <strong><span id="total-count">0</span></strong>
+        <p>개인 감상 데이터가 누적되는 아카이브형 구조</p>
+      </div>
+
+      <div class="stat-card">
+        <div class="kicker">AI 추천 잔여</div>
+        <strong id="hero-recommend-remaining">3</strong>
+        <p id="hero-recommend-desc">추천 가능 횟수를 바로 확인할 수 있습니다.</p>
+      </div>
+
+      <div class="stat-card">
+        <div class="kicker">한줄평 자동 생성</div>
+        <strong id="hero-auto-review-status">OFF</strong>
+        <p id="hero-auto-review-desc">현재 자동 생성 설정 상태</p>
+      </div>
+
+      <div class="stat-card">
+        <div class="kicker">로그인 상태</div>
+        <strong id="hero-login-state">ACTIVE</strong>
+        <p id="hero-login-desc">현재 계정 기준으로 기록이 저장됩니다.</p>
+      </div>
+
+      <div class="quick-card">
+        <h3>빠른 액션</h3>
+        <div class="quick-grid">
+          <button onclick="openAddModal('SS', this)">새 작품 추가</button>
+          <button onclick="refreshMissingAnimeMetadata(document.getElementById('refreshMissingBtn'))">작품 정보 보정</button>
+          <button onclick="generateTasteProfile(document.getElementById('tasteProfileBtn'))">전체 취향 분석</button>
+          <button onclick="openShareModal()">링크 공유</button>
+        </div>
+      </div>
+    </aside>
+  </section>
+
+  <div id="migration-banner" class="hidden" style="margin-bottom:18px;">
+    <div class="profile-box" style="padding:16px 18px;">
+      <div class="label" id="migration-banner-title">기존 기록 가져오기</div>
+      <p id="migration-banner-desc" style="margin-bottom:12px;">예전에 이름 로그인으로 저장한 데이터를 이 계정으로 가져올 수 있습니다.</p>
+      <div id="migration-banner-actions" class="top-actions"></div>
+    </div>
+  </div>
+
+  <div class="section-head">
+    <div>
+      <h2>Tier Overview</h2>
+      <p>각 티어를 하나의 독립된 섹션 카드처럼 읽을 수 있도록 정리한 구조입니다.</p>
+    </div>
+    <div class="legend">
+      <span>SS 최애</span>
+      <span>S 기준작</span>
+      <span>A 강력추천</span>
+      <span>B 아쉬움</span>
+      <span>C 미스매치</span>
+      <span>D 거의 안 맞음</span>
+    </div>
+  </div>
+
+  <section class="tiers">
+    <article class="tier-row tier-ss">
+      <div class="tier-label">
+        <div class="tier-badge">
+          <strong>SS</strong>
+          <div class="tier-copy">
+            <h3>최애 인생작</h3>
+            <p>가장 강한 애정과 취향의 핵심이 모이는 구간.</p>
+          </div>
+        </div>
+        <div class="tier-count" id="tier-desc-ss">최애 인생작 (0작품)</div>
+      </div>
+      <div class="tier-cards" id="grid-tier-ss">
+        <button onclick="openAddModal('SS', this)" class="anime-card-container add-card">
+          <span>+<br>새 작품 추가</span>
+        </button>
+      </div>
+    </article>
+
+    <article class="tier-row tier-s">
+      <div class="tier-label">
+        <div class="tier-badge">
+          <strong>S</strong>
+          <div class="tier-copy">
+            <h3>취향의 기준작</h3>
+            <p>취향 분석에서 반복적으로 참조되는 기준점.</p>
+          </div>
+        </div>
+        <div class="tier-count" id="tier-desc-s">취향의 기준작 (0작품)</div>
+      </div>
+      <div class="tier-cards" id="grid-tier-s">
+        <button onclick="openAddModal('S', this)" class="anime-card-container add-card">
+          <span>+<br>새 작품 추가</span>
+        </button>
+      </div>
+    </article>
+
+    <article class="tier-row tier-a">
+      <div class="tier-label">
+        <div class="tier-badge">
+          <strong>A</strong>
+          <div class="tier-copy">
+            <h3>강력 추천작</h3>
+            <p>전체적인 만족감은 높지만 최상위까진 아닌 구간.</p>
+          </div>
+        </div>
+        <div class="tier-count" id="tier-desc-a">강력 추천작 (0작품)</div>
+      </div>
+      <div class="tier-cards" id="grid-tier-a">
+        <button onclick="openAddModal('A', this)" class="anime-card-container add-card">
+          <span>+<br>새 작품 추가</span>
+        </button>
+      </div>
+    </article>
+
+    <article class="tier-row tier-b">
+      <div class="tier-label">
+        <div class="tier-badge">
+          <strong>B</strong>
+          <div class="tier-copy">
+            <h3>인정하지만 아쉬움</h3>
+            <p>분명 장점은 있으나 결정적 포인트가 부족한 작품.</p>
+          </div>
+        </div>
+        <div class="tier-count" id="tier-desc-b">인정하지만 아쉬운 작품 (0작품)</div>
+      </div>
+      <div class="tier-cards" id="grid-tier-b">
+        <button onclick="openAddModal('B', this)" class="anime-card-container add-card">
+          <span>+<br>새 작품 추가</span>
+        </button>
+      </div>
+    </article>
+
+    <article class="tier-row tier-c">
+      <div class="tier-label">
+        <div class="tier-badge">
+          <strong>C</strong>
+          <div class="tier-copy">
+            <h3>취향과 어긋남</h3>
+            <p>객관적 완성도와 별개로 개인 취향과 거리감이 있음.</p>
+          </div>
+        </div>
+        <div class="tier-count" id="tier-desc-c">취향과 어긋난 작품 (0작품)</div>
+      </div>
+      <div class="tier-cards" id="grid-tier-c">
+        <button onclick="openAddModal('C', this)" class="anime-card-container add-card">
+          <span>+<br>새 작품 추가</span>
+        </button>
+      </div>
+    </article>
+
+    <article class="tier-row tier-d">
+      <div class="tier-label">
+        <div class="tier-badge">
+          <strong>D</strong>
+          <div class="tier-copy">
+            <h3>거의 안 맞는 작품</h3>
+            <p>AI 추천 분석에서 제외 기준처럼 보이는 영역.</p>
+          </div>
+        </div>
+        <div class="tier-count" id="tier-desc-d">거의 안 맞는 작품 (0작품)</div>
+      </div>
+      <div class="tier-cards" id="grid-tier-d">
+        <button onclick="openAddModal('D', this)" class="anime-card-container add-card">
+          <span>+<br>새 작품 추가</span>
+        </button>
+      </div>
+    </article>
+  </section>
+
+  <section id="recommended-section" class="recommend-panel">
+    <div class="recommend-top">
+      <div>
+        <h2>AI Recommended</h2>
+        <p id="rec-status-text">추천된 작품을 드래그해서 위 티어로 바로 넣을 수 있습니다.</p>
+      </div>
+      <button id="recommendBtn" onclick="generateRecommendations(this)" class="cta">
+        <span id="recommendBtnText">추천받기</span>
+      </button>
+    </div>
+
+    <div id="rec-loading" class="hidden flex flex-col items-center justify-center py-12 text-purple-400">
+      <div class="loader mb-4"></div>
+      <p class="text-sm font-bold animate-pulse">사용자의 취향을 분석하여 맞춤형 작품을 선정하고 있습니다...</p>
+    </div>
+
+    <div class="recommend-grid" id="grid-tier-recommended">
+      <div id="rec-empty-state" class="profile-box" style="grid-column:1/-1; text-align:center;">
+        추천받기 버튼을 눌러 내 취향에 맞는 새로운 애니메이션을 발견해보세요.
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer-note">
+    <p id="footer-text">Anime Tier List Maker</p>
+  </footer>
+</div>
+<!-- 작품 추가 모달 -->
+<div id="addModal" onclick="if(event.target === this) closeAddModal()" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 p-4 transition-opacity overflow-y-auto">
+<div class="bg-gray-800 p-6 md:p-8 rounded-xl border border-gray-600 w-full max-w-4xl shadow-2xl relative my-8">
+<h3 class="text-2xl font-bold text-white mb-6 flex items-center">
+<span id="modal-tier-badge" class="px-2 py-1 rounded text-sm mr-3 font-black"></span> 
+새 작품 추가
+</h3>
+
+<div class="flex flex-col md:flex-row gap-8">
+<div class="w-full md:w-1/3 flex-shrink-0 flex flex-col items-center">
+<p class="text-gray-400 text-sm mb-3 font-bold">카드 미리보기</p>
+<div id="addPreviewCard" class="w-full max-w-[220px] bg-gray-900 rounded-lg overflow-hidden border border-gray-700 relative shadow-lg">
+<img id="addPreviewImg" src="https://placehold.co/300x450/1f2937/9ca3af?text=No+Image&font=roboto" class="w-full h-64 object-cover object-top opacity-90 transition-opacity">
+<div class="p-3">
+<div class="flex justify-between items-start gap-1 mb-1 w-full overflow-hidden">
+<div class="flex-1 min-w-0 flex items-center">
+<span id="addPreviewGenres" class="inline-block bg-gray-700 text-gray-300 text-[10px] px-1.5 py-0.5 rounded border border-gray-600 truncate max-w-full">-</span>
+</div>
+<div class="flex-shrink-0 whitespace-nowrap text-yellow-400 text-[10px] font-bold pt-0.5">
+⭐ <span id="addPreviewRating">0.0</span>
+</div>
+</div>
+<div class="h-[40px] flex flex-col justify-center w-full">
+<h4 id="addPreviewTitle" class="font-bold text-white text-base leading-[20px] line-clamp-2">작품 제목</h4>
+</div>
+<div class="h-[36px] mt-1 flex flex-col justify-center w-full">
+<p id="addPreviewReview" class="text-xs text-gray-400 leading-[18px] line-clamp-2">한줄평이 여기에 표시됩니다.</p>
+</div>
+</div>
+</div>
+</div>
+
+<div class="w-full md:w-2/3 space-y-5">
+<div>
+<label class="block text-sm font-medium text-gray-400 mb-2">포스터 이미지 주소 (URL)</label>
+<input type="text" id="imgUrl" placeholder="https://... (작품 선택 시 자동 채워짐)" class="w-full bg-gray-900 border border-gray-700 text-white rounded-lg p-3 focus:outline-none focus:border-blue-500 transition-colors" oninput="updatePreviewImage()">
+</div>
+<div>
+<label class="block text-sm font-medium text-gray-400 mb-2">작품 제목 검색 <span class="text-red-500">*</span></label>
+<div class="flex gap-2">
+<input type="text" id="animeTitle" placeholder="대략적인 제목 입력 후 엔터 또는 AI 검색 클릭" class="w-full bg-gray-900 border border-gray-700 text-white rounded-lg p-3 focus:outline-none focus:border-blue-500 transition-colors" onkeypress="if(event.key === 'Enter') searchAnimeAI(document.getElementById('aiSearchBtn'))">
+<button onclick="searchAnimeAI(this)" id="aiSearchBtn" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-bold flex-shrink-0 flex items-center gap-2 transition-colors">
+🔍 검색하기
+</button>
+</div>
+<p id="aiLoadingText" class="text-purple-400 text-xs mt-2 hidden">작품 정보를 찾고 있습니다...</p>
+
+<!-- AI 검색 결과 후보 리스트 영역 -->
+<div id="aiSearchResults" class="hidden mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto pr-2 custom-scrollbar"></div>
+</div>
+
+<div class="grid grid-cols-2 gap-4">
+<div>
+<label class="block text-sm font-medium text-gray-400 mb-2">원제</label>
+<input type="text" id="animeOriginalTitle" class="w-full bg-gray-900 border border-gray-700 text-gray-400 rounded-lg p-3 focus:outline-none" readonly>
+</div>
+<div>
+<label class="block text-sm font-medium text-gray-400 mb-2">평점 (TMDb)</label>
+<input type="text" id="animeRating" class="w-full bg-gray-900 border border-gray-700 text-gray-400 rounded-lg p-3 focus:outline-none" readonly>
+</div>
+</div>
+
+<div>
+<label class="block text-sm font-medium text-gray-400 mb-2">한줄평 <span class="text-red-500">*</span></label>
+<textarea id="animeReview" rows="2" placeholder="AI 자동 생성이 꺼져 있으면 직접 입력해주세요." class="w-full bg-gray-900 border border-gray-700 text-white rounded-lg p-3 focus:outline-none focus:border-blue-500 transition-colors" oninput="updatePreviewReview()"></textarea>
+</div>
+</div>
+</div>
+
+<div class="flex justify-end gap-3 mt-8 border-t border-gray-700 pt-6">
+<button onclick="closeAddModal()" class="px-5 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-gray-700 transition-colors">취소</button>
+<button onclick="saveAnime()" class="px-5 py-2.5 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors">목록에 추가</button>
+</div>
+</div>
+</div>
+
+<!-- 작품 상세 정보 모달 창 -->
+<div id="detailModal" onclick="if(event.target === this) closeDetailModal()" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-[150] p-4 transition-opacity">
+<div class="bg-gray-800 rounded-2xl border border-gray-600 w-full max-w-5xl shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]" onclick="event.stopPropagation()">
+<button onclick="closeDetailModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white bg-gray-700/80 hover:bg-gray-600 p-2 rounded-full transition-colors z-20">
+<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+</button>
+
+<div class="flex flex-col md:flex-row h-full overflow-y-auto">
+<div class="w-full md:w-2/5 flex-shrink-0 bg-gray-900 relative">
+<img id="detailImg" src="" alt="포스터" class="w-full h-auto md:h-full object-cover border-b md:border-b-0 md:border-r border-gray-700">
+<div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-gray-900 to-transparent p-6 pt-20">
+<span id="detailBadge" class="px-3 py-1 bg-blue-600 text-white font-bold rounded-lg shadow-lg text-sm"></span>
+</div>
+</div>
+<div class="w-full md:w-3/5 p-6 md:p-10 flex flex-col bg-gray-800">
+<div class="mb-6">
+<div id="detailGenres" class="flex flex-wrap gap-2 mb-3"></div>
+<h2 id="detailTitle" class="text-3xl md:text-4xl font-black text-white leading-tight mb-2">제목</h2>
+<p id="detailOriginalTitle" class="text-base text-gray-400 italic mb-6">원제</p>
+
+<div class="flex items-center gap-6 text-sm text-gray-300 mb-6 bg-gray-900/80 p-4 rounded-xl border border-gray-700 shadow-inner">
+<div class="flex flex-col">
+<span class="text-gray-500 text-xs mb-1">평점</span>
+<span class="font-bold text-yellow-400 flex items-center gap-1 text-lg">⭐ <span id="detailRating">-</span></span>
+</div>
+<div class="w-px h-10 bg-gray-700"></div>
+<div class="flex flex-col">
+<span class="text-gray-500 text-xs mb-1">방영/개봉</span>
+<span id="detailDate" class="font-medium text-base">-</span>
+</div>
+</div>
+</div>
+
+<div id="detailReviewArea" class="mb-8 bg-gray-700/30 p-5 rounded-xl border border-gray-600">
+<h3 class="text-sm font-bold text-gray-300 mb-3 flex justify-between items-center">
+<span>내 한줄평</span>
+<span class="text-xs font-normal text-gray-500">엔터 키로 바로 저장</span>
+</h3>
+<div class="flex gap-2">
+<input type="text" id="detailReviewInput" class="w-full bg-gray-900 border border-gray-600 text-white rounded-lg p-3 focus:outline-none focus:border-blue-500 transition-colors" onkeypress="if(event.key === 'Enter') saveEditedReview()">
+<button onclick="saveEditedReview()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold flex-shrink-0 transition-colors">저장</button>
+</div>
+</div>
+
+<div id="detailReasonArea" class="mb-8 bg-purple-900/20 p-5 rounded-xl border border-purple-500/30 hidden">
+<h3 class="text-sm font-bold text-purple-400 mb-3 flex items-center gap-2">
+<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+AI 추천 이유
+</h3>
+<p id="detailReasonText" class="text-gray-300 text-sm leading-relaxed"></p>
+</div>
+
+<div class="flex-grow">
+<h3 class="text-base font-bold text-gray-300 mb-3 border-b border-gray-700 pb-2">줄거리</h3>
+<p id="detailOverview" class="text-gray-400 text-sm leading-relaxed whitespace-pre-wrap"></p>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+
+<!-- 백업 코드 내보내기 모달 -->
+<div id="exportCodeModal" onclick="if(event.target === this) closeExportCodeModal()" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-[160] p-4 transition-opacity">
+  <div class="bg-gray-800 rounded-2xl border border-gray-600 w-full max-w-2xl shadow-2xl p-6 md:p-8" onclick="event.stopPropagation()">
+    <div class="flex items-start justify-between gap-4 mb-4">
+      <div>
+        <h3 class="text-2xl font-bold text-white">백업 코드</h3>
+        <p class="text-sm text-gray-400 mt-1">이 코드를 복사해두면 다른 이름으로 로그인한 뒤 그대로 불러올 수 있습니다.</p>
+      </div>
+      <button onclick="closeExportCodeModal()" class="text-gray-400 hover:text-white bg-gray-700/80 hover:bg-gray-600 p-2 rounded-full transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+      </button>
+    </div>
+    <textarea id="exportCodeOutput" readonly class="w-full h-56 bg-gray-900 border border-gray-700 text-gray-200 rounded-xl p-4 text-sm leading-relaxed focus:outline-none"></textarea>
+    <p class="text-xs text-gray-500 mt-3">백업 코드는 현재 로그인한 계정의 티어리스트, 성향 분석, 추천 목록을 모두 포함합니다.</p>
+    <div class="flex justify-end gap-3 mt-6">
+      <button onclick="closeExportCodeModal()" class="px-5 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-gray-700 transition-colors">닫기</button>
+      <button onclick="copyExportCode()" class="px-5 py-2.5 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors">코드 복사</button>
+    </div>
+  </div>
+</div>
+
+<!-- 백업 코드 불러오기 모달 -->
+<div id="importCodeModal" onclick="if(event.target === this) closeImportCodeModal()" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-[160] p-4 transition-opacity">
+  <div class="bg-gray-800 rounded-2xl border border-gray-600 w-full max-w-2xl shadow-2xl p-6 md:p-8" onclick="event.stopPropagation()">
+    <div class="flex items-start justify-between gap-4 mb-4">
+      <div>
+        <h3 class="text-2xl font-bold text-white">백업 코드 불러오기</h3>
+        <p class="text-sm text-gray-400 mt-1">복사해둔 코드를 붙여넣으면 현재 로그인한 계정에 그대로 적용됩니다.</p>
+      </div>
+      <button onclick="closeImportCodeModal()" class="text-gray-400 hover:text-white bg-gray-700/80 hover:bg-gray-600 p-2 rounded-full transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+      </button>
+    </div>
+    <textarea id="importCodeInput" placeholder="여기에 백업 코드를 붙여넣어주세요." class="w-full h-56 bg-gray-900 border border-gray-700 text-white rounded-xl p-4 text-sm leading-relaxed focus:outline-none focus:border-blue-500 transition-colors"></textarea>
+    <p class="text-xs text-gray-500 mt-3">현재 계정의 기존 기록은 이 코드의 내용으로 덮어써집니다.</p>
+    <div class="flex justify-end gap-3 mt-6">
+      <button onclick="closeImportCodeModal()" class="px-5 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-gray-700 transition-colors">취소</button>
+      <button onclick="applyImportCode()" class="px-5 py-2.5 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 transition-colors">적용하기</button>
+    </div>
+  </div>
+</div>
+<!-- 공유하기 모달 -->
+<div id="shareModal" onclick="if(event.target === this) closeShareModal()" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-[160] p-4 transition-opacity">
+  <div class="bg-gray-800 rounded-2xl border border-gray-600 w-full max-w-2xl shadow-2xl p-6 md:p-8" onclick="event.stopPropagation()">
+    <div class="flex items-start justify-between gap-4 mb-4">
+      <div>
+        <h3 class="text-2xl font-bold text-white">티어리스트 공유</h3>
+        <p class="text-sm text-gray-400 mt-1">공개 링크를 만들고 다른 사람에게 내 티어리스트를 보여줄 수 있습니다.</p>
+      </div>
+      <button onclick="closeShareModal()" class="text-gray-400 hover:text-white bg-gray-700/80 hover:bg-gray-600 p-2 rounded-full transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+      </button>
+    </div>
+
+    <div class="space-y-4">
+      <div class="bg-gray-900 border border-gray-700 rounded-xl p-4">
+        <p class="text-sm text-gray-300 font-bold mb-2">공유 상태</p>
+        <p id="shareStatusText" class="text-sm text-gray-400">확인 중...</p>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-400 mb-2">공유 링크</label>
+        <input
+          type="text"
+          id="shareLinkInput"
+          readonly
+          placeholder="공유 링크를 생성하면 여기에 표시됩니다."
+          class="w-full bg-gray-900 border border-gray-700 text-white rounded-lg p-3 focus:outline-none"
+        >
+      </div>
+
+      <div class="flex flex-wrap gap-2">
+        <button id="enableShareBtn" onclick="enableShareLink(this)" class="px-4 py-2 rounded-lg bg-pink-600 hover:bg-pink-500 text-white text-sm font-bold transition-colors">
+          공개 링크 생성
+        </button>
+        <button id="copyShareBtn" onclick="copyShareLink()" class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold transition-colors">
+          링크 복사
+        </button>
+        <button id="disableShareBtn" onclick="disableShareLink(this)" class="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-sm font-bold transition-colors">
+          비공개로 전환
+        </button>
+      </div>
+
+      <p class="text-xs text-gray-500">
+        공유 페이지에서는 티어리스트, 성향 분석, 추천 목록이 읽기 전용으로 표시됩니다.
+      </p>
+    </div>
+  </div>
+</div>
+<!-- 설정 모달 -->
+<div id="settingsModal" onclick="if(event.target === this) closeSettingsModal()" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-[170] p-4 transition-opacity">
+  <div class="bg-gray-800 rounded-2xl border border-gray-600 w-full max-w-lg shadow-2xl p-6 md:p-8" onclick="event.stopPropagation()">
+    <div class="flex items-start justify-between gap-4 mb-6">
+      <div>
+        <h3 class="text-2xl font-bold text-white">설정</h3>
+        <p class="text-sm text-gray-400 mt-1">AI 자동 생성 관련 옵션을 설정할 수 있습니다.</p>
+      </div>
+      <button onclick="closeSettingsModal()" class="text-gray-400 hover:text-white bg-gray-700/80 hover:bg-gray-600 p-2 rounded-full transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+      </button>
+    </div>
+
+    <div class="space-y-5">
+  <div class="flex items-start justify-between gap-4 bg-gray-900 border border-gray-700 rounded-xl p-4">
+    <div class="min-w-0">
+      <p class="text-white font-bold">AI 한줄평 자동 생성</p>
+      <p class="text-xs text-gray-400 mt-1">
+        작품 선택 시 AI가 한줄평을 자동으로 작성합니다. 꺼두면 직접 입력해야 합니다.
+      </p>
+      <p id="autoReviewUsageText" class="text-xs text-purple-300 mt-2">
+        사용량 확인 중...
+      </p>
+    </div>
+    <label class="inline-flex items-center cursor-pointer flex-shrink-0">
+      <input id="autoReviewToggle" type="checkbox" class="sr-only" onchange="handleAutoReviewToggle(this)">
+      <div class="w-11 h-6 bg-gray-600 rounded-full relative transition-colors">
+        <div id="autoReviewKnob" class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform"></div>
+      </div>
+    </label>
+  </div>
+
+  <div class="bg-gray-900 border border-gray-700 rounded-xl p-4">
+    <p class="text-white font-bold">AI 추천 사용량</p>
+    <p class="text-xs text-gray-400 mt-1">
+      AI 추천은 제한 횟수 안에서만 다시 추천받기를 사용할 수 있습니다.
+    </p>
+    <p id="recommendUsageText" class="text-xs text-purple-300 mt-2">
+      사용량 확인 중...
+    </p>
+  </div>
+</div>
+<div class="bg-gray-900 border border-gray-700 rounded-xl p-4">
+  <p class="text-white font-bold">UI 버전 선택</p>
+  <p class="text-xs text-gray-400 mt-1">
+    기존 화면과 새 화면 중 원하는 UI를 선택할 수 있습니다. 마지막으로 사용한 UI는 자동으로 기억됩니다.
+  </p>
+
+  <div class="mt-4 space-y-3">
+    <label class="flex items-center justify-between gap-3 cursor-pointer bg-gray-800 border border-gray-700 rounded-lg px-4 py-3">
+      <div>
+        <p class="text-sm font-bold text-white">기존 UI</p>
+        <p class="text-xs text-gray-400">기존 index 스타일의 익숙한 구성</p>
+      </div>
+      <input id="uiLegacyRadio" type="radio" name="uiVersion" value="legacy" onchange="handleUiVersionChange(this)">
+    </label>
+
+    <label class="flex items-center justify-between gap-3 cursor-pointer bg-gray-800 border border-gray-700 rounded-lg px-4 py-3">
+      <div>
+        <p class="text-sm font-bold text-white">새 UI</p>
+        <p class="text-xs text-gray-400">redesign 레이아웃 기반의 새로운 구성</p>
+      </div>
+      <input id="uiRedesignRadio" type="radio" name="uiVersion" value="redesign" onchange="handleUiVersionChange(this)">
+    </label>
+  </div>
+</div>
+    <div class="flex justify-end gap-3 mt-6">
+      <button onclick="closeSettingsModal()" class="px-5 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-gray-700 transition-colors">닫기</button>
+    </div>
+  </div>
+</div>
+<script>
+// ==========================================
+// 환경 변수 설정
+// ==========================================
+const SUPABASE_DB_URL = "https://gsmjwxciyigkxvwxhsop.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdzbWp3eGNpeWlna3h2d3hoc29wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4OTEzMzQsImV4cCI6MjA4OTQ2NzMzNH0.JBOsK1kB8Y2daz0qZ61SsDlVLrjHQJY4mqR2T4QbtZA";
+
+// ==========================================
+// 고정 데이터 및 상태 관리
+// ==========================================
+const TIER_LABELS = {
+'SS': '최애 인생작',
+'S': '취향의 기준작',
+'A': '강력 추천작',
+'B': '인정하지만 아쉬운 작품',
+'C': '취향과 어긋난 작품',
+'D': '거의 안 맞는 작품'
+};
+
+const tierThemes = {
+'SS': { color: 'text-yellow-300', bg: 'bg-yellow-300/20' },
+'S': { color: 'text-yellow-500', bg: 'bg-yellow-500/20' },
+'A': { color: 'text-red-500', bg: 'bg-red-500/20' },
+'B': { color: 'text-blue-400', bg: 'bg-blue-400/20' },
+'C': { color: 'text-gray-400', bg: 'bg-gray-400/20' },
+'D': { color: 'text-gray-500', bg: 'bg-gray-500/20' },
+'RECOMMENDED': { color: 'text-purple-400', bg: 'bg-purple-500/20' }
+};
+
+const appState = {
+user: { id: null, name: null, email: null, isLoggedIn: false, loginType: null, identities: [] },
+tierList: { SS: [], S: [], A: [], B: [], C: [], D: [] },
+tasteProfile: {
+titleKo: "아직 분석되지 않음",
+titleEn: "Not Analyzed",
+description: "티어리스트를 채우고 분석해보세요."
+},
+recommendedItems: []
+};
+
+let tempAnimeData = null;
+let currentTier = '';
+let currentBtn = null;
+let currentDetailId = null;
+let currentDetailIsRecommended = false;
+
+let aiAbortController = null;
+let isDragging = false;
+let dragJustEnded = false;
+let dragUnlockTimer = null;
+
+let pointerDownInfo = null;
+let suppressNextCardClickUntil = 0;
+let dragEdgePointer = null;
+let dragEdgeScrollRaf = null;
+let dragWheelHandlerAttached = false;
+
+function getPageScrollTarget() {
+  return document.scrollingElement || document.documentElement;
+}
+
+function scrollPageByDelta(dx = 0, dy = 0) {
+  const target = getPageScrollTarget();
+  if (!target) return;
+
+  if (typeof target.scrollBy === 'function') {
+    target.scrollBy({
+      left: dx,
+      top: dy,
+      behavior: 'auto'
+    });
+  } else {
+    target.scrollLeft += dx;
+    target.scrollTop += dy;
+  }
+}
+
+function updateDragEdgePointerFromEvent(evt) {
+  const raw = evt?.originalEvent || evt;
+  if (!raw) return;
+
+  dragEdgePointer = {
+    x: Number(raw.clientX || 0),
+    y: Number(raw.clientY || 0)
+  };
+
+  startDragEdgeAutoScroll();
+}
+
+function startDragEdgeAutoScroll() {
+  if (dragEdgeScrollRaf) return;
+
+  const tick = () => {
+    if (!isDragging || !dragEdgePointer) {
+      dragEdgeScrollRaf = null;
+      return;
+    }
+
+    const vw = window.innerWidth || document.documentElement.clientWidth || 0;
+    const vh = window.innerHeight || document.documentElement.clientHeight || 0;
+
+    const edgeX = 90;
+    const edgeY = 110;
+
+    let dx = 0;
+    let dy = 0;
+
+    if (dragEdgePointer.x <= edgeX) {
+      dx = -Math.max(10, Math.round((edgeX - dragEdgePointer.x) * 0.35));
+    } else if (dragEdgePointer.x >= vw - edgeX) {
+      dx = Math.max(10, Math.round((dragEdgePointer.x - (vw - edgeX)) * 0.35));
+    }
+
+    if (dragEdgePointer.y <= edgeY) {
+      dy = -Math.max(12, Math.round((edgeY - dragEdgePointer.y) * 0.4));
+    } else if (dragEdgePointer.y >= vh - edgeY) {
+      dy = Math.max(12, Math.round((dragEdgePointer.y - (vh - edgeY)) * 0.4));
+    }
+
+    if (dx !== 0 || dy !== 0) {
+      scrollPageByDelta(dx, dy);
+    }
+
+    dragEdgeScrollRaf = requestAnimationFrame(tick);
+  };
+
+  dragEdgeScrollRaf = requestAnimationFrame(tick);
+}
+
+function stopDragEdgeAutoScroll() {
+  dragEdgePointer = null;
+
+  if (dragEdgeScrollRaf) {
+    cancelAnimationFrame(dragEdgeScrollRaf);
+    dragEdgeScrollRaf = null;
+  }
+}
+
+function handleDragWheelScroll(event) {
+  if (!isDragging) return;
+
+  event.preventDefault();
+  scrollPageByDelta(event.deltaX, event.deltaY);
+}
+
+function attachDragWheelHandler() {
+  if (dragWheelHandlerAttached) return;
+  window.addEventListener('wheel', handleDragWheelScroll, { passive: false, capture: true });
+  dragWheelHandlerAttached = true;
+}
+
+function detachDragWheelHandler() {
+  if (!dragWheelHandlerAttached) return;
+  window.removeEventListener('wheel', handleDragWheelScroll, { capture: true });
+  dragWheelHandlerAttached = false;
+}
+
+let desktopAutoScrollRAF = null;
+let desktopAutoScrollPointerY = null;
+
+function updateDesktopAutoScroll(pointerY) {
+  desktopAutoScrollPointerY = Number(pointerY || 0);
+
+  if (desktopAutoScrollRAF) return;
+
+  const tick = () => {
+    if (desktopAutoScrollPointerY == null) {
+      desktopAutoScrollRAF = null;
+      return;
+    }
+
+    const viewportH = window.innerHeight || document.documentElement.clientHeight || 0;
+    const edge = 120;
+    let delta = 0;
+
+    if (desktopAutoScrollPointerY < edge) {
+      delta = -Math.max(8, Math.round((edge - desktopAutoScrollPointerY) * 0.22));
+    } else if (desktopAutoScrollPointerY > viewportH - edge) {
+      delta = Math.max(8, Math.round((desktopAutoScrollPointerY - (viewportH - edge)) * 0.22));
+    }
+
+    if (delta !== 0) {
+      window.scrollBy(0, delta);
+      desktopAutoScrollRAF = requestAnimationFrame(tick);
+    } else {
+      desktopAutoScrollRAF = null;
+    }
+  };
+
+  desktopAutoScrollRAF = requestAnimationFrame(tick);
+}
+
+function stopDesktopAutoScroll() {
+  desktopAutoScrollPointerY = null;
+  if (desktopAutoScrollRAF) {
+    cancelAnimationFrame(desktopAutoScrollRAF);
+    desktopAutoScrollRAF = null;
+  }
+}
+
+function isTouchDevice() {
+  return window.matchMedia('(pointer: coarse)').matches
+    || 'ontouchstart' in window
+    || navigator.maxTouchPoints > 0;
+}
+function markCardPointerDown(event) {
+  if (!event) return;
+  pointerDownInfo = {
+    x: Number(event.clientX || 0),
+    y: Number(event.clientY || 0)
+  };
+}
+
+window.addEventListener('pointermove', (event) => {
+  if (!pointerDownInfo) return;
+
+  const dx = Math.abs(Number(event.clientX || 0) - pointerDownInfo.x);
+  const dy = Math.abs(Number(event.clientY || 0) - pointerDownInfo.y);
+
+  if (dx > 6 || dy > 6) {
+    suppressNextCardClickUntil = Date.now() + 260;
+  }
+}, true);
+
+['pointerup', 'pointercancel', 'mouseup', 'touchend'].forEach(evt => {
+  window.addEventListener(evt, () => {
+    pointerDownInfo = null;
+  }, true);
+});
+
+function resetDragState() {
+  isDragging = false;
+  dragJustEnded = false;
+  document.body.classList.remove('is-dragging');
+
+  document.querySelectorAll('.sortable-drag').forEach(el => {
+    el.classList.remove('sortable-drag');
+  });
+
+  document.querySelectorAll('.sortable-ghost').forEach(el => {
+    el.classList.remove('sortable-ghost');
+  });
+}
+
+['pointerup', 'mouseup', 'touchend', 'dragend', 'blur'].forEach(evt => {
+  window.addEventListener(evt, () => {
+    setTimeout(resetDragState, 0);
+  }, true);
+});
+
+async function fetchWithTimeout(url, options = {}, timeout = 15000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeout);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+    return response;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+const supabaseClient = (SUPABASE_DB_URL && SUPABASE_ANON_KEY && typeof supabase !== 'undefined') 
+? supabase.createClient(SUPABASE_DB_URL, SUPABASE_ANON_KEY) 
+: null;
+
+// ==========================================
+// 유틸리티 함수
+// ==========================================
+function getAnimeSettings() {
+  try {
+    const raw = localStorage.getItem('anime_settings');
+    if (!raw) {
+      return {
+        autoReview: false,
+        uiVersion: 'redesign'
+      };
+    }
+    return {
+      autoReview: false,
+      uiVersion: 'redesign',
+      ...JSON.parse(raw)
+    };
+  } catch (e) {
+    return {
+      autoReview: false,
+      uiVersion: 'redesign'
+    };
+  }
+}
+
+function saveAnimeSettings(settings) {
+  localStorage.setItem('anime_settings', JSON.stringify(settings));
+}
+
+function syncUiVersionRadios(uiVersion) {
+  const uiLegacyRadio = document.getElementById('uiLegacyRadio');
+  const uiRedesignRadio = document.getElementById('uiRedesignRadio');
+
+  if (uiLegacyRadio) uiLegacyRadio.checked = uiVersion === 'legacy';
+  if (uiRedesignRadio) uiRedesignRadio.checked = uiVersion === 'redesign';
+}
+
+function applyUiVersion(uiVersion, options = {}) {
+  const { redirect = false } = options;
+  const normalized = uiVersion === 'legacy' ? 'legacy' : 'redesign';
+
+  document.body.setAttribute('data-ui-version', normalized);
+  syncUiVersionRadios(normalized);
+
+  if (!redirect) return;
+
+  if (normalized === 'legacy') {
+    window.location.href = './';
+  }
+}
+
+function setUiVersion(uiVersion, options = {}) {
+  const { silent = false } = options;
+  const normalized = uiVersion === 'legacy' ? 'legacy' : 'redesign';
+
+  const settings = getAnimeSettings();
+  settings.uiVersion = normalized;
+  saveAnimeSettings(settings);
+
+  if (!silent) {
+    showToast(normalized === 'legacy' ? '기존 UI로 변경되었습니다.' : '새 UI로 변경되었습니다.');
+  }
+
+  applyUiVersion(normalized, { redirect: true });
+}
+
+function handleUiVersionChange(input) {
+  if (!input || !input.checked) return;
+  setUiVersion(input.value);
+}
+
+function getCurrentUser() {
+  return localStorage.getItem('anime_username');
+}
+
+function saveCurrentUser(name) {
+  localStorage.setItem('anime_username', name);
+  appState.user.id = null;
+  appState.user.name = name;
+  appState.user.email = null;
+  appState.user.isLoggedIn = true;
+  appState.user.loginType = 'legacy';
+}
+
+function applyDemoUser() {
+  appState.user.id = null;
+  appState.user.name = '체험 사용자';
+  appState.user.email = null;
+  appState.user.isLoggedIn = true;
+  appState.user.loginType = 'demo';
+  appState.user.identities = [];
+}
+
+function clearCurrentUser() {
+  localStorage.removeItem('anime_username');
+}
+
+function getDisplayNameFromUser(user) {
+  if (!user) return null;
+  return (
+    user.user_metadata?.full_name ||
+    user.user_metadata?.name ||
+    user.user_metadata?.nickname ||
+    user.email ||
+    '사용자'
+  );
+}
+
+function applySocialUser(user) {
+  appState.user.id = user.id;
+  appState.user.name = getDisplayNameFromUser(user);
+  appState.user.email = user.email || null;
+  appState.user.isLoggedIn = true;
+  appState.user.loginType = 'social';
+}
+
+function clearUserState() {
+  appState.user = {
+    id: null,
+    name: null,
+    email: null,
+    isLoggedIn: false,
+    loginType: null,
+    identities: []
+  };
+}
+
+function isSocialLogin() {
+  return appState.user.loginType === 'social' && !!appState.user.id;
+}
+
+function isLegacyLogin() {
+  return appState.user.loginType === 'legacy' && !!appState.user.name;
+}
+
+function isDemoMode() {
+  return appState.user.loginType === 'demo';
+}
+
+function getLocalExtrasKey() {
+  if (isDemoMode()) return null;
+  if (isSocialLogin()) return `anime_extras_social_${appState.user.id}`;
+  if (isLegacyLogin()) return `anime_extras_legacy_${appState.user.name}`;
+  return null;
+}
+
+function getLinkedProviders() {
+  const identities = appState.user.identities || [];
+  return identities.map(i => i.provider);
+}
+
+function hasLinkedProvider(provider) {
+  return getLinkedProviders().includes(provider);
+}
+
+async function refreshLinkedIdentities() {
+  if (!supabaseClient || !isSocialLogin()) {
+    appState.user.identities = [];
+    renderAccountLinkUI();
+    return;
+  }
+
+  try {
+    const { data, error } = await supabaseClient.auth.getUserIdentities();
+
+    if (error) {
+      console.error('Get identities error:', error);
+      appState.user.identities = [];
+    } else {
+      appState.user.identities = data?.identities || [];
+    }
+  } catch (err) {
+    console.error('Refresh identities error:', err);
+    appState.user.identities = [];
+  }
+
+  renderAccountLinkUI();
+}
+
+function renderProviderStatus(provider, elementId, connectFnName) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+
+  if (!isSocialLogin()) {
+    el.innerHTML = `<span class="text-gray-500">소셜 로그인 전용</span>`;
+    return;
+  }
+
+  if (hasLinkedProvider(provider)) {
+    el.innerHTML = `
+      <span class="px-2 py-1 rounded-md bg-green-600/20 text-green-400 text-xs font-bold">
+        연결됨 ✓
+      </span>
+    `;
+  } else {
+    el.innerHTML = `
+      <button onclick="${connectFnName}()" class="px-2 py-1 rounded-md bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-colors">
+        연결하기
+      </button>
+    `;
+  }
+}
+
+function renderAccountLinkUI() {
+  const box = document.getElementById('account-link-box');
+  if (!box) return;
+
+  if (isSocialLogin()) {
+    box.classList.remove('hidden');
+  } else {
+    box.classList.add('hidden');
+    return;
+  }
+
+  renderProviderStatus('google', 'google-link-status', 'linkGoogleIdentity');
+  renderProviderStatus('kakao', 'kakao-link-status', 'linkKakaoIdentity');
+}
+
+function generateId() { return Math.random().toString(36).substr(2, 9); }
+function getPlaceholderUrl(title) {
+return `https://placehold.co/300x450/1f2937/9ca3af?text=${encodeURIComponent(title || 'No Image')}&font=roboto`;
+}
+function canUseAutoReview() {
+  try {
+    const raw = localStorage.getItem('anime_settings');
+    if (!raw) return false; // 기본값: 꺼짐
+    const settings = JSON.parse(raw);
+    return settings.autoReview === true;
+  } catch (e) {
+    return false;
+  }
+}
+
+const AI_REVIEW_LIMIT = 5;
+const AI_RECOMMEND_LIMIT = 3;
+
+function getUsageStorageKey(type) {
+  if (isDemoMode()) return `anime_usage_demo_${type}`;
+  if (isSocialLogin()) return `anime_usage_social_${appState.user.id}_${type}`;
+  if (isLegacyLogin()) return `anime_usage_legacy_${appState.user.name}_${type}`;
+  return `anime_usage_guest_${type}`;
+}
+
+function getAiUsage(type) {
+  const key = getUsageStorageKey(type);
+
+  try {
+    const raw = localStorage.getItem(key);
+    const parsed = raw ? JSON.parse(raw) : null;
+
+    return {
+      used: Number(parsed?.used || 0),
+      limit: type === 'autoReview' ? AI_REVIEW_LIMIT : AI_RECOMMEND_LIMIT
+    };
+  } catch (e) {
+    return {
+      used: 0,
+      limit: type === 'autoReview' ? AI_REVIEW_LIMIT : AI_RECOMMEND_LIMIT
+    };
+  }
+}
+
+function getAiRemaining(type) {
+  const usage = getAiUsage(type);
+  return Math.max(0, usage.limit - usage.used);
+}
+
+function incrementAiUsage(type, amount = 1) {
+  const usage = getAiUsage(type);
+  const key = getUsageStorageKey(type);
+
+  localStorage.setItem(key, JSON.stringify({
+    used: usage.used + amount
+  }));
+
+  renderAiUsageTexts();
+  updateRecButtonUI();
+}
+
+function renderAiUsageTexts() {
+  const autoReviewEl = document.getElementById('autoReviewUsageText');
+  const recommendEl = document.getElementById('recommendUsageText');
+
+  const autoReviewUsage = getAiUsage('autoReview');
+  const autoReviewRemaining = getAiRemaining('autoReview');
+
+  const recommendUsage = getAiUsage('recommend');
+  const recommendRemaining = getAiRemaining('recommend');
+
+  if (autoReviewEl) {
+    autoReviewEl.innerText = `AI 한줄평 사용: ${autoReviewUsage.used}/${autoReviewUsage.limit} · 남은 횟수 ${autoReviewRemaining}회`;
+  }
+
+  if (recommendEl) {
+  recommendEl.innerText = `AI 추천 사용: ${recommendUsage.used}/${recommendUsage.limit} · 남은 횟수 ${recommendRemaining}회`;
+}
+
+const heroRecommendRemaining = document.getElementById('hero-recommend-remaining');
+const heroRecommendDesc = document.getElementById('hero-recommend-desc');
+const heroAutoReviewStatus = document.getElementById('hero-auto-review-status');
+const heroAutoReviewDesc = document.getElementById('hero-auto-review-desc');
+
+if (heroRecommendRemaining) {
+  heroRecommendRemaining.innerText = String(recommendRemaining);
+}
+if (heroRecommendDesc) {
+  heroRecommendDesc.innerText = `현재 추천 가능 횟수 ${recommendRemaining}회`;
+}
+if (heroAutoReviewStatus) {
+  heroAutoReviewStatus.innerText = canUseAutoReview() ? 'ON' : 'OFF';
+}
+if (heroAutoReviewDesc) {
+  heroAutoReviewDesc.innerText = canUseAutoReview()
+    ? `남은 자동 한줄평 ${autoReviewRemaining}회`
+    : '현재 자동 생성이 꺼져 있습니다.';
+}
+}
+function buildUserMetaIdentityFilter(query) {
+  if (isSocialLogin()) {
+    return query.eq('user_id', appState.user.id);
+  }
+  return query.eq('username', appState.user.name).is('user_id', null);
+}
+
+async function getUserMetaRow() {
+  if (isDemoMode() || !supabaseClient || (!appState.user.id && !appState.user.name)) {
+    return null;
+  }
+
+  let query = supabaseClient.from('user_meta').select('*');
+  query = buildUserMetaIdentityFilter(query);
+
+  const { data, error } = await query.maybeSingle();
+  if (error) throw error;
+  return data || null;
+}
+
+function buildUserMetaPayload(extra = {}) {
+  return {
+    user_id: isSocialLogin() ? appState.user.id : null,
+    username: isSocialLogin() ? (appState.user.name || appState.user.email || '사용자') : appState.user.name,
+    taste_profile_title_ko: appState.tasteProfile.titleKo,
+    taste_profile_title_en: appState.tasteProfile.titleEn,
+    taste_profile_description: appState.tasteProfile.description,
+    recommended_items: appState.recommendedItems,
+    updated_at: new Date().toISOString(),
+    ...extra
+  };
+}
+
+async function saveUserMetaRecord(extra = {}) {
+  if (isDemoMode() || !supabaseClient || (!appState.user.id && !appState.user.name)) {
+    return null;
+  }
+
+  const existing = await getUserMetaRow();
+  const payload = buildUserMetaPayload({
+    public_id: existing?.public_id ?? null,
+    is_public: existing?.is_public ?? false,
+    ...extra
+  });
+
+  if (existing?.id) {
+    const { data, error } = await supabaseClient
+      .from('user_meta')
+      .update(payload)
+      .eq('id', existing.id)
+      .select()
+      .maybeSingle();
+
+    if (error) throw error;
+    return data || null;
+  }
+
+  const { data, error } = await supabaseClient
+    .from('user_meta')
+    .insert(payload)
+    .select()
+    .maybeSingle();
+
+  if (error) throw error;
+  return data || null;
+}
+function syncSettingsUI() {
+  const toggle = document.getElementById('autoReviewToggle');
+  const knob = document.getElementById('autoReviewKnob');
+  const settings = getAnimeSettings();
+
+  if (!toggle || !knob) return;
+
+  toggle.checked = settings.autoReview === true;
+
+  if (toggle.checked) {
+    knob.style.transform = 'translateX(20px)';
+    knob.parentElement.classList.remove('bg-gray-600');
+    knob.parentElement.classList.add('bg-purple-600');
+  } else {
+    knob.style.transform = 'translateX(0px)';
+    knob.parentElement.classList.remove('bg-purple-600');
+    knob.parentElement.classList.add('bg-gray-600');
+  }
+}
+
+function openSettingsModal() {
+  syncSettingsUI();
+  renderAiUsageTexts();
+  const modal = document.getElementById('settingsModal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+function closeSettingsModal() {
+  const modal = document.getElementById('settingsModal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+}
+
+function handleAutoReviewToggle(input) {
+  const settings = getAnimeSettings();
+  settings.autoReview = input.checked === true;
+  saveAnimeSettings(settings);
+  syncSettingsUI();
+  showToast(input.checked ? 'AI 한줄평 자동 생성을 켰습니다.' : 'AI 한줄평 자동 생성을 껐습니다.');
+}
+function generatePublicId() {
+  return Math.random().toString(36).slice(2, 12);
+}
+
+function buildShareUrl(publicId) {
+  return `${window.location.origin}/share.html?id=${encodeURIComponent(publicId)}`;
+}
+
+function isMissingPosterUrl(url) {
+  const value = String(url || '').trim();
+  if (!value) return true;
+
+  return (
+    value.includes('placehold.co') ||
+    value.includes('No+Image') ||
+    value.includes('text=No%20Image') ||
+    value.includes('text=No+Image')
+  );
+}
+
+function utf8ToBase64(value) {
+return btoa(unescape(encodeURIComponent(value)));
+}
+
+function base64ToUtf8(value) {
+return decodeURIComponent(escape(atob(value)));
+}
+
+function createBackupCodeFromPayload(payload) {
+const json = JSON.stringify(payload);
+return `ATL1.${utf8ToBase64(json)}`;
+}
+
+function parseBackupCode(code) {
+const trimmed = String(code || '').trim();
+if (!trimmed) throw new Error('EMPTY_CODE');
+if (!trimmed.startsWith('ATL1.')) throw new Error('INVALID_PREFIX');
+
+const encoded = trimmed.slice(5);
+if (!encoded) throw new Error('INVALID_CODE');
+
+const json = base64ToUtf8(encoded);
+return JSON.parse(json);
+}
+
+function shouldShowMigrationBanner() {
+  if (!appState.user.isLoggedIn || isDemoMode()) return false;
+
+  const total =
+    appState.tierList.SS.length +
+    appState.tierList.S.length +
+    appState.tierList.A.length +
+    appState.tierList.B.length +
+    appState.tierList.C.length +
+    appState.tierList.D.length;
+
+  // legacy 로그인: 항상 전환 유도 배너 표시
+  if (isLegacyLogin()) {
+    return true;
+  }
+
+  // social 로그인: 데이터 없고, 닫은 적 없을 때만 표시
+  if (isSocialLogin()) {
+    if (localStorage.getItem('migration_banner_dismissed') === 'true') return false;
+    return total === 0;
+  }
+
+  return false;
+}
+
+function renderMigrationBanner() {
+  const el = document.getElementById('migration-banner');
+  const titleEl = document.getElementById('migration-banner-title');
+  const descEl = document.getElementById('migration-banner-desc');
+  const actionsEl = document.getElementById('migration-banner-actions');
+
+  if (!el || !titleEl || !descEl || !actionsEl) return;
+
+  if (!shouldShowMigrationBanner()) {
+    el.classList.add('hidden');
+    return;
+  }
+
+  el.classList.remove('hidden');
+
+  if (isLegacyLogin()) {
+    titleEl.innerText = '소셜 계정 연결 추천';
+    descEl.innerText = '이름 로그인 상태에서는 계정 연결이 되지 않습니다. 백업 코드를 만든 뒤 Google, Kakao로 로그인해서 기존 기록을 가져오세요.';
+    actionsEl.innerHTML = `
+      <button onclick="openExportCodeModal()" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg">
+        백업 코드 생성
+      </button>
+      <button onclick="scrollToSocialLoginGuide()" class="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 text-xs font-bold rounded-lg">
+        소셜 로그인 안내
+      </button>
+    `;
+    return;
+  }
+
+  if (isSocialLogin()) {
+    titleEl.innerText = '기존 기록 가져오기';
+    descEl.innerText = '예전에 이름 로그인으로 저장한 데이터를 이 계정으로 가져올 수 있습니다.';
+    actionsEl.innerHTML = `
+      <button onclick="openImportCodeModal()" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg">
+        불러오기
+      </button>
+      <button onclick="dismissMigrationBanner()" class="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 text-xs font-bold rounded-lg">
+        닫기
+      </button>
+    `;
+  }
+}
+
+function dismissMigrationBanner() {
+  localStorage.setItem('migration_banner_dismissed', 'true');
+  renderMigrationBanner();
+}
+function scrollToSocialLoginGuide() {
+  showToast('로그아웃 후 Google / Kakao 버튼으로 로그인하면 됩니다.');
+}
+
+function normalizeAnimeTitle(title = '') {
+  return String(title || '')
+    .toLowerCase()
+    .normalize('NFKC')
+    .replace(/[：:]/g, ' ')
+    .replace(/[-‐-‒–—―~]/g, ' ')
+    .replace(/[()\[\]{}【】「」『』<>〈〉]/g, ' ')
+    .replace(/\b(tv|movie|the movie|ova|ona|special|edition|ver)\b/gi, '')
+    .replace(/\bseason\s*\d+\b/gi, '')
+    .replace(/\bpart\s*\d+\b/gi, '')
+    .replace(/\bchapter\s*\d+\b/gi, '')
+    .replace(/\b\d+(st|nd|rd|th)\s+season\b/gi, '')
+    .replace(/\s+/g, '')
+    .trim();
+}
+
+function isBlankValue(value) {
+  return value == null || String(value).trim() === '';
+}
+
+function isMissingRating(value) {
+  return value == null || Number(value) === 0 || Number.isNaN(Number(value));
+}
+
+function parseGenresField(genres) {
+  if (Array.isArray(genres)) return genres.filter(Boolean);
+  if (!genres) return [];
+  return String(genres)
+    .split(',')
+    .map(v => v.trim())
+    .filter(Boolean);
+}
+
+function buildRefreshSearchQueries(title = '', originalTitle = '') {
+  const base = [title, originalTitle].filter(Boolean).map(v => String(v).trim());
+  const queries = new Set();
+
+  const replacements = [
+    [/러브코미디/g, '럽코'],
+    [/럽코/g, '러브코미디'],
+    [/러브코미디/g, '러브코메디'],
+    [/러브코메디/g, '러브코미디'],
+    [/청춘러브코미디/g, '청춘 러브코미디'],
+    [/청춘 러브코미디/g, '청춘러브코미디'],
+    [/청춘럽코/g, '청춘 럽코'],
+    [/청춘 럽코/g, '청춘럽코']
+  ];
+
+  base.forEach(q => {
+    const trimmed = q.trim();
+    if (!trimmed) return;
+
+    queries.add(trimmed);
+    queries.add(trimmed.replace(/\s+/g, ''));
+    queries.add(trimmed.replace(/[:：].*$/, '').trim());
+
+    replacements.forEach(([pattern, replacement]) => {
+      if (pattern.test(trimmed)) {
+        queries.add(trimmed.replace(pattern, replacement));
+      }
+    });
+
+    if (trimmed.startsWith('역시 ')) {
+      queries.add(trimmed.replace(/^역시\s*/, '').trim());
+    }
+
+    if (trimmed.includes('내 청춘')) {
+      queries.add(trimmed.replace(/내 청춘/g, '역시 내 청춘'));
+    }
+  });
+
+  return [...queries].filter(Boolean);
+}
+
+function getMetadataCompletenessScore(item) {
+  let score = 0;
+  if (!isBlankValue(item?.poster_url)) score += 5;
+  if (!isBlankValue(item?.original_title)) score += 2;
+  if (!isBlankValue(item?.overview)) score += 2;
+  if (!isBlankValue(item?.release_date)) score += 2;
+  if (!isMissingRating(item?.vote_average)) score += 1;
+  if (Array.isArray(item?.genres) && item.genres.length > 0) score += 2;
+  if (Array.isArray(item?.genres) && item.genres.includes('애니메이션')) score += 2;
+  return score;
+}
+
+function getTitleSimilarityScore(item, sourceTitle = '', sourceOriginalTitle = '') {
+  const q1 = normalizeAnimeTitle(sourceTitle);
+  const q2 = normalizeAnimeTitle(sourceOriginalTitle);
+  const t1 = normalizeAnimeTitle(item?.title || '');
+  const t2 = normalizeAnimeTitle(item?.original_title || '');
+
+  let score = 0;
+  [q1, q2].filter(Boolean).forEach(q => {
+    [t1, t2].filter(Boolean).forEach(t => {
+      if (t === q) score += 10;
+      else if (t.includes(q) || q.includes(t)) score += 6;
+      else {
+        const qMain = q.replace(/잘못됐다/g, '').trim();
+        const tMain = t.replace(/잘못됐다/g, '').trim();
+        if (qMain && tMain && (tMain.includes(qMain) || qMain.includes(tMain))) {
+          score += 4;
+        }
+      }
+    });
+  });
+
+  return score;
+}
+
+function pickBestRefreshCandidate(results, sourceTitle = '', sourceOriginalTitle = '') {
+  if (!Array.isArray(results) || results.length === 0) return null;
+
+  const scored = results.map(item => ({
+    item,
+    score:
+      getMetadataCompletenessScore(item) +
+      getTitleSimilarityScore(item, sourceTitle, sourceOriginalTitle)
+  }));
+
+  scored.sort((a, b) => b.score - a.score);
+  return scored[0]?.item || null;
+}
+
+// ==========================================
+// DB 및 Local Storage 로직
+// ==========================================
+function saveLocalExtras() {
+const key = getLocalExtrasKey();
+if (!key) return;
+
+const data = {
+tasteProfile: appState.tasteProfile,
+recommendedItems: appState.recommendedItems
+};
+localStorage.setItem(key, JSON.stringify(data));
+}
+
+function loadLocalExtras() {
+const key = getLocalExtrasKey();
+if (!key) return;
+
+const dataStr = localStorage.getItem(key);
+if (dataStr) {
+try {
+const data = JSON.parse(dataStr);
+if (data.tasteProfile) appState.tasteProfile = data.tasteProfile;
+if (data.recommendedItems) appState.recommendedItems = data.recommendedItems;
+} catch(e) {}
+}
+renderTasteProfile();
+renderRecommendations();
+updateRecButtonUI();
+}
+
+async function loadUserMetaFromDB() {
+if (isDemoMode()) {
+renderTasteProfile();
+renderRecommendations();
+updateRecButtonUI();
+return;
+}
+
+if (!supabaseClient || (!appState.user.id && !appState.user.name)) {
+loadLocalExtras();
+return;
+}
+
+try {
+let query = supabaseClient.from('user_meta').select('*');
+
+if (isSocialLogin()) {
+query = query.eq('user_id', appState.user.id);
+} else {
+query = query.eq('username', appState.user.name).is('user_id', null);
+}
+
+const { data, error } = await query.maybeSingle();
+
+if (error) throw error;
+
+if (data) {
+appState.tasteProfile = {
+titleKo: data.taste_profile_title_ko || "아직 분석되지 않음",
+titleEn: data.taste_profile_title_en || "Not Analyzed",
+description: data.taste_profile_description || "티어리스트를 채우고 분석해보세요."
+};
+appState.recommendedItems = data.recommended_items || [];
+
+renderTasteProfile();
+renderRecommendations();
+updateRecButtonUI();
+} else {
+loadLocalExtras();
+}
+} catch (err) {
+console.error("Load User Meta Error:", err);
+loadLocalExtras();
+}
+}
+
+async function saveUserMetaToDB() {
+  saveLocalExtras();
+
+  if (isDemoMode()) return;
+  if (!supabaseClient || (!appState.user.id && !appState.user.name)) return;
+
+  try {
+    await saveUserMetaRecord();
+  } catch (err) {
+    console.error("Save User Meta Catch Error:", err);
+  }
+}
+
+// ==========================================
+// 초기화 및 렌더링
+// ==========================================
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const settings = getAnimeSettings();
+  const preferredUi = settings.uiVersion || 'redesign';
+
+  if (preferredUi === 'legacy') {
+    applyUiVersion('legacy', { redirect: true });
+    return;
+  }
+
+  applyUiVersion('redesign', { redirect: false });
+  await initializeApp();
+});
+
+async function initializeApp() {
+setupDragAndDrop();
+
+const savedName = getCurrentUser();
+
+if (!supabaseClient) {
+if (savedName) {
+saveCurrentUser(savedName);
+closeNamePopup();
+renderUserInfo();
+await loadUserMetaFromDB();
+await loadTierListFromDB();
+} else {
+openNamePopup();
+}
+return;
+}
+
+try {
+const { data, error } = await supabaseClient.auth.getSession();
+
+if (error) {
+console.error('Get session error:', error);
+}
+
+const session = data?.session;
+
+if (session?.user) {
+applySocialUser(session.user);
+closeNamePopup();
+renderUserInfo();
+await refreshLinkedIdentities();
+await loadUserMetaFromDB();
+await loadTierListFromDB();
+} else if (savedName) {
+saveCurrentUser(savedName);
+closeNamePopup();
+renderUserInfo();
+await loadUserMetaFromDB();
+await loadTierListFromDB();
+} else {
+openNamePopup();
+}
+
+supabaseClient.auth.onAuthStateChange(async (_event, session) => {
+if (session?.user) {
+applySocialUser(session.user);
+closeNamePopup();
+renderUserInfo();
+await refreshLinkedIdentities();
+await loadUserMetaFromDB();
+await loadTierListFromDB();
+} else {
+const savedName = getCurrentUser();
+
+if (savedName) {
+saveCurrentUser(savedName);
+closeNamePopup();
+renderUserInfo();
+await loadUserMetaFromDB();
+await loadTierListFromDB();
+} else {
+clearUserState();
+appState.tierList = { SS: [], S: [], A: [], B: [], C: [], D: [] };
+appState.recommendedItems = [];
+appState.tasteProfile = {
+titleKo: "아직 분석되지 않음",
+titleEn: "Not Analyzed",
+description: "티어리스트를 채우고 분석해보세요."
+};
+renderTierList();
+renderRecommendations();
+updateRecButtonUI();
+openNamePopup();
+}
+}
+});
+} catch (err) {
+console.error('Initialize app error:', err);
+if (savedName) {
+saveCurrentUser(savedName);
+closeNamePopup();
+renderUserInfo();
+await loadUserMetaFromDB();
+await loadTierListFromDB();
+} else {
+openNamePopup();
+}
+}
+}
+
+function renderUserInfo() {
+  if (!appState.user.isLoggedIn) return;
+
+  const displayName = appState.user.name || '사용자';
+
+  document.getElementById('report-title').innerHTML = `${displayName}님의<br>애니메이션 감상 아카이브`;
+  document.title = `${displayName}님의 티어리스트`;
+  document.getElementById('footer-text').innerText = `Tier List created by ${displayName}`;
+
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (logoutBtn) {
+    logoutBtn.innerText = isDemoMode() ? '체험 종료' : '이름 변경 (로그아웃)';
+  }
+
+  const loginStateEl = document.getElementById('hero-login-state');
+  const loginDescEl = document.getElementById('hero-login-desc');
+
+  if (loginStateEl) {
+    if (isDemoMode()) {
+      loginStateEl.innerText = 'DEMO';
+      loginDescEl.innerText = '체험 모드에서는 새로고침 시 기록이 사라집니다.';
+    } else if (isSocialLogin()) {
+      loginStateEl.innerText = 'SOCIAL';
+      loginDescEl.innerText = '소셜 로그인 계정 기준으로 기록이 저장됩니다.';
+    } else {
+      loginStateEl.innerText = 'LEGACY';
+      loginDescEl.innerText = '기존 이름 로그인 방식의 기록입니다.';
+    }
+  }
+
+  renderTasteProfile();
+  renderAccountLinkUI();
+  renderMigrationBanner();
+  renderAiUsageTexts();
+  updateRecButtonUI();
+}
+
+function updateTotalCount() {
+const total =
+appState.tierList.SS.length +
+appState.tierList.S.length +
+appState.tierList.A.length +
+appState.tierList.B.length +
+appState.tierList.C.length +
+appState.tierList.D.length;
+document.getElementById('total-count').innerText = total;
+renderTierHeaders();
+}
+
+function renderTierHeaders() {
+  const tiers = ['SS', 'S', 'A', 'B', 'C', 'D'];
+  tiers.forEach(tier => {
+    const count = appState.tierList[tier].length;
+    const spanId = `tier-desc-${tier.toLowerCase()}`;
+    const el = document.getElementById(spanId);
+    if (el) {
+      el.innerText = `${TIER_LABELS[tier]} (${count}작품)`;
+    }
+  });
+}
+
+function renderTasteProfile() {
+  const prof = appState.tasteProfile;
+  const titleEl = document.getElementById('taste-profile-title');
+  const descEl = document.getElementById('taste-profile-desc');
+  const tagsEl = document.getElementById('taste-profile-tags');
+
+  if (!titleEl || !descEl) return;
+
+  if (prof && prof.titleKo && prof.titleKo !== "아직 분석되지 않음") {
+    titleEl.innerText = prof.titleKo;
+    descEl.innerText = prof.description || '';
+  } else {
+    titleEl.innerText = "아직 분석되지 않음";
+    descEl.innerText = "티어리스트를 채우고 분석해보세요.";
+  }
+
+  if (tagsEl) {
+    const tags = [];
+
+    if (prof?.titleKo && prof.titleKo !== "아직 분석되지 않음") tags.push(prof.titleKo);
+    if (prof?.titleEn && prof.titleEn !== "Not Analyzed") tags.push(prof.titleEn);
+    if (appState.tierList.SS.length > 0) tags.push(`SS ${appState.tierList.SS.length}작품`);
+    if (appState.tierList.S.length > 0) tags.push(`S ${appState.tierList.S.length}작품`);
+
+    tagsEl.innerHTML = '';
+
+    if (tags.length === 0) {
+      tagsEl.innerHTML = `<span>취향 분석 대기</span>`;
+    } else {
+      tags.slice(0, 4).forEach(tag => {
+        const span = document.createElement('span');
+        span.innerText = tag;
+        tagsEl.appendChild(span);
+      });
+    }
+  }
+}
+
+function renderTierList() {
+  const tiers = ['SS', 'S', 'A', 'B', 'C', 'D'];
+
+  tiers.forEach(tier => {
+    const grid = document.getElementById(`grid-tier-${tier.toLowerCase()}`);
+    if (!grid) return;
+
+    grid.querySelectorAll('.anime-card-container:not(.add-card)').forEach(c => c.remove());
+
+    const addBtn = grid.querySelector('button[onclick^="openAddModal"]');
+
+    appState.tierList[tier].forEach(anime => {
+      const cardHtml = createCardHtml(anime, false);
+      if (addBtn) {
+        addBtn.insertAdjacentHTML('beforebegin', cardHtml);
+      } else {
+        grid.insertAdjacentHTML('beforeend', cardHtml);
+      }
+    });
+  });
+
+  updateTotalCount();
+}
+
+function renderRecommendations() {
+  const grid = document.getElementById('grid-tier-recommended');
+  if (!grid) return;
+
+  grid.querySelectorAll('.anime-card-container, #rec-empty-state').forEach(c => c.remove());
+
+  if (!appState.recommendedItems || appState.recommendedItems.length === 0) {
+    grid.innerHTML = `
+      <div id="rec-empty-state" class="profile-box" style="grid-column:1/-1; text-align:center;">
+        추천받기 버튼을 눌러 내 취향에 맞는 새로운 애니메이션을 발견해보세요.
+      </div>
+    `;
+    return;
+  }
+
+  appState.recommendedItems.forEach(anime => {
+    const cardHtml = createCardHtml(anime, true);
+    grid.insertAdjacentHTML('beforeend', cardHtml);
+  });
+}
+
+function updateRecButtonUI() {
+  const btnText = document.getElementById('recommendBtnText');
+  const statusText = document.getElementById('rec-status-text');
+  const btn = document.getElementById('recommendBtn');
+  const remaining = getAiRemaining('recommend');
+
+  if (appState.recommendedItems && appState.recommendedItems.length > 0) {
+  btnText.innerText = "AI 추천 다시 받기";
+  statusText.innerText = `현재 추천 목록이 저장되어 있습니다. 다시 추천받기를 누르면 새 추천으로 교체됩니다. · 남은 AI 추천 ${remaining}회`;
+} else {
+  btnText.innerText = "추천받기";
+  statusText.innerText = `추천된 작품을 드래그해서 위 티어로 바로 넣을 수 있습니다. · 남은 AI 추천 ${remaining}회`;
+}
+
+  if (btn) {
+    if (remaining <= 0) {
+      btn.disabled = true;
+      btn.classList.add('opacity-50', 'cursor-not-allowed');
+    } else {
+      btn.disabled = false;
+      btn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+  }
+
+  const heroRecommendRemaining = document.getElementById('hero-recommend-remaining');
+  if (heroRecommendRemaining) {
+    heroRecommendRemaining.innerText = String(remaining);
+  }
+}
+
+function createCardHtml(anime, isRecommended = false) {
+const { id, title, imgSrc, tier, genres, rating, rank, recommendationReason } = anime;
+const displayReview = isRecommended 
+? recommendationReason 
+: (anime.userReview || anime.aiReview || '리뷰 없음');
+
+const cardTier = isRecommended ? 'recommended' : tier.toLowerCase();
+let baseClass = `anime-card-container tier-${cardTier} bg-gray-800 rounded-lg overflow-hidden border border-gray-700 relative group flex flex-col`;
+
+if (!isRecommended && tier === 'C') {
+baseClass = `anime-card-container tier-c bg-gray-900 rounded border border-gray-700 opacity-60 hover:opacity-100 relative group flex flex-col`;
+}
+
+const safeTitle = (title || '').replace(/"/g, '&quot;');
+const safeReview = (displayReview || '').replace(/"/g, '&quot;');
+const fallbackImg = getPlaceholderUrl(safeTitle);
+
+let dataAttrs = `data-id="${id}" data-tier="${isRecommended ? 'RECOMMENDED' : tier}" onpointerdown="markCardPointerDown(event)" onclick="handleCardClick(event, '${id}', ${isRecommended})"`;
+let deleteBtn = isRecommended ? '' : `<button onclick="deleteAnime(this, event, '${id}', '${tier}')" class="absolute top-2 right-2 bg-red-600/90 hover:bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20 text-xs font-bold shadow-lg" title="삭제">✕</button>`;
+let rankBadge = isRecommended ? `<div class="absolute top-0 right-0 bg-purple-600 text-white text-xs font-bold px-3 py-1 rounded-bl-lg z-10">NO. ${rank}</div>` : '';
+
+const imgTagAttr = `src="${imgSrc}" onerror="this.onerror=null; this.src='${fallbackImg}';" alt="${safeTitle}"`;
+
+let genreBadge = '';
+const filteredGenres = (genres || []).filter(g => g && g !== '애니메이션');
+if (filteredGenres && filteredGenres.length > 0) {
+const displayGenres = filteredGenres.slice(0, 2).join(', ');
+genreBadge = `<span class="inline-block bg-gray-700 text-gray-300 text-[10px] px-1.5 py-0.5 rounded border border-gray-600 truncate max-w-full">${displayGenres}</span>`;
+}
+
+const ratingNum = Number(rating);
+const ratingDisplay = ratingNum ? `⭐ ${ratingNum.toFixed(1)}` : '';
+
+let innerHtml = '';
+if (isRecommended || tier === 'SS' || tier === 'S') {
+innerHtml = `
+                   ${deleteBtn}
+                   ${rankBadge}
+                   <div class="relative h-48 md:h-60 flex-shrink-0">
+                       <img ${imgTagAttr} class="w-full h-full object-cover object-top opacity-90 group-hover:opacity-100 transition-opacity pointer-events-none">
+                   </div>
+                   <div class="p-3 pointer-events-none flex flex-col flex-grow justify-end">
+                       <div class="flex justify-between items-start gap-2 mb-1 w-full overflow-hidden">
+                           <div class="flex-1 min-w-0 flex items-center">
+                               ${genreBadge}
+                           </div>
+                           <div class="flex-shrink-0 whitespace-nowrap text-yellow-400 text-xs font-bold pt-0.5">
+                               ${ratingDisplay}
+                           </div>
+                       </div>
+                       <h4 class="font-bold text-white text-lg leading-tight line-clamp-2">${safeTitle}</h4>
+                       <p class="text-xs ${isRecommended ? 'text-purple-400' : 'text-yellow-500'} mt-1 line-clamp-2">${safeReview}</p>
+                   </div>`;
+} else if (tier === 'A') {
+innerHtml = `
+                   ${deleteBtn}
+                   <div class="relative h-40 flex-shrink-0">
+                       <img ${imgTagAttr} class="w-full h-full object-cover object-top opacity-80 group-hover:opacity-100 transition-opacity pointer-events-none">
+                   </div>
+                   <div class="p-3 pointer-events-none flex flex-col flex-grow justify-end">
+                       <div class="flex justify-between items-start gap-2 mb-1 w-full overflow-hidden">
+                           <div class="flex-1 min-w-0 flex items-center">
+                               ${genreBadge}
+                           </div>
+                           <div class="flex-shrink-0 whitespace-nowrap text-yellow-400 text-xs font-bold pt-0.5">
+                               ${ratingDisplay}
+                           </div>
+                       </div>
+                       <h4 class="font-bold text-gray-200 text-sm md:text-base line-clamp-1">${safeTitle}</h4>
+                       <p class="text-xs text-red-400 mt-1 line-clamp-2">${safeReview}</p>
+                   </div>`;
+} else if (tier === 'B') {
+innerHtml = `
+                   ${deleteBtn}
+                   <div class="relative h-32 flex-shrink-0">
+                       <img ${imgTagAttr} class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity pointer-events-none">
+                   </div>
+                   <div class="p-2 pointer-events-none flex flex-col flex-grow justify-center">
+                       <div class="flex justify-between items-start gap-1 mb-1 w-full overflow-hidden">
+                           <div class="flex-1 min-w-0 flex items-center text-left">
+                               ${genreBadge}
+                           </div>
+                           <div class="flex-shrink-0 whitespace-nowrap text-yellow-400 text-[10px] font-bold">
+                               ${ratingDisplay}
+                           </div>
+                       </div>
+                       <h4 class="font-medium text-gray-300 text-xs md:text-sm w-full line-clamp-1">${safeTitle}</h4>
+                       <p class="text-[10px] text-gray-400 w-full line-clamp-1 mt-0.5">${safeReview}</p>
+                   </div>`;
+} else if (tier === 'C' || tier === 'D') {
+innerHtml = `
+                   ${deleteBtn}
+                   <div class="relative h-24 flex-shrink-0">
+                       <img ${imgTagAttr} class="w-full h-full object-cover filter grayscale hover:grayscale-0 transition-all pointer-events-none">
+                   </div>
+                   <div class="p-2 text-center pointer-events-none flex flex-col flex-grow justify-center items-center">
+                       <span class="text-xs text-gray-400 w-full line-clamp-1">${safeTitle}</span>
+                       <p class="text-[9px] text-gray-600 mt-1 w-full line-clamp-1">${safeReview}</p>
+                   </div>`;
+}
+
+return `<div class="${baseClass}" ${dataAttrs}>${innerHtml}</div>`;
+}
+
+// ==========================================
+// Supabase 데이터 통신
+// ==========================================
+async function loadTierListFromDB() {
+if (isDemoMode()) {
+renderTierList();
+renderMigrationBanner();
+return;
+}
+
+if (supabaseClient && (appState.user.id || appState.user.name)) {
+let query = supabaseClient
+.from('tier_items')
+.select('*')
+.order('sort_order', { ascending: true });
+
+if (isSocialLogin()) {
+query = query.eq('user_id', appState.user.id);
+} else {
+query = query.eq('username', appState.user.name).is('user_id', null);
+}
+
+const { data, error } = await query;
+
+if (!error && data) {
+appState.tierList = { SS: [], S: [], A: [], B: [], C: [], D: [] };
+data.forEach(row => {
+if (appState.tierList[row.tier]) {
+appState.tierList[row.tier].push({
+id: row.id,
+title: row.title,
+originalTitle: row.original_title,
+imgSrc: row.poster_url,
+genres: row.genres ? row.genres.split(', ').filter(g => g && g !== '애니메이션') : [],
+overview: row.overview,
+rating: row.vote_average,
+releaseDate: row.release_date,
+tier: row.tier,
+aiReview: row.ai_review,
+userReview: row.user_review
+});
+}
+});
+}
+}
+renderTierList();
+renderMigrationBanner();
+}
+
+async function saveAnimeToDB(anime, sortOrder) {
+if (isDemoMode()) return null;
+if (supabaseClient && (appState.user.id || appState.user.name)) {
+const { data, error } = await supabaseClient.from('tier_items').insert({
+user_id: isSocialLogin() ? appState.user.id : null,
+username: appState.user.name,
+title: anime.title,
+original_title: anime.originalTitle,
+poster_url: anime.imgSrc,
+genres: anime.genres && anime.genres.length > 0 ? anime.genres.join(', ') : '',
+overview: anime.overview,
+vote_average: anime.rating,
+release_date: anime.releaseDate,
+tier: anime.tier,
+ai_review: anime.aiReview,
+user_review: anime.userReview,
+sort_order: sortOrder
+}).select();
+
+if (!error && data && data.length > 0) return data;
+if (error) console.error('Save anime error:', error);
+}
+return null;
+}
+
+async function updateAnimeTierInDB(id, newTier) {
+if (isDemoMode()) return;
+if (supabaseClient) await supabaseClient.from('tier_items').update({ tier: newTier }).eq('id', id);
+}
+
+async function updateAnimeReviewInDB(id, review) {
+if (isDemoMode()) return;
+if (supabaseClient) await supabaseClient.from('tier_items').update({ user_review: review }).eq('id', id);
+}
+
+async function updateAnimeFieldsInDB(id, payload) {
+if (isDemoMode()) return;
+if (!supabaseClient || !id || !payload || Object.keys(payload).length === 0) return;
+const { error } = await supabaseClient.from('tier_items').update(payload).eq('id', id);
+if (error) {
+  console.error('Update anime fields error:', error);
+  throw error;
+}
+}
+
+async function deleteAnimeFromDB(id) {
+if (isDemoMode()) return;
+if (supabaseClient) await supabaseClient.from('tier_items').delete().eq('id', id);
+}
+
+async function persistTierOrder(tier) {
+if (isDemoMode() || !supabaseClient || tier === 'RECOMMENDED') return;
+const items = appState.tierList[tier];
+const promises = items.map((anime, index) => {
+return supabaseClient.from('tier_items').update({ sort_order: index }).eq('id', anime.id);
+});
+try {
+await Promise.all(promises);
+} catch(e) { console.error('Order save error:', e); }
+}
+
+async function clearAllTierItemsFromDB() {
+if (isDemoMode() || !supabaseClient || (!appState.user.id && !appState.user.name)) return;
+
+let query = supabaseClient.from('tier_items').delete();
+
+if (isSocialLogin()) {
+query = query.eq('user_id', appState.user.id);
+} else {
+query = query.eq('username', appState.user.name).is('user_id', null);
+}
+
+const { error } = await query;
+
+if (error) {
+console.error('Clear tier items error:', error);
+throw error;
+}
+}
+
+async function replaceTierListInDB() {
+if (isDemoMode() || !supabaseClient || (!appState.user.id && !appState.user.name)) return;
+
+await clearAllTierItemsFromDB();
+
+const tiers = ['SS', 'S', 'A', 'B', 'C', 'D'];
+
+for (const tier of tiers) {
+const items = appState.tierList[tier] || [];
+
+for (let i = 0; i < items.length; i++) {
+const anime = items[i];
+
+const payload = {
+user_id: isSocialLogin() ? appState.user.id : null,
+username: appState.user.name,
+title: anime.title || '',
+original_title: anime.originalTitle || '',
+poster_url: anime.imgSrc || '',
+genres: anime.genres && anime.genres.length > 0 ? anime.genres.join(', ') : '',
+overview: anime.overview || '',
+vote_average: anime.rating || 0,
+release_date: anime.releaseDate || '',
+tier: tier,
+ai_review: anime.aiReview || '',
+user_review: anime.userReview || '',
+sort_order: i
+};
+
+const { data, error } = await supabaseClient
+.from('tier_items')
+.insert(payload)
+.select();
+
+if (error) {
+console.error('Replace insert error:', error);
+throw error;
+}
+
+if (data && data[0]) {
+anime.id = data[0].id;
+}
+}
+}
+}
+
+// ==========================================
+// 팝업, 로그인, 로그아웃 제어
+// ==========================================
+function resetAppData() {
+appState.tierList = { SS: [], S: [], A: [], B: [], C: [], D: [] };
+appState.recommendedItems = [];
+appState.tasteProfile = {
+titleKo: "아직 분석되지 않음",
+titleEn: "Not Analyzed",
+description: "티어리스트를 채우고 분석해보세요."
+};
+}
+
+function enterDemoMode() {
+clearCurrentUser();
+clearUserState();
+applyDemoUser();
+resetAppData();
+renderUserInfo();
+renderTierList();
+renderRecommendations();
+updateRecButtonUI();
+renderMigrationBanner();
+closeNamePopup();
+showToast('체험 모드로 시작했습니다. 이 기록은 저장되지 않습니다.');
+}
+
+function handleLogin() {
+showToast('이름 로그인은 종료되었습니다. 소셜 로그인 또는 체험 모드를 이용해주세요.', true);
+}
+
+async function handleLogout() {
+if (isSocialLogin() && supabaseClient) {
+const { error } = await supabaseClient.auth.signOut();
+if (error) {
+showToast('로그아웃에 실패했습니다.', true);
+return;
+}
+}
+
+if (isLegacyLogin()) {
+clearCurrentUser();
+}
+
+clearUserState();
+resetAppData();
+renderTierList();
+renderRecommendations();
+updateRecButtonUI();
+openNamePopup();
+renderAccountLinkUI();
+}
+async function signInWithGoogle() {
+if (!supabaseClient) {
+showToast('Supabase 연결이 필요합니다.', true);
+return;
+}
+
+const { error } = await supabaseClient.auth.signInWithOAuth({
+provider: 'google',
+options: {
+redirectTo: window.location.origin
+}
+});
+
+if (error) showToast('구글 로그인에 실패했습니다.', true);
+}
+
+async function signInWithKakao() {
+if (!supabaseClient) {
+showToast('Supabase 연결이 필요합니다.', true);
+return;
+}
+
+const { error } = await supabaseClient.auth.signInWithOAuth({
+provider: 'kakao',
+options: {
+redirectTo: window.location.origin
+}
+});
+
+if (error) showToast('카카오 로그인에 실패했습니다.', true);
+}
+
+
+async function linkGoogleIdentity() {
+  if (!supabaseClient || !isSocialLogin()) {
+    showToast('소셜 로그인 상태에서만 연결할 수 있습니다.', true);
+    return;
+  }
+
+  if (hasLinkedProvider('google')) {
+    showToast('이미 Google 계정이 연결되어 있습니다.');
+    return;
+  }
+
+  const { error } = await supabaseClient.auth.linkIdentity({
+    provider: 'google',
+    options: {
+      redirectTo: window.location.origin
+    }
+  });
+
+  if (error) {
+    console.error('Link Google error:', error);
+    showToast('Google 계정 연결에 실패했습니다.', true);
+  }
+}
+
+async function linkKakaoIdentity() {
+  if (!supabaseClient || !isSocialLogin()) {
+    showToast('소셜 로그인 상태에서만 연결할 수 있습니다.', true);
+    return;
+  }
+
+  if (hasLinkedProvider('kakao')) {
+    showToast('이미 Kakao 계정이 연결되어 있습니다.');
+    return;
+  }
+
+  const { error } = await supabaseClient.auth.linkIdentity({
+    provider: 'kakao',
+    options: {
+      redirectTo: window.location.origin
+    }
+  });
+
+  if (error) {
+    console.error('Link Kakao error:', error);
+    showToast('카카오 계정 연결에 실패했습니다.', true);
+  }
+}
+
+
+function openExportCodeModal() {
+if (!appState.user.isLoggedIn) {
+showToast('먼저 로그인해주세요.', true);
+return;
+}
+
+const exportPayload = {
+version: 1,
+exportedAt: new Date().toISOString(),
+username: appState.user.name,
+tasteProfile: appState.tasteProfile,
+recommendedItems: appState.recommendedItems,
+tierList: appState.tierList
+};
+
+const backupCode = createBackupCodeFromPayload(exportPayload);
+document.getElementById('exportCodeOutput').value = backupCode;
+
+const modal = document.getElementById('exportCodeModal');
+modal.classList.remove('hidden');
+modal.classList.add('flex');
+}
+
+function closeExportCodeModal() {
+const modal = document.getElementById('exportCodeModal');
+modal.classList.add('hidden');
+modal.classList.remove('flex');
+}
+
+async function copyExportCode() {
+const textarea = document.getElementById('exportCodeOutput');
+const value = textarea.value.trim();
+if (!value) return;
+
+try {
+if (navigator.clipboard && window.isSecureContext) {
+await navigator.clipboard.writeText(value);
+} else {
+textarea.focus();
+textarea.select();
+document.execCommand('copy');
+}
+showToast('백업 코드가 복사되었습니다.');
+} catch (err) {
+showToast('복사에 실패했습니다.', true);
+}
+}
+
+function openImportCodeModal() {
+if (!appState.user.isLoggedIn || !appState.user.name) {
+showToast('먼저 이름을 입력하고 시작해주세요.', true);
+return;
+}
+
+document.getElementById('importCodeInput').value = '';
+const modal = document.getElementById('importCodeModal');
+modal.classList.remove('hidden');
+modal.classList.add('flex');
+}
+
+function closeImportCodeModal() {
+const modal = document.getElementById('importCodeModal');
+modal.classList.add('hidden');
+modal.classList.remove('flex');
+}
+
+async function openShareModal() {
+  if (!appState.user.isLoggedIn) {
+    showToast('먼저 로그인해주세요.', true);
+    return;
+  }
+
+  const modal = document.getElementById('shareModal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+
+  try {
+    const existing = await getUserMetaRow();
+    if (!existing && !isDemoMode()) {
+      await saveUserMetaRecord();
+    }
+  } catch (err) {
+    console.error('openShareModal prepare error:', err);
+  }
+
+  await loadShareSettings();
+}
+
+function closeShareModal() {
+  const modal = document.getElementById('shareModal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+}
+
+async function loadShareSettings() {
+  const statusEl = document.getElementById('shareStatusText');
+  const inputEl = document.getElementById('shareLinkInput');
+
+  statusEl.innerText = '확인 중...';
+  inputEl.value = '';
+
+  if (isDemoMode() || !supabaseClient || (!appState.user.id && !appState.user.name)) {
+    statusEl.innerText = '체험 모드에서는 공유 기능을 사용할 수 없습니다.';
+    return;
+  }
+
+  try {
+    const data = await getUserMetaRow();
+
+    if (data?.is_public && data?.public_id) {
+      statusEl.innerText = '현재 공개 상태입니다.';
+      inputEl.value = buildShareUrl(data.public_id);
+    } else if (data?.public_id) {
+      statusEl.innerText = '공유 링크가 존재하지만 현재 비공개 상태입니다.';
+      inputEl.value = buildShareUrl(data.public_id);
+    } else {
+      statusEl.innerText = '아직 생성된 공유 링크가 없습니다.';
+    }
+  } catch (err) {
+    console.error('loadShareSettings error:', err);
+    statusEl.innerText = '공유 설정을 불러오지 못했습니다.';
+  }
+}
+
+async function enableShareLink(btn) {
+  if (isDemoMode() || !supabaseClient || (!appState.user.id && !appState.user.name)) {
+    showToast('체험 모드에서는 공유 기능을 사용할 수 없습니다.', true);
+    return;
+  }
+
+  const originalText = btn.innerText;
+  btn.disabled = true;
+  btn.classList.add('opacity-50');
+  btn.innerText = '생성 중...';
+
+  try {
+    const existing = await getUserMetaRow();
+    const publicId = existing?.public_id || generatePublicId();
+
+    await saveUserMetaRecord({
+      public_id: publicId,
+      is_public: true
+    });
+
+    const shareUrl = buildShareUrl(publicId);
+    document.getElementById('shareLinkInput').value = shareUrl;
+    document.getElementById('shareStatusText').innerText = '현재 공개 상태입니다.';
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      showToast('공유 링크가 생성되고 복사되었습니다.');
+    } catch (err) {
+      showToast('공유 링크가 생성되었습니다.');
+    }
+  } catch (err) {
+    console.error('enableShareLink error:', err);
+    showToast(`공유 링크 생성에 실패했습니다. ${err?.message || ''}`, true);
+  } finally {
+    btn.disabled = false;
+    btn.classList.remove('opacity-50');
+    btn.innerText = originalText;
+  }
+}
+
+async function disableShareLink(btn) {
+  if (isDemoMode() || !supabaseClient || (!appState.user.id && !appState.user.name)) {
+    showToast('체험 모드에서는 공유 기능을 사용할 수 없습니다.', true);
+    return;
+  }
+
+  const originalText = btn.innerText;
+  btn.disabled = true;
+  btn.classList.add('opacity-50');
+  btn.innerText = '변경 중...';
+
+  try {
+    const existing = await getUserMetaRow();
+
+    if (!existing) {
+      showToast('아직 생성된 공유 링크가 없습니다.', true);
+      return;
+    }
+
+    await saveUserMetaRecord({
+      public_id: existing.public_id || null,
+      is_public: false
+    });
+
+    document.getElementById('shareStatusText').innerText = '현재 비공개 상태입니다.';
+    if (existing.public_id) {
+      document.getElementById('shareLinkInput').value = buildShareUrl(existing.public_id);
+    }
+    showToast('공유가 비공개로 전환되었습니다.');
+  } catch (err) {
+    console.error('disableShareLink error:', err);
+    showToast('비공개 전환에 실패했습니다.', true);
+  } finally {
+    btn.disabled = false;
+    btn.classList.remove('opacity-50');
+    btn.innerText = originalText;
+  }
+}
+
+async function copyShareLink() {
+  const input = document.getElementById('shareLinkInput');
+  const value = String(input.value || '').trim();
+
+  if (!value) {
+    showToast('먼저 공유 링크를 생성해주세요.', true);
+    return;
+  }
+
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(value);
+    } else {
+      input.focus();
+      input.select();
+      document.execCommand('copy');
+    }
+    showToast('공유 링크가 복사되었습니다.');
+  } catch (err) {
+    showToast('링크 복사에 실패했습니다.', true);
+  }
+}
+
+async function applyImportCode() {
+const code = document.getElementById('importCodeInput').value.trim();
+if (!code) {
+showToast('백업 코드를 붙여넣어주세요.', true);
+return;
+}
+try {
+const parsed = parseBackupCode(code);
+await importUserData(parsed);
+} catch (err) {
+showToast('올바른 백업 코드가 아닙니다.', true);
+}
+}
+
+async function importUserData(data) {
+if (!data || typeof data !== 'object') return;
+
+const ok = confirm(`현재 "${appState.user.name}" 계정의 기존 기록을 모두 덮어쓸까요?`);
+if (!ok) return;
+
+try {
+appState.tierList = data.tierList || { SS: [], S: [], A: [], B: [], C: [], D: [] };
+appState.tasteProfile = data.tasteProfile || { titleKo: "아직 분석되지 않음", titleEn: "Not Analyzed", description: "티어리스트를 채우고 분석해보세요." };
+appState.recommendedItems = data.recommendedItems || [];
+
+await replaceTierListInDB();
+await saveUserMetaToDB();
+localStorage.setItem('migration_banner_dismissed', 'true'); 
+renderMigrationBanner(); 
+renderUserInfo();
+renderTierList();
+renderRecommendations();
+updateRecButtonUI();
+closeImportCodeModal();
+showToast('백업 코드 불러오기가 완료되었습니다.');
+} catch (err) {
+showToast('불러오기 중 오류가 발생했습니다.', true);
+}
+}
+
+function openNamePopup() {
+document.getElementById('main-body').classList.add('overflow-hidden');
+const popup = document.getElementById('name-popup');
+const popupContent = document.getElementById('name-popup-content');
+popup.style.display = 'flex';
+setTimeout(() => {
+popup.style.opacity = '1';
+popup.style.backdropFilter = 'blur(12px)';
+popupContent.style.transform = 'scale(1)';
+}, 10);
+}
+
+function closeNamePopup() {
+document.getElementById('main-body').classList.remove('overflow-hidden');
+const popup = document.getElementById('name-popup');
+const popupContent = document.getElementById('name-popup-content');
+popup.style.opacity = '0';
+popup.style.backdropFilter = 'blur(0px)';
+popupContent.style.transform = 'scale(0.95)';
+setTimeout(() => popup.style.display = 'none', 500);
+}
+
+function showToast(message, isError = false) {
+let container = document.getElementById('toast-container');
+if (!container) {
+container = document.createElement('div');
+container.id = 'toast-container';
+container.className = 'fixed bottom-5 left-1/2 transform -translate-x-1/2 z-[200] flex flex-col gap-2 pointer-events-none';
+document.body.appendChild(container);
+}
+const toast = document.createElement('div');
+toast.className = `px-6 py-3 rounded-full shadow-2xl text-white text-sm font-bold transition-all duration-300 transform translate-y-10 opacity-0 ${isError ? 'bg-red-600' : 'bg-green-600'}`;
+toast.innerText = message;
+container.appendChild(toast);
+
+requestAnimationFrame(() => {
+toast.style.transform = 'translateY(0)';
+toast.style.opacity = '1';
+});
+setTimeout(() => {
+toast.style.opacity = '0';
+toast.style.transform = 'translateY(10px)';
+setTimeout(() => toast.remove(), 300);
+}, 3000);
+}
+
+// ==========================================
+// 모달창 (작품 추가 / 상세)
+// ==========================================
+function updatePreviewImage() {
+const url = document.getElementById('imgUrl').value.trim();
+const imgEl = document.getElementById('addPreviewImg');
+imgEl.src = url || getPlaceholderUrl(document.getElementById('animeTitle').value || 'No Image');
+}
+
+function updatePreviewReview() {
+const review = document.getElementById('animeReview').value.trim();
+document.getElementById('addPreviewReview').innerText = review || '한줄평이 여기에 표시됩니다.';
+}
+
+function resetSearchUI(options = {}) {
+  const { keepTitle = false } = options;
+
+  const btn = document.getElementById('aiSearchBtn');
+  const loadingText = document.getElementById('aiLoadingText');
+  const searchResults = document.getElementById('aiSearchResults');
+
+  if (btn) {
+    btn.disabled = false;
+    btn.classList.remove('opacity-50');
+  }
+
+  if (loadingText) loadingText.classList.add('hidden');
+
+  if (searchResults) {
+    searchResults.innerHTML = '';
+    searchResults.classList.add('hidden');
+  }
+
+  if (aiAbortController) {
+    aiAbortController.abort();
+    aiAbortController = null;
+  }
+
+  tempAnimeData = null;
+
+  document.getElementById('imgUrl').value = '';
+  if (!keepTitle) {
+    document.getElementById('animeTitle').value = '';
+  }
+  document.getElementById('animeOriginalTitle').value = '';
+  document.getElementById('animeRating').value = '';
+  document.getElementById('animeReview').value = '';
+
+  document.getElementById('addPreviewImg').src = getPlaceholderUrl('No Image');
+  document.getElementById('addPreviewTitle').innerText = '작품 제목';
+  document.getElementById('addPreviewGenres').innerText = '-';
+  document.getElementById('addPreviewRating').innerText = '0.0';
+  document.getElementById('addPreviewReview').innerText = '한줄평이 여기에 표시됩니다.';
+}
+
+function openAddModal(tier, btnElement) {
+  currentTier = tier;
+  currentBtn = btnElement;
+
+  const badge = document.getElementById('modal-tier-badge');
+  badge.textContent = tier + ' 등급';
+
+  const tierColorBg = tierThemes[tier]
+    ? `${tierThemes[tier].color} ${tierThemes[tier].bg}`
+    : 'text-gray-400 bg-gray-400/20';
+
+  badge.className = `px-2 py-1 rounded text-sm mr-3 font-black ${tierColorBg}`;
+
+  resetSearchUI();
+
+  const modal = document.getElementById('addModal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+function closeAddModal() {
+  resetSearchUI();
+  const modal = document.getElementById('addModal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+}
+
+function openDetailModal(id, isRecommended = false) {
+if (isDragging) return;
+
+let foundAnime = null;
+if (isRecommended) {
+foundAnime = appState.recommendedItems.find(a => String(a.id) === String(id));
+} else {
+for (const tier in appState.tierList) {
+foundAnime = appState.tierList[tier].find(a => String(a.id) === String(id));
+if (foundAnime) break;
+}
+}
+if (!foundAnime) return;
+
+currentDetailId = id;
+currentDetailIsRecommended = isRecommended;
+
+const fallbackImg = getPlaceholderUrl(foundAnime.title);
+document.getElementById('detailImg').src = foundAnime.imgSrc || fallbackImg;
+document.getElementById('detailBadge').innerText = isRecommended ? `추천작 No.${foundAnime.rank}` : `${foundAnime.tier} 등급`;
+document.getElementById('detailTitle').innerText = foundAnime.title || '제목 없음';
+document.getElementById('detailOriginalTitle').innerText = foundAnime.originalTitle || '';
+document.getElementById('detailRating').innerText = foundAnime.rating ? Number(foundAnime.rating).toFixed(1) : '-';
+document.getElementById('detailDate').innerText = foundAnime.releaseDate || '-';
+document.getElementById('detailOverview').innerText = foundAnime.overview || '등록된 줄거리가 없습니다.';
+
+const genresContainer = document.getElementById('detailGenres');
+genresContainer.innerHTML = '';
+(foundAnime.genres || []).forEach(genre => {
+const span = document.createElement('span');
+span.className = 'px-3 py-1 bg-gray-700 text-gray-200 text-xs rounded-lg font-medium border border-gray-600';
+span.innerText = genre;
+genresContainer.appendChild(span);
+});
+
+const reviewArea = document.getElementById('detailReviewArea');
+const reasonArea = document.getElementById('detailReasonArea');
+
+if (isRecommended) {
+reviewArea.classList.add('hidden');
+reasonArea.classList.remove('hidden');
+document.getElementById('detailReasonText').innerText = foundAnime.recommendationReason || '';
+} else {
+reviewArea.classList.remove('hidden');
+reasonArea.classList.add('hidden');
+document.getElementById('detailReviewInput').value = foundAnime.userReview || foundAnime.aiReview || '';
+}
+
+const modal = document.getElementById('detailModal');
+modal.classList.remove('hidden');
+modal.classList.add('flex');
+}
+
+function closeDetailModal() {
+document.getElementById('detailModal').classList.add('hidden');
+currentDetailId = null;
+}
+
+function handleCardClick(event, id, isRecommended = false) {
+  if (isDragging || dragJustEnded || Date.now() < suppressNextCardClickUntil) {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    return;
+  }
+  openDetailModal(id, isRecommended);
+}
+
+async function saveEditedReview() {
+if (!currentDetailId || currentDetailIsRecommended) return;
+const newReview = document.getElementById('detailReviewInput').value.trim();
+for (const tier in appState.tierList) {
+const anime = appState.tierList[tier].find(a => String(a.id) === String(currentDetailId));
+if (anime) { anime.userReview = newReview; break; }
+}
+await updateAnimeReviewInDB(currentDetailId, newReview);
+renderTierList();
+showToast('한줄평이 수정되었습니다.');
+}
+
+async function saveAnime() {
+  const title = document.getElementById('animeTitle').value.trim();
+  const reviewInput = document.getElementById('animeReview').value.trim();
+
+  if (!currentTier || !appState.tierList[currentTier]) {
+    showToast('현재 티어 정보가 비어 있습니다. 다시 모달을 열어주세요.', true);
+    console.error('saveAnime: currentTier invalid', currentTier);
+    return;
+  }
+
+  if (!title) {
+    showToast('작품 제목을 먼저 선택해주세요.', true);
+    return;
+  }
+
+  if (!reviewInput) {
+    showToast('한줄평을 입력해주세요.', true);
+    return;
+  }
+
+  const newAnime = {
+    id: generateId(),
+    title: title,
+    originalTitle: tempAnimeData?.originalTitle || '',
+    imgSrc: document.getElementById('imgUrl').value.trim() || getPlaceholderUrl(title),
+    genres: tempAnimeData?.genres || [],
+    overview: tempAnimeData?.overview || '',
+    rating: tempAnimeData?.rating || 0,
+    releaseDate: tempAnimeData?.releaseDate || '',
+    tier: currentTier,
+    aiReview: tempAnimeData?.aiReview || '',
+    userReview: reviewInput
+  };
+
+  try {
+    const savedData = await saveAnimeToDB(newAnime, appState.tierList[currentTier].length);
+    if (savedData?.[0]) newAnime.id = savedData[0].id;
+
+    appState.tierList[currentTier].push(newAnime);
+    renderTierList();
+    closeAddModal();
+    showToast('작품이 목록에 추가되었습니다.');
+    console.log('saveAnime success:', newAnime);
+  } catch (err) {
+    console.error('saveAnime failed:', err);
+    showToast('작품 추가 중 오류가 발생했습니다.', true);
+  }
+}
+
+async function deleteAnime(btn, event, id, tier) {
+event.stopPropagation();
+if(!confirm('삭제하시겠습니까?')) return;
+appState.tierList[tier] = appState.tierList[tier].filter(a => String(a.id) !== String(id));
+await deleteAnimeFromDB(id);
+renderTierList();
+}
+
+async function refreshMissingAnimeMetadata(btn) {
+  if (!appState.user.isLoggedIn) {
+    showToast('먼저 로그인해주세요.', true);
+    return;
+  }
+
+  if (!supabaseClient) {
+    showToast('Supabase 연결이 필요합니다.', true);
+    return;
+  }
+
+  const originalText = btn?.innerText || '작품 정보 보정';
+  if (btn) {
+    btn.disabled = true;
+    btn.classList.add('opacity-50');
+    btn.innerText = '보정 중...';
+  }
+
+  try {
+    let query = supabaseClient
+      .from('tier_items')
+      .select('*')
+      .order('sort_order', { ascending: true });
+
+    if (isSocialLogin()) {
+      query = query.eq('user_id', appState.user.id);
+    } else {
+      query = query.eq('username', appState.user.name).is('user_id', null);
+    }
+
+    const { data: items, error } = await query;
+
+    if (error) {
+      console.error('Refresh load items error:', error);
+      throw error;
+    }
+
+    if (!items || items.length === 0) {
+      showToast('보정할 작품이 없습니다.');
+      return;
+    }
+
+    let updatedCount = 0;
+
+    for (const item of items) {
+      const needsMeta =
+  isBlankValue(item.original_title) ||
+  isMissingPosterUrl(item.poster_url) ||
+  isBlankValue(item.release_date) ||
+  isBlankValue(item.overview) ||
+  isBlankValue(item.genres) ||
+  isMissingRating(item.vote_average);
+
+      const needsAiReview = isBlankValue(item.ai_review);
+
+      if (!needsMeta && !needsAiReview) continue;
+
+      let best = null;
+      const refreshQueries = buildRefreshSearchQueries(item.title, item.original_title);
+
+      for (const q of refreshQueries) {
+        try {
+          const res = await fetchWithTimeout('/api/search-anime', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ query: q })
+}, 15000);
+
+          const json = await res.json();
+          const results = json?.results || [];
+          const picked = pickBestRefreshCandidate(results, item.title, item.original_title);
+
+          if (picked) {
+            best = picked;
+            if (!isBlankValue(best.poster_url)) break;
+          }
+        } catch (err) {
+          console.error('Metadata refresh search error:', err);
+        }
+      }
+
+      const updatePayload = {};
+
+      if (best) {
+        if (isBlankValue(item.original_title) && !isBlankValue(best.original_title)) {
+          updatePayload.original_title = best.original_title;
+        }
+
+        if (isMissingPosterUrl(item.poster_url) && !isBlankValue(best.poster_url)) {
+  updatePayload.poster_url = best.poster_url;
+}
+
+        if (isBlankValue(item.release_date) && !isBlankValue(best.release_date)) {
+          updatePayload.release_date = best.release_date;
+        }
+
+        if (isBlankValue(item.overview) && !isBlankValue(best.overview)) {
+          updatePayload.overview = best.overview;
+        }
+
+        if (isBlankValue(item.genres) && Array.isArray(best.genres) && best.genres.length > 0) {
+          updatePayload.genres = best.genres.join(', ');
+        }
+
+        if (isMissingRating(item.vote_average) && !isMissingRating(best.vote_average)) {
+          updatePayload.vote_average = best.vote_average;
+        }
+      }
+
+      if (needsAiReview) {
+        const reviewSource = {
+          title: best?.title || item.title || '',
+          originalTitle: best?.original_title || item.original_title || '',
+          overview: best?.overview || item.overview || '',
+          genres: best?.genres || parseGenresField(item.genres),
+          releaseDate: best?.release_date || item.release_date || '',
+          voteAverage: best?.vote_average || item.vote_average || 0
+        };
+
+        const hasEnoughReviewSource =
+          !isBlankValue(reviewSource.title) &&
+          (
+            !isBlankValue(reviewSource.overview) ||
+            (Array.isArray(reviewSource.genres) && reviewSource.genres.length > 0) ||
+            !isMissingRating(reviewSource.voteAverage) ||
+            !isBlankValue(reviewSource.releaseDate)
+          );
+
+        if (hasEnoughReviewSource) {
+          try {
+            const reviewRes = await fetchWithTimeout('/api/generate-review', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(reviewSource)
+}, 15000);
+
+            const reviewJson = await reviewRes.json();
+
+            if (isBlankValue(item.ai_review) && !isBlankValue(reviewJson?.shortReview)) {
+              updatePayload.ai_review = reviewJson.shortReview;
+            }
+          } catch (err) {
+            console.error('Metadata refresh review error:', err);
+          }
+        }
+      }
+
+      if (Object.keys(updatePayload).length > 0) {
+        try {
+          await updateAnimeFieldsInDB(item.id, updatePayload);
+          updatedCount++;
+        } catch (err) {
+          console.error(`Failed to update item ${item.id}:`, err);
+        }
+      }
+    }
+
+    await loadTierListFromDB();
+    showToast(`${updatedCount}개 작품의 누락 정보를 보정했습니다.`);
+  } catch (err) {
+    console.error('refreshMissingAnimeMetadata error:', err);
+    showToast('작품 정보 보정 중 오류가 발생했습니다.', true);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.classList.remove('opacity-50');
+      btn.innerText = originalText;
+    }
+  }
+}
+
+// ==========================================
+// SortableJS 기반 드래그 앤 드롭
+// ==========================================
+function setupDragAndDrop() {
+  const grids = ['grid-tier-ss','grid-tier-s','grid-tier-a','grid-tier-b','grid-tier-c','grid-tier-d','grid-tier-recommended'];
+
+  grids.forEach(id => {
+    const grid = document.getElementById(id);
+    if (!grid) return;
+
+    new Sortable(grid, {
+      group: 'tierList',
+      animation: 220,
+
+      delay: 150,
+      delayOnTouchOnly: true,
+      touchStartThreshold: 8,
+      fallbackTolerance: 12,
+
+      ghostClass: 'sortable-ghost',
+      dragClass: 'sortable-drag',
+
+      forceFallback: false,
+      fallbackOnBody: false,
+
+      scroll: true,
+      bubbleScroll: true,
+      scrollSensitivity: 80,
+      scrollSpeed: 18,
+
+      filter: 'button, #rec-empty-state',
+      preventOnFilter: false,
+
+      onStart: (evt) => {
+        isDragging = true;
+        dragJustEnded = false;
+        suppressNextCardClickUntil = Date.now() + 260;
+        clearTimeout(dragUnlockTimer);
+
+        attachDragWheelHandler();
+
+        if (evt?.originalEvent) {
+          updateDragEdgePointerFromEvent(evt.originalEvent);
+        }
+      },
+
+      onMove: (evt) => {
+        updateDragEdgePointerFromEvent(evt);
+      },
+
+      onEnd: async (evt) => {
+        stopDragEdgeAutoScroll();
+        detachDragWheelHandler();
+
+        const movedId = evt.item.getAttribute('data-id');
+        const fromTier = evt.from.id.split('-').pop().toUpperCase();
+        const toTier = evt.to.id.split('-').pop().toUpperCase();
+
+        try {
+          if (fromTier === 'RECOMMENDED' && toTier === 'RECOMMENDED') {
+            const movedIndex = appState.recommendedItems.findIndex(a => String(a.id) === String(movedId));
+            if (movedIndex > -1) {
+              const [movedAnime] = appState.recommendedItems.splice(movedIndex, 1);
+              appState.recommendedItems.splice(evt.newIndex, 0, movedAnime);
+              await saveUserMetaToDB();
+              renderRecommendations();
+              updateRecButtonUI();
+            }
+            return;
+          }
+
+          if (toTier === 'RECOMMENDED' && fromTier !== 'RECOMMENDED') {
+            renderTierList();
+            renderRecommendations();
+            return;
+          }
+
+          let movedAnime = null;
+
+          if (fromTier === 'RECOMMENDED') {
+            const idx = appState.recommendedItems.findIndex(a => String(a.id) === String(movedId));
+            if (idx > -1) movedAnime = appState.recommendedItems.splice(idx, 1)[0];
+          } else {
+            const idx = appState.tierList[fromTier].findIndex(a => String(a.id) === String(movedId));
+            if (idx > -1) movedAnime = appState.tierList[fromTier].splice(idx, 1)[0];
+          }
+
+          if (!movedAnime) return;
+
+          movedAnime.tier = toTier;
+
+          if (fromTier === 'RECOMMENDED') {
+            movedAnime.aiReview = movedAnime.recommendationReason;
+            const savedData = await saveAnimeToDB(movedAnime, evt.newIndex);
+            if (savedData?.[0]?.id) {
+              movedAnime.id = savedData[0].id;
+            }
+          } else {
+            await updateAnimeTierInDB(movedId, toTier);
+          }
+
+          appState.tierList[toTier].splice(evt.newIndex, 0, movedAnime);
+
+          await persistTierOrder(toTier);
+          if (fromTier !== toTier && fromTier !== 'RECOMMENDED') {
+            await persistTierOrder(fromTier);
+          }
+
+          renderTierList();
+          renderRecommendations();
+          updateRecButtonUI();
+        } catch (e) {
+          console.error('Drag end error:', e);
+          renderTierList();
+          renderRecommendations();
+          updateRecButtonUI();
+        } finally {
+          dragJustEnded = true;
+          suppressNextCardClickUntil = Date.now() + 280;
+          clearTimeout(dragUnlockTimer);
+          dragUnlockTimer = setTimeout(() => {
+            resetDragState();
+          }, 120);
+        }
+      }
+    });
+  });
+}
+
+// ==========================================
+// AI 및 분석 로직
+// ==========================================
+async function searchAnimeAI(btn) {
+  const titleInput = document.getElementById('animeTitle');
+  const query = titleInput.value.trim();
+  if (!query) return;
+
+  resetSearchUI({ keepTitle: true });
+  aiAbortController = new AbortController();
+
+  const loadingText = document.getElementById('aiLoadingText');
+  const searchBtn = document.getElementById('aiSearchBtn');
+  const resultsBox = document.getElementById('aiSearchResults');
+
+  loadingText.classList.remove('hidden');
+  if (searchBtn) {
+    searchBtn.disabled = true;
+    searchBtn.classList.add('opacity-50');
+  }
+
+  try {
+    const response = await fetchWithTimeout('/api/search-anime', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ query }),
+  signal: aiAbortController.signal
+}, 15000);
+
+    const data = await response.json();
+    const results = data?.results || [];
+
+    renderSearchResults(results);
+
+    if (results.length > 0) {
+      await selectCandidate(results[0], null, { silent: true });
+
+      if (resultsBox) {
+        resultsBox.classList.remove('hidden');
+      }
+
+    } else {
+      tempAnimeData = null;
+      document.getElementById('animeOriginalTitle').value = '';
+      document.getElementById('animeRating').value = '';
+      document.getElementById('imgUrl').value = '';
+      updatePreviewImage();
+      showToast('검색 결과를 찾지 못했습니다.', true);
+    }
+  } catch (error) {
+    if (error.name !== 'AbortError') {
+      console.error(error);
+      showToast('작품 검색 중 오류가 발생했습니다.', true);
+    }
+  } finally {
+    loadingText.classList.add('hidden');
+    if (searchBtn) {
+      searchBtn.disabled = false;
+      searchBtn.classList.remove('opacity-50');
+    }
+  }
+}
+
+function renderSearchResults(results) {
+  const container = document.getElementById('aiSearchResults');
+  container.innerHTML = '';
+
+  if (!results || results.length === 0) {
+    container.classList.add('hidden');
+    return;
+  }
+
+  container.classList.remove('hidden');
+
+  results.forEach((item, index) => {
+    const div = document.createElement('div');
+    div.className = `flex bg-gray-900 border rounded-lg p-3 cursor-pointer gap-3 items-center transition-colors ${
+      index === 0
+        ? 'border-purple-500 ring-1 ring-purple-500/40'
+        : 'border-gray-700 hover:border-purple-500'
+    }`;
+
+    div.onclick = async () => {
+      container.querySelectorAll('.search-candidate-item').forEach(el => {
+        el.classList.remove('border-purple-500', 'ring-1', 'ring-purple-500/40');
+        el.classList.add('border-gray-700');
+      });
+
+      div.classList.remove('border-gray-700');
+      div.classList.add('border-purple-500', 'ring-1', 'ring-purple-500/40');
+
+      await selectCandidate(item, div);
+    };
+
+    div.classList.add('search-candidate-item');
+
+    div.innerHTML = `
+      <img src="${item.poster_url || getPlaceholderUrl(item.title)}" class="w-12 h-16 object-cover rounded flex-shrink-0">
+      <div class="min-w-0 flex-1">
+        <div class="text-white font-bold text-sm truncate">${item.title}</div>
+        <div class="text-xs text-gray-400 truncate">${item.original_title || ''}</div>
+      </div>
+      ${index === 0 ? `<span class="text-[10px] text-purple-300 font-bold flex-shrink-0">자동선택</span>` : ''}
+    `;
+
+    container.appendChild(div);
+  });
+}
+
+async function selectCandidate(item, element = null, options = {}) {
+  const { silent = false } = options || {};
+
+  tempAnimeData = {
+    id: item.id,
+    mediaType: item.media_type,
+    title: item.title || '',
+    originalTitle: item.original_title || '',
+    imgSrc: item.poster_url || '',
+    genres: item.genres || [],
+    overview: item.overview || '',
+    rating: item.vote_average || 0,
+    releaseDate: item.release_date || '',
+    aiReview: ''
+  };
+
+  document.getElementById('animeTitle').value = tempAnimeData.title;
+  document.getElementById('animeOriginalTitle').value = tempAnimeData.originalTitle;
+  document.getElementById('animeRating').value =
+    tempAnimeData.rating ? Number(tempAnimeData.rating).toFixed(1) : '-';
+  document.getElementById('imgUrl').value = tempAnimeData.imgSrc;
+  updatePreviewImage();
+
+  document.getElementById('addPreviewTitle').innerText = tempAnimeData.title || '작품 제목';
+  document.getElementById('addPreviewGenres').innerText =
+    (tempAnimeData.genres && tempAnimeData.genres.length > 0)
+      ? tempAnimeData.genres.slice(0, 2).join(', ')
+      : '-';
+  document.getElementById('addPreviewRating').innerText =
+    tempAnimeData.rating ? Number(tempAnimeData.rating).toFixed(1) : '0.0';
+
+  const reviewTextarea = document.getElementById('animeReview');
+
+if (!canUseAutoReview()) {
+  tempAnimeData.aiReview = '';
+  reviewTextarea.value = '';
+  reviewTextarea.placeholder = 'AI 한줄평이 꺼져 있습니다. 직접 입력해주세요.';
+  updatePreviewReview();
+
+  if (!silent) {
+    showToast('작품 정보를 적용했습니다. 한줄평은 직접 입력해주세요.');
+  }
+  return;
+}
+
+if (getAiRemaining('autoReview') <= 0) {
+  tempAnimeData.aiReview = '';
+  reviewTextarea.value = '';
+  reviewTextarea.placeholder = 'AI 한줄평 사용 횟수를 모두 소진했습니다. 직접 입력해주세요.';
+  updatePreviewReview();
+
+  if (!silent) {
+    showToast('AI 한줄평 사용 횟수를 모두 사용했습니다.', true);
+  }
+  return;
+}
+
+reviewTextarea.placeholder = '후보 리스트에서 작품을 선택하면 AI가 한줄평을 생성합니다.';
+reviewTextarea.value = 'AI 한줄평 생성 중...';
+updatePreviewReview();
+
+try {
+  const res = await fetchWithTimeout('/api/generate-review', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      title: tempAnimeData.title,
+      originalTitle: tempAnimeData.originalTitle,
+      overview: tempAnimeData.overview,
+      genres: tempAnimeData.genres,
+      releaseDate: tempAnimeData.releaseDate,
+      voteAverage: tempAnimeData.rating
+    })
+  }, 15000);
+
+  const reviewData = await res.json();
+tempAnimeData.aiReview = reviewData.shortReview || '';
+reviewTextarea.value = tempAnimeData.aiReview;
+updatePreviewReview();
+
+if (tempAnimeData.aiReview) {
+  incrementAiUsage('autoReview', 1);
+}
+
+if (!silent) {
+  showToast('작품 정보를 적용했습니다.');
+}
+} catch (err) {
+  console.error(err);
+  tempAnimeData.aiReview = '';
+  reviewTextarea.value = '';
+  reviewTextarea.placeholder = 'AI 한줄평 생성에 실패했습니다. 직접 입력해주세요.';
+  updatePreviewReview();
+
+  if (!silent) {
+    showToast('AI 한줄평 생성에 실패했습니다. 직접 입력해주세요.', true);
+  }
+}
+}
+async function generateTasteProfile(btn) {
+  const allItems = Object.values(appState.tierList).flat();
+  if (allItems.length < 3) {
+    return showToast('작품을 더 추가해주세요.', true);
+  }
+
+  btn.classList.add('animate-spin');
+
+  try {
+    const response = await fetch('/api/taste-profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ss: appState.tierList.SS.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
+        s: appState.tierList.S.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
+        a: appState.tierList.A.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
+        b: appState.tierList.B.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
+        c: appState.tierList.C.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
+        d: appState.tierList.D.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', ')
+      })
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      console.error('taste-profile error:', err);
+      throw new Error(`taste-profile failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (!data?.titleKo) {
+      console.error('Invalid taste-profile response:', data);
+      throw new Error('invalid taste-profile response');
+    }
+
+    appState.tasteProfile = data;
+    await saveUserMetaToDB();
+    renderTasteProfile();
+    showToast('성향 분석이 완료되었습니다.');
+  } catch (err) {
+    console.error(err);
+    showToast('성향 분석에 실패했습니다.', true);
+  } finally {
+    btn.classList.remove('animate-spin');
+  }
+}
+
+async function generateRecommendations(btn) {
+  const allItems = Object.values(appState.tierList).flat();
+  if (allItems.length < 2) {
+    showToast('작품을 2개 이상 추가해주세요.', true);
+    return;
+  }
+
+  if (getAiRemaining('recommend') <= 0) {
+    showToast('AI 추천 사용 횟수를 모두 사용했습니다.', true);
+    updateRecButtonUI();
+    return;
+  }
+
+  btn.disabled = true;
+  btn.classList.add('opacity-50');
+  document.getElementById('rec-loading').classList.remove('hidden');
+
+  try {
+    const response = await fetchWithTimeout('/api/recommend', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    titles: allItems.map(a => a.title).join(','),
+    ss: appState.tierList.SS.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
+    s: appState.tierList.S.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
+    a: appState.tierList.A.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
+    b: appState.tierList.B.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
+    c: appState.tierList.C.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
+    d: appState.tierList.D.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', ')
+  })
+}, 20000);
+
+    if (!response.ok) {
+  let errBody = null;
+  try {
+    errBody = await response.json();
+  } catch (_) {
+    errBody = await response.text().catch(() => '');
+  }
+  console.error('recommend api error body:', errBody);
+  throw new Error(`recommend failed: ${response.status}`);
+}
+
+const recs = await response.json();
+incrementAiUsage('recommend', 1);
+
+    // 1차: 내가 이미 본 작품 제목 모으기
+    const watchedSet = new Set();
+    allItems.forEach(a => {
+      if (a.title) watchedSet.add(normalizeAnimeTitle(a.title));
+      if (a.originalTitle) watchedSet.add(normalizeAnimeTitle(a.originalTitle));
+      if (a.original_title) watchedSet.add(normalizeAnimeTitle(a.original_title));
+    });
+
+    // 2차: AI가 준 제목 기준으로 먼저 거르기
+    const firstPass = recs.filter(r => {
+      const candidates = [
+        r.title,
+        r.originalTitle,
+        r.original_title
+      ]
+        .filter(Boolean)
+        .map(normalizeAnimeTitle);
+
+      return !candidates.some(t => watchedSet.has(t));
+    });
+
+    // 3차: TMDb 정보 보강
+    const enriched = await Promise.all(
+      firstPass.map(async (r, i) => {
+        try {
+          const queries = [r.title, r.originalTitle].filter(Boolean);
+          let best = null;
+
+          for (const q of queries) {
+            const res = await fetchWithTimeout('/api/search-anime', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ query: q })
+}, 15000);
+
+            const data = await res.json();
+
+            if (data?.results?.[0]) {
+              best = data.results[0];
+              break;
+            }
+          }
+
+          return {
+            id: generateId(),
+            rank: i + 1,
+            title: best?.title || r.title,
+            originalTitle: best?.original_title || r.originalTitle || '',
+            imgSrc: best?.poster_url || getPlaceholderUrl(r.title),
+            genres: best?.genres || [],
+            overview: best?.overview || '',
+            rating: best?.vote_average || 0,
+            releaseDate: best?.release_date || '',
+            tier: 'RECOMMENDED',
+            recommendationReason: r.reason
+          };
+        } catch (e) {
+          return {
+            id: generateId(),
+            rank: i + 1,
+            title: r.title,
+            originalTitle: r.originalTitle || '',
+            imgSrc: getPlaceholderUrl(r.title),
+            genres: [],
+            overview: '',
+            rating: 0,
+            releaseDate: '',
+            tier: 'RECOMMENDED',
+            recommendationReason: r.reason
+          };
+        }
+      })
+    );
+
+    // 4차: TMDb 보정 후 다시 한 번 중복 제거
+    const secondPass = enriched.filter(rec => {
+      const candidates = [
+        rec.title,
+        rec.originalTitle,
+        rec.original_title
+      ]
+        .filter(Boolean)
+        .map(normalizeAnimeTitle);
+
+      return !candidates.some(t => watchedSet.has(t));
+    });
+
+    // 5차: 추천끼리도 중복 제거
+    const seen = new Set();
+    const finalRecs = secondPass.filter(rec => {
+      const key = normalizeAnimeTitle(rec.title || rec.originalTitle || '');
+      if (!key) return false;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    appState.recommendedItems = finalRecs.slice(0, 4);
+
+    await saveUserMetaToDB();
+    renderRecommendations();
+    updateRecButtonUI();
+
+    if (appState.recommendedItems.length === 0) {
+      showToast('기존 작품과 겹치지 않는 추천을 찾지 못했습니다. 다시 시도해주세요.', true);
+    } else {
+      showToast('AI 추천이 완료되었습니다.');
+    }
+  } catch (err) {
+    console.error(err);
+    showToast('AI 추천에 실패했습니다.', true);
+  } finally {
+    btn.disabled = false;
+    btn.classList.remove('opacity-50');
+    document.getElementById('rec-loading').classList.add('hidden');
+  }
+}
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeDetailModal();
+      closeAddModal();
+      closeExportCodeModal();
+      closeImportCodeModal();
+      closeShareModal();
+      closeSettingsModal();
+    }
+});
+</script>
+</body>
+</html>
