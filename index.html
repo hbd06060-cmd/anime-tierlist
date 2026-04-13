@@ -1701,9 +1701,7 @@ const descEl = document.getElementById('taste-profile-desc');
 if (!titleEl || !descEl) return;
 
 if (prof && prof.titleKo && prof.titleKo !== "아직 분석되지 않음") {
-  titleEl.innerText = prof.titleEn
-    ? `${prof.titleKo} (${prof.titleEn})`
-    : prof.titleKo;
+  titleEl.innerText = prof.titleKo;
   descEl.innerText = prof.description || '';
 } else {
   titleEl.innerText = "아직 분석되지 않음";
