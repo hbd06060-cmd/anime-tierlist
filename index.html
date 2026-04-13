@@ -3265,9 +3265,9 @@ async function generateTasteProfile(btn) {
     }
 
     appState.tasteProfile = normalized;
-    renderTasteProfile();
-    await saveUserMetaToDB();
-    showToast('성향 분석이 완료되었습니다.');
+await saveUserMetaToDB();
+renderTasteProfile();
+showToast('성향 분석이 완료되었습니다.');
   } catch (err) {
     console.error(err);
 
