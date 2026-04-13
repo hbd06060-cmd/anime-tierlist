@@ -127,10 +127,11 @@ body.is-dragging .anime-card-container * {
       
       <div class="glass-panel p-4 rounded-2xl flex flex-col md:flex-row md:items-center gap-4 shadow-lg shadow-black/20">
         <div class="flex-1 min-w-0">
-          <p class="text-gray-400 text-sm md:text-base font-bold mb-1 flex items-center gap-2">
-            ✨ 성향 분석 <span class="w-1 h-1 rounded-full bg-gray-500 inline-block"></span> 
-            <span class="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-orange-400 text-base md:text-lg font-black" id="taste-profile-title">아직 분석되지 않음</span>
-          </p>
+          <p class="text-gray-400 text-sm md:text-base font-bold mb-1 flex items-start gap-2 leading-tight">
+  <span class="shrink-0 pt-[2px]">✨ 성향 분석</span>
+  <span class="w-1 h-1 rounded-full bg-gray-500 inline-block shrink-0 mt-[9px]"></span>
+  <span class="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-orange-400 text-base md:text-lg font-black leading-tight block" id="taste-profile-title">아직 분석되지 않음</span>
+</p>
           <p id="taste-profile-desc" class="text-xs text-gray-500 leading-relaxed mt-1">티어리스트를 채우고 분석해보세요.</p>
         </div>
         <button id="tasteProfileBtn" onclick="generateTasteProfile(this)" class="text-gray-300 hover:text-white hover:bg-white/10 transition-all p-2.5 rounded-xl flex-shrink-0 flex items-center justify-center border border-white/5 bg-white/5" title="전체 취향 분석 새로고침">
@@ -913,7 +914,8 @@ function normalizeTasteProfile(raw) {
   const fallback = {
     titleKo: "아직 분석되지 않음",
     titleEn: "Not Analyzed",
-    description: "티어리스트를 채우고 분석해보세요."
+    description: "티어리스트를 채우고 분석해보세요.",
+    fullText: ""
   };
 
   if (!raw) return fallback;
@@ -923,13 +925,23 @@ function normalizeTasteProfile(raw) {
     return {
       titleKo: "서사/캐릭터 중심 취향",
       titleEn: "Narrative & Character Focus",
-      description: cleaned || fallback.description
+      description: cleaned || fallback.description,
+      fullText: cleaned || ""
     };
   }
 
-  const rawTitleKo = String(raw.titleKo || '').trim();
-  const rawTitleEn = String(raw.titleEn || '').trim();
-  const rawDescription = String(raw.description || '').trim();
+  const rawTitleKo = String(raw.titleKo || raw.title || '').trim();
+  const rawTitleEn = String(raw.titleEn || raw.subtitle || raw.enTitle || '').trim();
+
+  const rawDescription = String(
+    raw.description ||
+    raw.summary ||
+    raw.analysis ||
+    raw.reason ||
+    raw.body ||
+    raw.fullText ||
+    ''
+  ).trim();
 
   const brokenTitle =
     rawTitleKo.length > 80 ||
@@ -944,14 +956,18 @@ function normalizeTasteProfile(raw) {
     return {
       titleKo: "서사/캐릭터 중심 취향",
       titleEn: "Narrative & Character Focus",
-      description: rawDescription || rawTitleKo || fallback.description
+      description: rawDescription || rawTitleKo || fallback.description,
+      fullText: rawDescription || rawTitleKo || ""
     };
   }
+
+  const finalDescription = rawDescription || fallback.description;
 
   return {
     titleKo: trimProfileLine(rawTitleKo || fallback.titleKo, 36),
     titleEn: trimProfileLine(rawTitleEn || fallback.titleEn, 44),
-    description: rawDescription || fallback.description
+    description: finalDescription,
+    fullText: String(raw.fullText || finalDescription || '')
   };
 }
 
@@ -2056,7 +2072,8 @@ appState.recommendedItems = [];
 appState.tasteProfile = {
 titleKo: "아직 분석되지 않음",
 titleEn: "Not Analyzed",
-description: "티어리스트를 채우고 분석해보세요."
+description: "티어리스트를 채우고 분석해보세요.",
+fullText: ""
 };
 }
 
@@ -3226,7 +3243,7 @@ async function generateTasteProfile(btn) {
         c: appState.tierList.C.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
         d: appState.tierList.D.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', ')
       })
-    }, 20000);
+    }, 45000);
 
     if (!response.ok) {
       let errBody = null;
@@ -3248,12 +3265,17 @@ async function generateTasteProfile(btn) {
     }
 
     appState.tasteProfile = normalized;
-    await saveUserMetaToDB();
     renderTasteProfile();
+    await saveUserMetaToDB();
     showToast('성향 분석이 완료되었습니다.');
   } catch (err) {
     console.error(err);
-    showToast('성향 분석에 실패했습니다.', true);
+
+    if (err?.name === 'AbortError') {
+      showToast('성향 분석 응답 시간이 너무 길어 중단되었습니다. 잠시 후 다시 시도해주세요.', true);
+    } else {
+      showToast('성향 분석에 실패했습니다.', true);
+    }
   } finally {
     btn.disabled = false;
     btn.classList.remove('animate-spin', 'opacity-70');
