@@ -902,6 +902,59 @@ function getAnimeSettings() {
 function saveAnimeSettings(settings) {
   localStorage.setItem('anime_settings', JSON.stringify(settings));
 }
+
+function trimProfileLine(value, max = 60) {
+  const text = String(value || '').replace(/\s+/g, ' ').trim();
+  if (!text) return '';
+  return text.length > max ? text.slice(0, max).trim() + '…' : text;
+}
+
+function normalizeTasteProfile(raw) {
+  const fallback = {
+    titleKo: "아직 분석되지 않음",
+    titleEn: "Not Analyzed",
+    description: "티어리스트를 채우고 분석해보세요."
+  };
+
+  if (!raw) return fallback;
+
+  if (typeof raw === 'string') {
+    const cleaned = raw.trim();
+    return {
+      titleKo: "서사/캐릭터 중심 취향",
+      titleEn: "Narrative & Character Focus",
+      description: cleaned || fallback.description
+    };
+  }
+
+  const rawTitleKo = String(raw.titleKo || '').trim();
+  const rawTitleEn = String(raw.titleEn || '').trim();
+  const rawDescription = String(raw.description || '').trim();
+
+  const brokenTitle =
+    rawTitleKo.length > 80 ||
+    rawTitleKo.includes('\n') ||
+    rawTitleKo.includes('{') ||
+    rawTitleKo.includes('}') ||
+    rawTitleKo.includes('"description"') ||
+    rawTitleKo.includes('```') ||
+    /^\d{20,}/.test(rawTitleKo);
+
+  if (brokenTitle) {
+    return {
+      titleKo: "서사/캐릭터 중심 취향",
+      titleEn: "Narrative & Character Focus",
+      description: rawDescription || rawTitleKo || fallback.description
+    };
+  }
+
+  return {
+    titleKo: trimProfileLine(rawTitleKo || fallback.titleKo, 36),
+    titleEn: trimProfileLine(rawTitleEn || fallback.titleEn, 44),
+    description: rawDescription || fallback.description
+  };
+}
+
 function getUiTargetPath(uiVersion) {
   return uiVersion === 'redesign' ? './redesign.html' : './';
 }
@@ -1056,53 +1109,7 @@ function buildUserMetaPayload(extra = {}) {
     ...extra
   };
 }
-function trimProfileLine(value, max = 60) {
-  const text = String(value || '').replace(/\s+/g, ' ').trim();
-  if (!text) return '';
-  return text.length > max ? text.slice(0, max).trim() + '…' : text;
-}
 
-function normalizeTasteProfile(raw) {
-  const fallback = {
-    titleKo: "아직 분석되지 않음",
-    titleEn: "Not Analyzed",
-    description: "티어리스트를 채우고 분석해보세요.",
-    fullText: ""
-  };
-
-  if (!raw || typeof raw !== 'object') return fallback;
-
-  const rawTitleKo = String(raw.titleKo || '').trim();
-  const rawTitleEn = String(raw.titleEn || '').trim();
-  const rawDescription = String(raw.description || '').trim();
-
-  const titleLooksBroken =
-    rawTitleKo.length > 80 ||
-    rawTitleKo.includes('\n') ||
-    rawTitleKo.includes('•') ||
-    rawTitleKo.includes('- SS') ||
-    rawTitleKo.includes('장르') ||
-    rawTitleKo.includes('서사') ||
-    rawTitleKo.includes('당신은');
-
-  if (titleLooksBroken) {
-    return {
-      titleKo: "서사와 캐릭터 중심 취향",
-      titleEn: "Narratives and Character Depth",
-      description: rawTitleKo,
-      fullText: rawTitleKo
-    };
-  }
-
-  const finalDescription = rawDescription || "티어리스트를 채우고 분석해보세요.";
-
-  return {
-    titleKo: trimProfileLine(rawTitleKo || fallback.titleKo, 40),
-    titleEn: trimProfileLine(rawTitleEn || fallback.titleEn, 48),
-    description: finalDescription,
-    fullText: String(raw.fullText || finalDescription || '')
-  };
-}
 async function saveUserMetaRecord(extra = {}) {
   if (isDemoMode() || !supabaseClient || (!appState.user.id && !appState.user.name)) {
     return null;
@@ -3201,10 +3208,13 @@ async function generateTasteProfile(btn) {
     return showToast('작품을 더 추가해주세요.', true);
   }
 
-  btn.classList.add('animate-spin');
+  if (btn.disabled) return;
+
+  btn.disabled = true;
+  btn.classList.add('animate-spin', 'opacity-70');
 
   try {
-    const response = await fetch('/api/taste-profile', {
+    const response = await fetchWithTimeout('/api/taste-profile', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -3215,22 +3225,28 @@ async function generateTasteProfile(btn) {
         c: appState.tierList.C.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
         d: appState.tierList.D.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', ')
       })
-    });
+    }, 20000);
 
     if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      console.error('taste-profile error:', err);
+      let errBody = null;
+      try {
+        errBody = await response.json();
+      } catch (_) {
+        errBody = await response.text().catch(() => '');
+      }
+      console.error('taste-profile error:', errBody);
       throw new Error(`taste-profile failed: ${response.status}`);
     }
 
     const data = await response.json();
+    const normalized = normalizeTasteProfile(data);
 
-    if (!data?.titleKo) {
+    if (!normalized?.titleKo) {
       console.error('Invalid taste-profile response:', data);
       throw new Error('invalid taste-profile response');
     }
 
-    appState.tasteProfile = normalizeTasteProfile(data);
+    appState.tasteProfile = normalized;
     await saveUserMetaToDB();
     renderTasteProfile();
     showToast('성향 분석이 완료되었습니다.');
@@ -3238,7 +3254,8 @@ async function generateTasteProfile(btn) {
     console.error(err);
     showToast('성향 분석에 실패했습니다.', true);
   } finally {
-    btn.classList.remove('animate-spin');
+    btn.disabled = false;
+    btn.classList.remove('animate-spin', 'opacity-70');
   }
 }
 
