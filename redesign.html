@@ -344,9 +344,169 @@ body {
   cursor: pointer;
   transition: 0.2s ease;
 }
-
+.quick-grid button {
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1.35;
+}
 .quick-grid button:hover {
   background: rgba(255,255,255,0.08);
+}
+
+.ui-version-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.ui-version-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+  cursor: pointer;
+  transition: 0.22s ease;
+  overflow: hidden;
+}
+
+.ui-version-card:hover {
+  border-color: rgba(139,92,246,0.34);
+  background: linear-gradient(180deg, rgba(139,92,246,0.10), rgba(255,255,255,0.03));
+  transform: translateY(-1px);
+}
+
+.ui-version-card.is-active {
+  border-color: rgba(139,92,246,0.65);
+  background: linear-gradient(135deg, rgba(139,92,246,0.18), rgba(99,102,241,0.10));
+  box-shadow: 0 14px 36px rgba(99,102,241,0.22);
+}
+
+.ui-version-copy {
+  min-width: 0;
+}
+
+.ui-version-copy strong {
+  display: block;
+  font-size: 15px;
+  font-weight: 800;
+  color: #f8faff;
+  letter-spacing: -0.02em;
+}
+
+.ui-version-copy span {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #9aa6c8;
+}
+
+.ui-version-indicator {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(255,255,255,0.22);
+  background: rgba(255,255,255,0.04);
+  flex-shrink: 0;
+  position: relative;
+  transition: 0.22s ease;
+}
+
+.ui-version-card.is-active .ui-version-indicator {
+  border-color: rgba(167,139,250,0.95);
+  background: rgba(139,92,246,0.18);
+  box-shadow: 0 0 0 6px rgba(139,92,246,0.12);
+}
+
+.ui-version-card.is-active .ui-version-indicator::after {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #a78bfa, #60a5fa);
+}
+
+.quick-insight-note {
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.quick-insight-pills,
+.quick-mini-grid {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.quick-insight-pills {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.quick-pill,
+.quick-mini-card {
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.04);
+}
+
+.quick-pill {
+  padding: 10px 12px;
+}
+
+.quick-pill .label,
+.quick-mini-card .label {
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #8f9ac0;
+  margin-bottom: 6px;
+}
+
+.quick-pill .value,
+.quick-mini-card .value {
+  display: block;
+  color: #f8faff;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.quick-pill .value {
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.quick-mini-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.quick-mini-card {
+  padding: 14px;
+}
+
+.quick-mini-card .value {
+  font-size: 16px;
+  line-height: 1.35;
+  white-space: pre-line;
+}
+
+@media (max-width: 860px) {
+  .quick-insight-pills,
+  .quick-mini-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .section-head {
@@ -826,32 +986,43 @@ body {
       <h1 id="report-title">사용자님의<br>애니메이션 감상 아카이브</h1>
 
       <div class="hero-desc">
-        단순히 작품을 줄 세우는 화면이 아니라, 취향의 결을 읽어내는 개인용 아카이브처럼 보이도록 구성했습니다.
-        상단에서 사용자의 취향과 상태가 먼저 보이고, 아래에서 티어별 작품을 편하게 훑는 구조입니다.
-      </div>
+  내가 본 작품을 티어별로 정리하고, 한줄평과 성향 분석까지 함께 기록하는 감상 아카이브입니다.
+  상단에서는 지금의 취향과 계정 상태를 빠르게 확인하고, 아래에서는 티어별 작품 흐름을 한눈에 관리할 수 있습니다.
+</div>
 
-      <div class="profile-card">
-        <div class="profile-box">
-          <div class="label">Taste Profile</div>
-          <div class="value" id="taste-profile-title">아직 분석되지 않음</div>
-          <p id="taste-profile-desc">티어리스트를 채우고 분석해보세요.</p>
-          <div class="profile-tags" id="taste-profile-tags">
-            <span>취향 분석 대기</span>
-          </div>
-        </div>
+      <div class="profile-box">
+  <div class="label">Taste Profile</div>
+  <div class="value" id="taste-profile-title">아직 분석되지 않음</div>
+  <p id="taste-profile-desc">티어리스트를 채우고 분석해보세요.</p>
+</div>
 
         <div class="profile-box">
-          <div class="label">Quick Insight</div>
-          <p>
-            이 화면은 기존보다 상단 인상을 더 강하게 만들고,
-            사용자의 취향과 현재 상태가 먼저 보이도록 정리한 버전입니다.
-          </p>
-          <div style="margin-top:14px;">
-            <button id="tasteProfileBtn" onclick="generateTasteProfile(this)" class="cta" style="padding:12px 16px; font-size:13px;">
-              전체 취향 분석
-            </button>
-          </div>
-        </div>
+  <div class="label">Quick Insight</div>
+  <p id="quick-insight-text" class="quick-insight-note">
+    아직 취향 분석이 없습니다. 작품을 더 채운 뒤 전체 취향 분석을 실행하면 핵심 선호 포인트를 이 영역에서 바로 확인할 수 있습니다.
+  </p>
+
+  <div class="quick-insight-pills">
+    <div class="quick-pill">
+      <span class="label">핵심 취향</span>
+      <span class="value" id="quick-insight-focus">분석 대기</span>
+    </div>
+    <div class="quick-pill">
+      <span class="label">상위 티어</span>
+      <span class="value" id="quick-insight-top-tier">SS 0 · S 0</span>
+    </div>
+    <div class="quick-pill">
+      <span class="label">추천 상태</span>
+      <span class="value" id="quick-insight-rec">추천 0작품</span>
+    </div>
+  </div>
+
+  <div style="margin-top:14px;">
+    <button id="tasteProfileBtn" onclick="generateTasteProfile(this)" class="cta" style="padding:12px 16px; font-size:13px;">
+      전체 취향 분석
+    </button>
+  </div>
+</div>
       </div>
     </div>
 
@@ -881,14 +1052,33 @@ body {
       </div>
 
       <div class="quick-card">
-        <h3>빠른 액션</h3>
-        <div class="quick-grid">
-          <button onclick="openAddModal('SS', this)">새 작품 추가</button>
-          <button onclick="refreshMissingAnimeMetadata(document.getElementById('refreshMissingBtn'))">작품 정보 보정</button>
-          <button onclick="generateTasteProfile(document.getElementById('tasteProfileBtn'))">전체 취향 분석</button>
-          <button onclick="openShareModal()">링크 공유</button>
-        </div>
-      </div>
+  <h3>빠른 액션</h3>
+  <div class="quick-grid">
+    <button onclick="openAddModal('SS', this)">새 작품 추가</button>
+    <button onclick="refreshMissingAnimeMetadata(document.getElementById('refreshMissingBtn'))">작품 정보 보정</button>
+    <button onclick="generateTasteProfile(document.getElementById('tasteProfileBtn'))">전체 취향 분석</button>
+    <button onclick="openShareModal()">링크 공유</button>
+  </div>
+
+  <div class="quick-mini-grid">
+    <div class="quick-mini-card">
+      <span class="label">현재 프로필</span>
+      <span class="value" id="quick-mini-profile">분석 대기</span>
+    </div>
+    <div class="quick-mini-card">
+      <span class="label">상위 티어 작품 수</span>
+      <span class="value" id="quick-mini-top-count">SS 0 · S 0</span>
+    </div>
+    <div class="quick-mini-card">
+      <span class="label">추천 목록 상태</span>
+      <span class="value" id="quick-mini-rec-state">추천 0작품</span>
+    </div>
+    <div class="quick-mini-card">
+      <span class="label">저장 방식</span>
+      <span class="value" id="quick-mini-login-state">상태 확인 중</span>
+    </div>
+  </div>
+</div>
     </aside>
   </section>
 
@@ -1324,24 +1514,26 @@ AI 추천 이유
 <div class="bg-gray-900 border border-gray-700 rounded-xl p-4">
   <p class="text-white font-bold">UI 버전 선택</p>
   <p class="text-xs text-gray-400 mt-1">
-    기존 화면과 새 화면 중 원하는 UI를 선택할 수 있습니다. 마지막으로 사용한 UI는 자동으로 기억됩니다.
+    원하는 화면 톤을 선택할 수 있습니다. 마지막 선택은 자동으로 저장됩니다.
   </p>
 
-  <div class="mt-4 space-y-3">
-    <label class="flex items-center justify-between gap-3 cursor-pointer bg-gray-800 border border-gray-700 rounded-lg px-4 py-3">
-      <div>
-        <p class="text-sm font-bold text-white">기존 UI</p>
-        <p class="text-xs text-gray-400">기존 index 스타일의 익숙한 구성</p>
+  <div class="ui-version-grid">
+    <label id="uiLegacyCard" class="ui-version-card">
+      <div class="ui-version-copy">
+        <strong>기존 UI</strong>
+        <span>정보를 한 번에 훑기 쉬운 기존 index 스타일 구성</span>
       </div>
-      <input id="uiLegacyRadio" type="radio" name="uiVersion" value="legacy" onchange="handleUiVersionChange(this)">
+      <span class="ui-version-indicator"></span>
+      <input id="uiLegacyRadio" type="radio" name="uiVersion" value="legacy" class="sr-only" onchange="handleUiVersionChange(this)">
     </label>
 
-    <label class="flex items-center justify-between gap-3 cursor-pointer bg-gray-800 border border-gray-700 rounded-lg px-4 py-3">
-      <div>
-        <p class="text-sm font-bold text-white">새 UI</p>
-        <p class="text-xs text-gray-400">redesign 레이아웃 기반의 새로운 구성</p>
+    <label id="uiRedesignCard" class="ui-version-card">
+      <div class="ui-version-copy">
+        <strong>새 UI</strong>
+        <span>아카이브처럼 분위기 있게 정리한 redesign 레이아웃</span>
       </div>
-      <input id="uiRedesignRadio" type="radio" name="uiVersion" value="redesign" onchange="handleUiVersionChange(this)">
+      <span class="ui-version-indicator"></span>
+      <input id="uiRedesignRadio" type="radio" name="uiVersion" value="redesign" class="sr-only" onchange="handleUiVersionChange(this)">
     </label>
   </div>
 </div>
@@ -1796,6 +1988,8 @@ async function refreshLinkedIdentities() {
   }
 
   renderAccountLinkUI();
+  updateQuickInsightPanel();
+  renderUserInfo();
 }
 
 function renderProviderStatus(provider, elementId, connectFnName) {
@@ -1835,6 +2029,111 @@ function renderAccountLinkUI() {
 
   renderProviderStatus('google', 'google-link-status', 'linkGoogleIdentity');
   renderProviderStatus('kakao', 'kakao-link-status', 'linkKakaoIdentity');
+}
+
+function getReadableLoginState() {
+  if (isDemoMode()) {
+    return {
+      title: 'DEMO',
+      desc: '체험 모드 · 브라우저를 새로고침하면 기록이 사라집니다.'
+    };
+  }
+
+  if (isLegacyLogin()) {
+    return {
+      title: 'LEGACY',
+      desc: '기존 이름 로그인 방식으로 저장 중입니다.'
+    };
+  }
+
+  if (isSocialLogin()) {
+    const providers = getLinkedProviders();
+
+    if (providers.includes('google') && providers.includes('kakao')) {
+      return {
+        title: 'GOOGLE + KAKAO',
+        desc: '소셜 계정 2개가 연결된 상태입니다.'
+      };
+    }
+
+    if (providers.includes('google')) {
+      return {
+        title: 'GOOGLE',
+        desc: 'Google 계정 기준으로 기록이 저장됩니다.'
+      };
+    }
+
+    if (providers.includes('kakao')) {
+      return {
+        title: 'KAKAO',
+        desc: 'Kakao 계정 기준으로 기록이 저장됩니다.'
+      };
+    }
+
+    return {
+      title: 'SOCIAL',
+      desc: '소셜 로그인 계정 기준으로 기록이 저장됩니다.'
+    };
+  }
+
+  return {
+    title: 'ACTIVE',
+    desc: '현재 계정 기준으로 기록이 저장됩니다.'
+  };
+}
+
+function updateQuickInsightPanel() {
+  const prof = appState.tasteProfile || {};
+  const hasProfile = prof.titleKo && prof.titleKo !== '아직 분석되지 않음';
+
+  const insightTextEl = document.getElementById('quick-insight-text');
+  const focusEl = document.getElementById('quick-insight-focus');
+  const topTierEl = document.getElementById('quick-insight-top-tier');
+  const recEl = document.getElementById('quick-insight-rec');
+
+  const miniProfileEl = document.getElementById('quick-mini-profile');
+  const miniTopCountEl = document.getElementById('quick-mini-top-count');
+  const miniRecStateEl = document.getElementById('quick-mini-rec-state');
+  const miniLoginStateEl = document.getElementById('quick-mini-login-state');
+
+  const ssCount = appState.tierList.SS.length;
+  const sCount = appState.tierList.S.length;
+  const recCount = appState.recommendedItems.length;
+  const loginState = getReadableLoginState();
+
+  if (insightTextEl) {
+    insightTextEl.innerText = hasProfile
+      ? `${prof.description || '현재 취향 분석이 저장되어 있습니다.'}`
+      : '아직 취향 분석이 없습니다. 작품을 더 채운 뒤 전체 취향 분석을 실행하면 핵심 선호 포인트를 이 영역에서 바로 확인할 수 있습니다.';
+  }
+
+  if (focusEl) {
+    focusEl.innerText = hasProfile ? prof.titleKo : '분석 대기';
+  }
+
+  if (topTierEl) {
+    topTierEl.innerText = `SS ${ssCount} · S ${sCount}`;
+  }
+
+  if (recEl) {
+    recEl.innerText = `추천 ${recCount}작품`;
+  }
+
+  if (miniProfileEl) {
+    miniProfileEl.innerText = hasProfile ? prof.titleKo : '분석 대기';
+  }
+
+  if (miniTopCountEl) {
+    miniTopCountEl.innerText = `SS ${ssCount} · S ${sCount}`;
+  }
+
+  if (miniRecStateEl) {
+    miniRecStateEl.innerText = recCount > 0 ? `추천 ${recCount}작품 보관 중` : '추천 목록 비어 있음';
+  }
+
+  if (miniLoginStateEl) {
+    miniLoginStateEl.innerText = loginState.title;
+  }
 }
 
 function generateId() { return Math.random().toString(36).substr(2, 9); }
@@ -1913,28 +2212,33 @@ function renderAiUsageTexts() {
   }
 
   if (recommendEl) {
-  recommendEl.innerText = `AI 추천 사용: ${recommendUsage.used}/${recommendUsage.limit} · 남은 횟수 ${recommendRemaining}회`;
-}
+    recommendEl.innerText = `AI 추천 사용: ${recommendUsage.used}/${recommendUsage.limit} · 남은 횟수 ${recommendRemaining}회`;
+  }
 
-const heroRecommendRemaining = document.getElementById('hero-recommend-remaining');
-const heroRecommendDesc = document.getElementById('hero-recommend-desc');
-const heroAutoReviewStatus = document.getElementById('hero-auto-review-status');
-const heroAutoReviewDesc = document.getElementById('hero-auto-review-desc');
+  const heroRecommendRemaining = document.getElementById('hero-recommend-remaining');
+  const heroRecommendDesc = document.getElementById('hero-recommend-desc');
+  const heroAutoReviewStatus = document.getElementById('hero-auto-review-status');
+  const heroAutoReviewDesc = document.getElementById('hero-auto-review-desc');
 
-if (heroRecommendRemaining) {
-  heroRecommendRemaining.innerText = String(recommendRemaining);
-}
-if (heroRecommendDesc) {
-  heroRecommendDesc.innerText = `현재 추천 가능 횟수 ${recommendRemaining}회`;
-}
-if (heroAutoReviewStatus) {
-  heroAutoReviewStatus.innerText = canUseAutoReview() ? 'ON' : 'OFF';
-}
-if (heroAutoReviewDesc) {
-  heroAutoReviewDesc.innerText = canUseAutoReview()
-    ? `남은 자동 한줄평 ${autoReviewRemaining}회`
-    : '현재 자동 생성이 꺼져 있습니다.';
-}
+  if (heroRecommendRemaining) {
+    heroRecommendRemaining.innerText = String(recommendRemaining);
+  }
+
+  if (heroRecommendDesc) {
+    heroRecommendDesc.innerText = `현재 추천 가능 횟수 ${recommendRemaining}회`;
+  }
+
+  if (heroAutoReviewStatus) {
+    heroAutoReviewStatus.innerText = canUseAutoReview() ? 'ON' : 'OFF';
+  }
+
+  if (heroAutoReviewDesc) {
+    heroAutoReviewDesc.innerText = canUseAutoReview()
+      ? `남은 자동 한줄평 ${autoReviewRemaining}회`
+      : '현재 자동 생성이 꺼져 있습니다.';
+  }
+
+  updateQuickInsightPanel();
 }
 function buildUserMetaIdentityFilter(query) {
   if (isSocialLogin()) {
@@ -2007,18 +2311,34 @@ function syncSettingsUI() {
   const knob = document.getElementById('autoReviewKnob');
   const settings = getAnimeSettings();
 
-  if (!toggle || !knob) return;
+  if (toggle && knob) {
+    toggle.checked = settings.autoReview === true;
 
-  toggle.checked = settings.autoReview === true;
+    if (toggle.checked) {
+      knob.style.transform = 'translateX(20px)';
+      knob.parentElement.classList.remove('bg-gray-600');
+      knob.parentElement.classList.add('bg-purple-600');
+    } else {
+      knob.style.transform = 'translateX(0px)';
+      knob.parentElement.classList.remove('bg-purple-600');
+      knob.parentElement.classList.add('bg-gray-600');
+    }
+  }
 
-  if (toggle.checked) {
-    knob.style.transform = 'translateX(20px)';
-    knob.parentElement.classList.remove('bg-gray-600');
-    knob.parentElement.classList.add('bg-purple-600');
-  } else {
-    knob.style.transform = 'translateX(0px)';
-    knob.parentElement.classList.remove('bg-purple-600');
-    knob.parentElement.classList.add('bg-gray-600');
+  const uiLegacyRadio = document.getElementById('uiLegacyRadio');
+  const uiRedesignRadio = document.getElementById('uiRedesignRadio');
+  const uiLegacyCard = document.getElementById('uiLegacyCard');
+  const uiRedesignCard = document.getElementById('uiRedesignCard');
+
+  if (uiLegacyRadio) uiLegacyRadio.checked = settings.uiVersion === 'legacy';
+  if (uiRedesignRadio) uiRedesignRadio.checked = settings.uiVersion !== 'legacy';
+
+  if (uiLegacyCard) {
+    uiLegacyCard.classList.toggle('is-active', settings.uiVersion === 'legacy');
+  }
+
+  if (uiRedesignCard) {
+    uiRedesignCard.classList.toggle('is-active', settings.uiVersion !== 'legacy');
   }
 }
 
@@ -2502,18 +2822,14 @@ function renderUserInfo() {
 
   const loginStateEl = document.getElementById('hero-login-state');
   const loginDescEl = document.getElementById('hero-login-desc');
+  const loginState = getReadableLoginState();
 
   if (loginStateEl) {
-    if (isDemoMode()) {
-      loginStateEl.innerText = 'DEMO';
-      loginDescEl.innerText = '체험 모드에서는 새로고침 시 기록이 사라집니다.';
-    } else if (isSocialLogin()) {
-      loginStateEl.innerText = 'SOCIAL';
-      loginDescEl.innerText = '소셜 로그인 계정 기준으로 기록이 저장됩니다.';
-    } else {
-      loginStateEl.innerText = 'LEGACY';
-      loginDescEl.innerText = '기존 이름 로그인 방식의 기록입니다.';
-    }
+    loginStateEl.innerText = loginState.title;
+  }
+
+  if (loginDescEl) {
+    loginDescEl.innerText = loginState.desc;
   }
 
   renderTasteProfile();
@@ -2521,6 +2837,7 @@ function renderUserInfo() {
   renderMigrationBanner();
   renderAiUsageTexts();
   updateRecButtonUI();
+  updateQuickInsightPanel();
 }
 
 function updateTotalCount() {
@@ -2551,7 +2868,6 @@ function renderTasteProfile() {
   const prof = appState.tasteProfile;
   const titleEl = document.getElementById('taste-profile-title');
   const descEl = document.getElementById('taste-profile-desc');
-  const tagsEl = document.getElementById('taste-profile-tags');
 
   if (!titleEl || !descEl) return;
 
@@ -2563,26 +2879,7 @@ function renderTasteProfile() {
     descEl.innerText = "티어리스트를 채우고 분석해보세요.";
   }
 
-  if (tagsEl) {
-    const tags = [];
-
-    if (prof?.titleKo && prof.titleKo !== "아직 분석되지 않음") tags.push(prof.titleKo);
-    if (prof?.titleEn && prof.titleEn !== "Not Analyzed") tags.push(prof.titleEn);
-    if (appState.tierList.SS.length > 0) tags.push(`SS ${appState.tierList.SS.length}작품`);
-    if (appState.tierList.S.length > 0) tags.push(`S ${appState.tierList.S.length}작품`);
-
-    tagsEl.innerHTML = '';
-
-    if (tags.length === 0) {
-      tagsEl.innerHTML = `<span>취향 분석 대기</span>`;
-    } else {
-      tags.slice(0, 4).forEach(tag => {
-        const span = document.createElement('span');
-        span.innerText = tag;
-        tagsEl.appendChild(span);
-      });
-    }
-  }
+  updateQuickInsightPanel();
 }
 
 function renderTierList() {
