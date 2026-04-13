@@ -216,9 +216,9 @@ body {
 }
 
 .profile-card {
-  margin-top: 28px;
+  margin-top: 24px;
   display: grid;
-  grid-template-columns: 1.1fr .9fr;
+  grid-template-columns: 1fr;
   gap: 14px;
 }
 
@@ -233,7 +233,7 @@ body {
 }
 
 .profile-box {
-  padding: 20px;
+  padding: 18px 20px;
 }
 
 .profile-box .label {
@@ -246,17 +246,18 @@ body {
 }
 
 .profile-box .value {
-  font-size: 28px;
+  font-size: 22px;
   font-weight: 900;
   letter-spacing: -0.04em;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
+  line-height: 1.2;
 }
 
 .profile-box p {
   margin: 0;
   color: var(--muted);
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: 13px;
+  line-height: 1.65;
 }
 
 .profile-tags {
@@ -499,15 +500,15 @@ body {
 
 .quick-radar-wrap {
   margin-top: 14px;
-  padding: 14px 12px 8px;
-  border-radius: 18px;
+  padding: 16px 14px 10px;
+  border-radius: 20px;
   border: 1px solid rgba(255,255,255,0.06);
   background: rgba(255,255,255,0.03);
 }
 
 .quick-radar-canvas {
   width: 100%;
-  height: 260px;
+  height: 240px;
   display: block;
 }
 
@@ -535,13 +536,139 @@ body {
   margin-bottom: 6px;
 }
 
-.quick-axis-card .value {
+.insight-map {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: 1.08fr 0.92fr;
+  gap: 14px;
+}
+
+.insight-chart-card {
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.035);
+  padding: 16px;
+}
+
+.insight-chart-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.insight-chart-head strong {
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: #f5f7ff;
+}
+
+.insight-chart-head span {
+  font-size: 11px;
+  color: #97a2c4;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+
+.insight-chart-note {
+  margin-top: 12px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.insight-footer {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.insight-mini {
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.04);
+  padding: 12px 13px;
+}
+
+.insight-mini .label {
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #8f9ac0;
+  margin-bottom: 6px;
+}
+
+.insight-mini .value {
   display: block;
   color: #f8faff;
   font-weight: 800;
   font-size: 14px;
   line-height: 1.45;
   letter-spacing: -0.03em;
+}
+
+.taste-profile-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.taste-profile-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.taste-profile-meta .meta-text {
+  font-size: 12px;
+  color: #98a1bc;
+  font-weight: 700;
+}
+
+.taste-profile-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.inline-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.24);
+  border-top-color: rgba(255,255,255,0.92);
+  border-radius: 999px;
+  animation: spin 0.9s linear infinite;
+}
+
+.genre-radar-canvas {
+  width: 100%;
+  height: 240px;
+  display: block;
+}
+
+@media (max-width: 1100px) {
+  .insight-map {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 860px) {
+  .insight-footer {
+    grid-template-columns: 1fr;
+  }
+
+  .genre-radar-canvas,
+  .quick-radar-canvas {
+    height: 220px;
+  }
 }
 
 @media (max-width: 860px) {
@@ -1045,35 +1172,72 @@ body {
       <div class="profile-card">
         <div class="profile-box">
           <div class="label">Taste Profile</div>
-          <div class="value" id="taste-profile-title">아직 분석되지 않음</div>
-          <p id="taste-profile-desc">티어리스트를 채우고 분석해보세요.</p>
+          <div class="taste-profile-compact">
+            <div class="value" id="taste-profile-title">아직 분석되지 않음</div>
+            <p id="taste-profile-desc">티어리스트를 채우고 분석해보세요.</p>
+
+            <div class="taste-profile-meta">
+              <span class="meta-text" id="taste-profile-updated">아직 분석 기록이 없습니다.</span>
+              <div class="taste-profile-action">
+                <button id="tasteProfileBtn" onclick="generateTasteProfile(this)" class="cta" style="padding:10px 15px; font-size:13px;">
+                  <span id="tasteProfileBtnText">전체 취향 분석</span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div class="profile-box">
-          <div class="label">Quick Insight</div>
-          <p id="quick-insight-text" class="quick-insight-note">
-            작품을 분석하면 취향의 중심축을 차트로 정리해 보여줍니다.
-          </p>
+        <div class="insight-map">
+          <div class="insight-chart-card">
+            <div class="insight-chart-head">
+              <strong>감상 기준</strong>
+              <span>6 AXES</span>
+            </div>
 
-          <div class="quick-radar-wrap">
-            <canvas id="quickInsightRadar" class="quick-radar-canvas"></canvas>
+            <p id="quick-insight-text" class="quick-insight-note">
+              티어 배치와 작품 성향을 바탕으로, 무엇을 더 엄격하게 보는지 시각화합니다.
+            </p>
+
+            <div class="quick-radar-wrap">
+              <canvas id="quickInsightRadar" class="quick-radar-canvas"></canvas>
+            </div>
+
+            <div class="insight-footer">
+              <div class="insight-mini">
+                <span class="label">강하게 반응한 축</span>
+                <span class="value" id="quick-axis-strong">분석 대기</span>
+              </div>
+              <div class="insight-mini">
+                <span class="label">상대적으로 낮은 축</span>
+                <span class="value" id="quick-axis-weak">분석 대기</span>
+              </div>
+            </div>
           </div>
 
-          <div class="quick-axis-summary">
-            <div class="quick-axis-card">
-              <span class="label">강하게 반응한 축</span>
-              <span class="value" id="quick-axis-strong">분석 대기</span>
+          <div class="insight-chart-card">
+            <div class="insight-chart-head">
+              <strong>장르 성향</strong>
+              <span>8 AXES</span>
             </div>
-            <div class="quick-axis-card">
-              <span class="label">상대적으로 낮은 축</span>
-              <span class="value" id="quick-axis-weak">분석 대기</span>
-            </div>
-          </div>
 
-          <div style="margin-top:14px;">
-            <button id="tasteProfileBtn" onclick="generateTasteProfile(this)" class="cta" style="padding:12px 16px; font-size:13px;">
-              전체 취향 분석
-            </button>
+            <p id="genre-insight-text" class="quick-insight-note">
+              많이 본 장르가 아니라, 상위 티어에 더 자주 남는 장르 쪽으로 반영됩니다.
+            </p>
+
+            <div class="quick-radar-wrap">
+              <canvas id="genreInsightRadar" class="genre-radar-canvas"></canvas>
+            </div>
+
+            <div class="insight-footer">
+              <div class="insight-mini">
+                <span class="label">선호 장르</span>
+                <span class="value" id="genre-axis-strong">분석 대기</span>
+              </div>
+              <div class="insight-mini">
+                <span class="label">낮은 장르</span>
+                <span class="value" id="genre-axis-weak">분석 대기</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1630,7 +1794,8 @@ tierList: { SS: [], S: [], A: [], B: [], C: [], D: [] },
 tasteProfile: {
 titleKo: "아직 분석되지 않음",
 titleEn: "Not Analyzed",
-description: "티어리스트를 채우고 분석해보세요."
+description: "티어리스트를 채우고 분석해보세요.",
+updatedAt: null
 },
 recommendedItems: []
 };
@@ -2136,49 +2301,207 @@ function getReadableLoginState() {
 }
 
 const QUICK_INSIGHT_AXES = [
-  {
-    key: 'story',
-    label: '스토리',
-    keywords: ['서사', '스토리', '전개', '플롯', '복선', '떡밥', '구조', '개연성', '구성', '서술']
-  },
-  {
-    key: 'character',
-    label: '캐릭터',
-    keywords: ['캐릭터', '인물', '주인공', '관계', '매력', '성장', '케미', '서사와 캐릭터', '조연']
-  },
-  {
-    key: 'immersion',
-    label: '몰입감',
-    keywords: ['몰입', '여운', '감정', '감성', '울림', '심리', '정서', '빠져든', '몰입감']
-  },
-  {
-    key: 'tension',
-    label: '긴장감',
-    keywords: ['긴장감', '스릴', '박진', '텐션', '속도감', '후킹', '심리전', '액션', '몰아친']
-  },
-  {
-    key: 'visual',
-    label: '비주얼',
-    keywords: ['작화', '연출', '비주얼', '그림체', '영상미', '색감', '분위기', '음악', '미장센']
-  },
-  {
-    key: 'quality',
-    label: '완성도',
-    keywords: ['완성도', '결말', '마무리', '밸런스', '짜임새', '안정감', '구성력', '정교', '탄탄']
-  }
+  { key: 'story', label: '스토리' },
+  { key: 'character', label: '캐릭터' },
+  { key: 'immersion', label: '몰입감' },
+  { key: 'tension', label: '긴장감' },
+  { key: 'visual', label: '비주얼' },
+  { key: 'quality', label: '완성도' }
 ];
 
-function countKeywordMatches(text, keywords) {
-  const source = String(text || '').toLowerCase();
-  if (!source) return 0;
+const GENRE_INSIGHT_AXES = [
+  { key: 'action', label: '액션', match: ['액션', 'Action'] },
+  { key: 'sffantasy', label: 'SF/판타지', match: ['SF', '판타지', 'Fantasy'] },
+  { key: 'mystery', label: '미스터리/심리', match: ['미스터리', '스릴러', '심리', '추리', 'Mystery'] },
+  { key: 'drama', label: '드라마', match: ['드라마', 'Drama'] },
+  { key: 'romance', label: '로맨스', match: ['로맨스', 'Romance'] },
+  { key: 'slice', label: '코미디/일상', match: ['코미디', '일상', '개그', 'Comedy'] },
+  { key: 'growth', label: '성장/스포츠', match: ['스포츠', '성장', 'Sports'] },
+  { key: 'horror', label: '호러/스릴러', match: ['호러', '공포', '스릴러', 'Horror'] }
+];
 
-  return keywords.reduce((sum, keyword) => {
-    return sum + (source.includes(String(keyword).toLowerCase()) ? 1 : 0);
-  }, 0);
+const ANIME_TRAIT_LIBRARY = {
+  '진격의거인': { story: 96, character: 84, immersion: 78, tension: 95, visual: 72, quality: 94 },
+  'attackontitan': { story: 96, character: 84, immersion: 78, tension: 95, visual: 72, quality: 94 },
+
+  '슈타인즈게이트': { story: 95, character: 86, immersion: 86, tension: 90, visual: 55, quality: 94 },
+  'steinsgate': { story: 95, character: 86, immersion: 86, tension: 90, visual: 55, quality: 94 },
+
+  '슈타인즈게이트제로': { story: 90, character: 84, immersion: 85, tension: 84, visual: 56, quality: 86 },
+  'steinsgate0': { story: 90, character: 84, immersion: 85, tension: 84, visual: 56, quality: 86 },
+
+  '헌터x헌터': { story: 92, character: 92, immersion: 76, tension: 88, visual: 58, quality: 90 },
+  'hunterxhunter': { story: 92, character: 92, immersion: 76, tension: 88, visual: 58, quality: 90 },
+
+  '데스노트': { story: 93, character: 82, immersion: 76, tension: 96, visual: 62, quality: 90 },
+  'deathnote': { story: 93, character: 82, immersion: 76, tension: 96, visual: 62, quality: 90 },
+
+  '블루록': { story: 74, character: 78, immersion: 66, tension: 87, visual: 76, quality: 72 },
+  'bluelock': { story: 74, character: 78, immersion: 66, tension: 87, visual: 76, quality: 72 },
+
+  '코드기아스': { story: 91, character: 88, immersion: 76, tension: 92, visual: 66, quality: 86 },
+  'codegeass': { story: 91, character: 88, immersion: 76, tension: 92, visual: 66, quality: 86 },
+
+  '나만이없는거리': { story: 88, character: 74, immersion: 82, tension: 84, visual: 60, quality: 82 },
+  'erased': { story: 88, character: 74, immersion: 82, tension: 84, visual: 60, quality: 82 },
+
+  '빈란드사가': { story: 90, character: 84, immersion: 76, tension: 78, visual: 70, quality: 88 },
+  'vinlandsaga': { story: 90, character: 84, immersion: 76, tension: 78, visual: 70, quality: 88 },
+
+  '체인소맨': { story: 80, character: 82, immersion: 72, tension: 86, visual: 88, quality: 72 },
+  'chainsawman': { story: 80, character: 82, immersion: 72, tension: 86, visual: 88, quality: 72 },
+
+  '극장판체인소맨레제편': { story: 80, character: 88, immersion: 90, tension: 88, visual: 90, quality: 78 },
+  '레제편': { story: 80, character: 88, immersion: 90, tension: 88, visual: 90, quality: 78 },
+
+  '주술회전': { story: 76, character: 84, immersion: 68, tension: 86, visual: 86, quality: 72 },
+  'jujutsukaisen': { story: 76, character: 84, immersion: 68, tension: 86, visual: 86, quality: 72 },
+
+  '닥터스톤': { story: 84, character: 72, immersion: 64, tension: 66, visual: 60, quality: 82 },
+  'drstone': { story: 84, character: 72, immersion: 64, tension: 66, visual: 60, quality: 82 },
+
+  '괴수8호': { story: 72, character: 72, immersion: 60, tension: 74, visual: 74, quality: 66 },
+  'kaijuno8': { story: 72, character: 72, immersion: 60, tension: 74, visual: 74, quality: 66 },
+
+  '나혼자만레벨업': { story: 68, character: 66, immersion: 62, tension: 78, visual: 86, quality: 62 },
+  'sololeveling': { story: 68, character: 66, immersion: 62, tension: 78, visual: 86, quality: 62 },
+
+  '블루피리어드': { story: 82, character: 74, immersion: 84, tension: 48, visual: 64, quality: 78 },
+  'blueperiod': { story: 82, character: 74, immersion: 84, tension: 48, visual: 64, quality: 78 },
+
+  '원펀맨': { story: 58, character: 60, immersion: 48, tension: 42, visual: 82, quality: 64 },
+  'onepunchman': { story: 58, character: 60, immersion: 48, tension: 42, visual: 82, quality: 64 },
+
+  '장송의프리렌': { story: 78, character: 64, immersion: 56, tension: 34, visual: 74, quality: 84 },
+  'frieren': { story: 78, character: 64, immersion: 56, tension: 34, visual: 74, quality: 84 },
+
+  '너의이름은': { story: 66, character: 58, immersion: 64, tension: 34, visual: 90, quality: 66 },
+  'yourname': { story: 66, character: 58, immersion: 64, tension: 34, visual: 90, quality: 66 },
+
+  '스즈메의문단속': { story: 64, character: 56, immersion: 60, tension: 34, visual: 88, quality: 62 },
+  'suzume': { story: 64, character: 56, immersion: 60, tension: 34, visual: 88, quality: 62 },
+
+  '페이트제로': { story: 84, character: 70, immersion: 62, tension: 82, visual: 82, quality: 80 },
+  'fatezero': { story: 84, character: 70, immersion: 62, tension: 82, visual: 82, quality: 80 }
+};
+
+const REVIEW_PENALTY_RULES = [
+  { keys: ['답답'], target: { tension: -10, immersion: -10, character: -8 } },
+  { keys: ['긴장감 제로'], target: { tension: -16 } },
+  { keys: ['노잼', '재미없'], target: { immersion: -14, tension: -8 } },
+  { keys: ['슴슴'], target: { immersion: -10, tension: -10 } },
+  { keys: ['감성이 안맞', '감성 불일치'], target: { immersion: -12 } },
+  { keys: ['전개 방식 불호', '전개 불호'], target: { story: -12, quality: -8 } },
+  { keys: ['초반 하차'], target: { immersion: -12, story: -8 } },
+  { keys: ['작화는 좋은데'], target: { visual: 4, story: -8, quality: -6 } },
+  { keys: ['결말', '마무리'], target: { quality: 4 } },
+  { keys: ['아쉬움'], target: { quality: -6 } },
+  { keys: ['호감'], target: { character: 4 } },
+  { keys: ['주인공'], target: { character: 3 } },
+  { keys: ['아련'], target: { immersion: 6 } },
+  { keys: ['심리'], target: { immersion: 4, story: 3 } },
+  { keys: ['작화'], target: { visual: 5 } },
+  { keys: ['연출'], target: { visual: 4 } },
+  { keys: ['완성도'], target: { quality: 6 } }
+];
+
+function getTierWeight(tier) {
+  const weights = { SS: 2.5, S: 1.9, A: 1.15, B: 0.2, C: -1.0, D: -1.45 };
+  return weights[tier] ?? 0;
+}
+
+function getNormalizedTitleCandidates(item) {
+  return [
+    item?.title,
+    item?.originalTitle,
+    item?.original_title
+  ]
+    .filter(Boolean)
+    .map(v => normalizeAnimeTitle(v));
+}
+
+function getDefaultTraitProfile(item) {
+  const genres = Array.isArray(item?.genres) ? item.genres : [];
+  const joined = genres.join(' ');
+
+  const profile = {
+    story: 58,
+    character: 58,
+    immersion: 54,
+    tension: 52,
+    visual: 54,
+    quality: 56
+  };
+
+  if (/액션|Action/i.test(joined)) {
+    profile.tension += 14;
+    profile.visual += 8;
+  }
+  if (/SF|판타지|Fantasy/i.test(joined)) {
+    profile.story += 8;
+    profile.visual += 6;
+  }
+  if (/미스터리|스릴러|추리|Mystery/i.test(joined)) {
+    profile.story += 14;
+    profile.tension += 12;
+    profile.quality += 8;
+  }
+  if (/드라마|Drama/i.test(joined)) {
+    profile.immersion += 12;
+    profile.character += 8;
+  }
+  if (/로맨스|Romance/i.test(joined)) {
+    profile.immersion += 10;
+    profile.character += 6;
+  }
+  if (/코미디|Comedy|일상/i.test(joined)) {
+    profile.character += 4;
+    profile.tension -= 8;
+  }
+  if (/호러|공포|Horror/i.test(joined)) {
+    profile.tension += 10;
+    profile.immersion += 4;
+  }
+  if (/스포츠|Sports/i.test(joined)) {
+    profile.tension += 8;
+    profile.character += 6;
+  }
+
+  return profile;
+}
+
+function getTraitProfileForAnime(item) {
+  const candidates = getNormalizedTitleCandidates(item);
+
+  for (const key of candidates) {
+    if (ANIME_TRAIT_LIBRARY[key]) {
+      return { ...ANIME_TRAIT_LIBRARY[key] };
+    }
+  }
+
+  return getDefaultTraitProfile(item);
+}
+
+function applyReviewAdjustments(profile, reviewText = '') {
+  const text = String(reviewText || '').trim();
+  if (!text) return profile;
+
+  const next = { ...profile };
+
+  REVIEW_PENALTY_RULES.forEach(rule => {
+    const hit = rule.keys.some(key => text.includes(key));
+    if (!hit) return;
+
+    Object.entries(rule.target).forEach(([axis, amount]) => {
+      next[axis] = (next[axis] || 0) + amount;
+    });
+  });
+
+  return next;
 }
 
 function clampInsightScore(value) {
-  return Math.max(24, Math.min(94, Math.round(value)));
+  return Math.max(18, Math.min(92, Math.round(value)));
 }
 
 function getAllTierItems() {
@@ -2187,73 +2510,106 @@ function getAllTierItems() {
   );
 }
 
-function buildQuickInsightScores() {
-  const baseScores = {
-    story: 54,
-    character: 56,
-    immersion: 52,
-    tension: 50,
-    visual: 50,
-    quality: 55
-  };
+function normalizeAxisShape(scores) {
+  const values = Object.values(scores);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = Math.max(1, max - min);
 
-  const tierWeights = {
-    SS: 2.2,
-    S: 1.8,
-    A: 1.2,
-    B: 0.4,
-    C: -0.7,
-    D: -1.1
+  const normalized = {};
+  Object.entries(scores).forEach(([key, value]) => {
+    const scaled = 34 + ((value - min) / range) * 44;
+    normalized[key] = clampInsightScore(scaled);
+  });
+  return normalized;
+}
+
+function buildQuickInsightScores() {
+  const totals = {
+    story: 0,
+    character: 0,
+    immersion: 0,
+    tension: 0,
+    visual: 0,
+    quality: 0
   };
 
   const items = getAllTierItems();
 
   items.forEach(item => {
-    const weight = tierWeights[item._tier] || 0;
-    const text = [
-      item.title,
-      item.originalTitle,
-      item.userReview,
-      item.aiReview,
-      item.overview,
-      Array.isArray(item.genres) ? item.genres.join(' ') : ''
-    ].join(' ');
+    const tierWeight = getTierWeight(item._tier);
+    let profile = getTraitProfileForAnime(item);
 
-    QUICK_INSIGHT_AXES.forEach(axis => {
-      const hits = countKeywordMatches(text, axis.keywords);
-      if (hits > 0) {
-        baseScores[axis.key] += hits * weight * 4.5;
+    profile = applyReviewAdjustments(
+      profile,
+      [item.userReview, item.aiReview].filter(Boolean).join(' ')
+    );
+
+    Object.keys(totals).forEach(axis => {
+      totals[axis] += (profile[axis] || 0) * tierWeight;
+    });
+  });
+
+  const counts = {
+    ss: appState.tierList.SS.length,
+    s: appState.tierList.S.length,
+    c: appState.tierList.C.length,
+    d: appState.tierList.D.length
+  };
+
+  totals.story += counts.ss * 16 + counts.s * 8;
+  totals.tension += counts.ss * 12 + counts.s * 6 - counts.d * 8;
+  totals.quality += counts.ss * 15 + counts.s * 7 - counts.c * 6 - counts.d * 9;
+  totals.character += counts.s * 5;
+  totals.visual -= counts.d * 3;
+
+  return QUICK_INSIGHT_AXES.map(axis => {
+    const normalized = normalizeAxisShape(totals);
+    return {
+      ...axis,
+      value: normalized[axis.key]
+    };
+  });
+}
+
+function buildGenreInsightScores() {
+  const totals = {
+    action: 0,
+    sffantasy: 0,
+    mystery: 0,
+    drama: 0,
+    romance: 0,
+    slice: 0,
+    growth: 0,
+    horror: 0
+  };
+
+  const items = getAllTierItems();
+
+  items.forEach(item => {
+    const tierWeight = getTierWeight(item._tier);
+    const genres = Array.isArray(item.genres) ? item.genres : [];
+
+    GENRE_INSIGHT_AXES.forEach(axis => {
+      const hit = genres.some(genre =>
+        axis.match.some(keyword => String(genre).toLowerCase().includes(String(keyword).toLowerCase()))
+      );
+      if (hit) {
+        totals[axis.key] += tierWeight * 14;
       }
     });
   });
 
-  const prof = appState.tasteProfile || {};
-  const profileText = [prof.titleKo, prof.description].join(' ');
+  const normalized = normalizeAxisShape(totals);
 
-  QUICK_INSIGHT_AXES.forEach(axis => {
-    const hits = countKeywordMatches(profileText, axis.keywords);
-    if (hits > 0) {
-      baseScores[axis.key] += hits * 6;
-    }
-  });
-
-  const ssCount = appState.tierList.SS.length;
-  const sCount = appState.tierList.S.length;
-  const cdCount = appState.tierList.C.length + appState.tierList.D.length;
-
-  baseScores.story += ssCount * 1.4;
-  baseScores.character += sCount * 1.2;
-  baseScores.quality += ssCount * 1.5;
-  baseScores.tension -= cdCount * 0.6;
-
-  return QUICK_INSIGHT_AXES.map(axis => ({
+  return GENRE_INSIGHT_AXES.map(axis => ({
     ...axis,
-    value: clampInsightScore(baseScores[axis.key])
+    value: normalized[axis.key]
   }));
 }
 
-function drawQuickInsightRadar(scores) {
-  const canvas = document.getElementById('quickInsightRadar');
+function drawRadarChart(canvasId, scores) {
+  const canvas = document.getElementById(canvasId);
   if (!canvas) return;
 
   const ctx = canvas.getContext('2d');
@@ -2261,7 +2617,7 @@ function drawQuickInsightRadar(scores) {
 
   const ratio = window.devicePixelRatio || 1;
   const cssWidth = canvas.clientWidth || 320;
-  const cssHeight = canvas.clientHeight || 260;
+  const cssHeight = canvas.clientHeight || 240;
 
   canvas.width = Math.round(cssWidth * ratio);
   canvas.height = Math.round(cssHeight * ratio);
@@ -2366,6 +2722,10 @@ function updateQuickInsightPanel() {
   const strongEl = document.getElementById('quick-axis-strong');
   const weakEl = document.getElementById('quick-axis-weak');
 
+  const genreTextEl = document.getElementById('genre-insight-text');
+  const genreStrongEl = document.getElementById('genre-axis-strong');
+  const genreWeakEl = document.getElementById('genre-axis-weak');
+
   const miniAnalysisEl = document.getElementById('quick-mini-analysis');
   const miniRecStateEl = document.getElementById('quick-mini-rec-state');
   const miniMetaStateEl = document.getElementById('quick-mini-meta-state');
@@ -2378,25 +2738,37 @@ function updateQuickInsightPanel() {
   const missingMetaCount = getMissingMetadataCount();
 
   const scores = buildQuickInsightScores();
+  const genreScores = buildGenreInsightScores();
+
   const sortedHigh = [...scores].sort((a, b) => b.value - a.value);
   const sortedLow = [...scores].sort((a, b) => a.value - b.value);
+
+  const sortedGenreHigh = [...genreScores].sort((a, b) => b.value - a.value);
+  const sortedGenreLow = [...genreScores].sort((a, b) => a.value - b.value);
 
   const strongText = `${sortedHigh[0].label}, ${sortedHigh[1].label}`;
   const weakText = `${sortedLow[0].label}, ${sortedLow[1].label}`;
 
+  const genreStrongText = `${sortedGenreHigh[0].label}, ${sortedGenreHigh[1].label}`;
+  const genreWeakText = `${sortedGenreLow[0].label}, ${sortedGenreLow[1].label}`;
+
   if (insightTextEl) {
     insightTextEl.innerText = hasProfile
-      ? `SS ${ssCount} · S ${sCount} 작품을 중심으로 읽었을 때, ${strongText} 축 반응이 두드러지고 ${weakText} 쪽은 상대적으로 덜 민감하게 보입니다.`
-      : '작품을 더 채우고 전체 취향 분석을 실행하면, 티어 배치와 한줄평을 바탕으로 취향의 중심축을 차트로 정리해 보여줍니다.';
+      ? `상위 티어를 기준으로 보면 ${strongText} 쪽을 특히 엄격하게 보고, ${weakText}은 상대적으로 덜 결정적으로 작용합니다.`
+      : '티어 배치와 작품 성향을 바탕으로, 무엇을 더 엄격하게 보는지 시각화합니다.';
   }
 
-  if (strongEl) {
-    strongEl.innerText = hasProfile ? strongText : '분석 대기';
+  if (strongEl) strongEl.innerText = hasProfile ? strongText : '분석 대기';
+  if (weakEl) weakEl.innerText = hasProfile ? weakText : '분석 대기';
+
+  if (genreTextEl) {
+    genreTextEl.innerText = hasProfile
+      ? `소비량이 아니라 상위 티어에 더 자주 남는 장르 쪽으로 읽으면 ${genreStrongText} 비중이 높고, ${genreWeakText} 쪽은 낮게 나타납니다.`
+      : '많이 본 장르가 아니라, 상위 티어에 더 자주 남는 장르 쪽으로 반영됩니다.';
   }
 
-  if (weakEl) {
-    weakEl.innerText = hasProfile ? weakText : '분석 대기';
-  }
+  if (genreStrongEl) genreStrongEl.innerText = hasProfile ? genreStrongText : '분석 대기';
+  if (genreWeakEl) genreWeakEl.innerText = hasProfile ? genreWeakText : '분석 대기';
 
   if (miniAnalysisEl) {
     miniAnalysisEl.innerText = hasProfile ? '프로필 분석 완료' : '분석 대기';
@@ -2414,7 +2786,8 @@ function updateQuickInsightPanel() {
     miniLoginStateEl.innerText = loginState.title;
   }
 
-  drawQuickInsightRadar(scores);
+  drawRadarChart('quickInsightRadar', scores);
+  drawRadarChart('genreInsightRadar', genreScores);
 }
 
 function generateId() { return Math.random().toString(36).substr(2, 9); }
@@ -2950,7 +3323,8 @@ if (data) {
 appState.tasteProfile = {
 titleKo: data.taste_profile_title_ko || "아직 분석되지 않음",
 titleEn: data.taste_profile_title_en || "Not Analyzed",
-description: data.taste_profile_description || "티어리스트를 채우고 분석해보세요."
+description: data.taste_profile_description || "티어리스트를 채우고 분석해보세요.",
+updatedAt: data.updated_at || null
 };
 appState.recommendedItems = data.recommended_items || [];
 
@@ -3149,6 +3523,7 @@ function renderTasteProfile() {
   const prof = appState.tasteProfile;
   const titleEl = document.getElementById('taste-profile-title');
   const descEl = document.getElementById('taste-profile-desc');
+  const updatedEl = document.getElementById('taste-profile-updated');
 
   if (!titleEl || !descEl) return;
 
@@ -3158,6 +3533,14 @@ function renderTasteProfile() {
   } else {
     titleEl.innerText = "아직 분석되지 않음";
     descEl.innerText = "티어리스트를 채우고 분석해보세요.";
+  }
+
+  if (updatedEl) {
+    if (prof?.updatedAt) {
+      updatedEl.innerText = `마지막 갱신: ${new Date(prof.updatedAt).toLocaleString('ko-KR')}`;
+    } else {
+      updatedEl.innerText = '아직 분석 기록이 없습니다.';
+    }
   }
 
   updateQuickInsightPanel();
@@ -3526,7 +3909,8 @@ appState.recommendedItems = [];
 appState.tasteProfile = {
 titleKo: "아직 분석되지 않음",
 titleEn: "Not Analyzed",
-description: "티어리스트를 채우고 분석해보세요."
+description: "티어리스트를 채우고 분석해보세요.",
+updatedAt: null
 };
 }
 
@@ -4697,10 +5081,20 @@ async function generateTasteProfile(btn) {
     return showToast('작품을 더 추가해주세요.', true);
   }
 
-  btn.classList.add('animate-spin');
+  const btnTextEl = document.getElementById('tasteProfileBtnText');
+  const originalText = btnTextEl ? btnTextEl.innerText : btn.innerText;
+
+  btn.disabled = true;
+  btn.classList.add('opacity-80');
+
+  if (btnTextEl) {
+    btnTextEl.innerHTML = `<span class="inline-spinner"></span> 분석 중...`;
+  } else {
+    btn.innerHTML = `<span class="inline-spinner"></span> 분석 중...`;
+  }
 
   try {
-    const response = await fetch('/api/taste-profile', {
+    const response = await fetchWithTimeout('/api/taste-profile', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -4711,7 +5105,7 @@ async function generateTasteProfile(btn) {
         c: appState.tierList.C.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', '),
         d: appState.tierList.D.map(a => `${a.title}${a.userReview ? ` - ${a.userReview}` : ''}`).join(', ')
       })
-    });
+    }, 20000);
 
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));
@@ -4726,7 +5120,11 @@ async function generateTasteProfile(btn) {
       throw new Error('invalid taste-profile response');
     }
 
-    appState.tasteProfile = data;
+    appState.tasteProfile = {
+      ...data,
+      updatedAt: new Date().toISOString()
+    };
+
     await saveUserMetaToDB();
     renderTasteProfile();
     showToast('성향 분석이 완료되었습니다.');
@@ -4734,7 +5132,14 @@ async function generateTasteProfile(btn) {
     console.error(err);
     showToast('성향 분석에 실패했습니다.', true);
   } finally {
-    btn.classList.remove('animate-spin');
+    btn.disabled = false;
+    btn.classList.remove('opacity-80');
+
+    if (btnTextEl) {
+      btnTextEl.innerText = originalText;
+    } else {
+      btn.innerText = originalText;
+    }
   }
 }
 
