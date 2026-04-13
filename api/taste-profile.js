@@ -1,28 +1,44 @@
 export default async function handler(req, res) {
-    if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
-    
-    const { ss, s, a, b, c, d, preferenceInsights } = req.body;
-    const apiKey = process.env.GEMINI_API_KEY;
-const insightText = preferenceInsights ? `
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  }
+
+  const { ss, s, a, b, c, d, preferenceInsights } = req.body || {};
+  const apiKey = process.env.GEMINI_API_KEY;
+
+  if (!apiKey) {
+    return res.status(500).json({ error: 'Missing GEMINI_API_KEY' });
+  }
+
+  const safeList = (arr, formatter) => {
+    try {
+      return (Array.isArray(arr) ? arr : []).map(formatter).join('\n') || '없음';
+    } catch (_) {
+      return '없음';
+    }
+  };
+
+  const insightText = preferenceInsights ? `
 [사용자 취향 요약]
 상위 선호작:
-${(preferenceInsights.topFavorites || []).map(x => `- ${x.title} (${x.tier}) : ${x.review || '리뷰 없음'}`).join('\n')}
+${safeList(preferenceInsights.topFavorites, x => `- ${x.title} (${x.tier}) : ${x.review || '리뷰 없음'}`)}
 
 비선호작:
-${(preferenceInsights.dislikedTitles || []).map(x => `- ${x.title} (${x.tier}) : ${x.review || '리뷰 없음'}`).join('\n')}
+${safeList(preferenceInsights.dislikedTitles, x => `- ${x.title} (${x.tier}) : ${x.review || '리뷰 없음'}`)}
 
 좋아하는 평가 요소:
-${(preferenceInsights.likedFeatures || []).map(x => `- ${x.feature} / 평균 ${x.average} / 신뢰도 ${x.confidence}`).join('\n')}
+${safeList(preferenceInsights.likedFeatures, x => `- ${x.feature} / 평균 ${x.average} / 신뢰도 ${x.confidence}`)}
 
 민감하게 싫어하는 평가 요소:
-${(preferenceInsights.dislikedFeatures || []).map(x => `- ${x.feature} / 평균 ${x.average} / 신뢰도 ${x.confidence}`).join('\n')}
+${safeList(preferenceInsights.dislikedFeatures, x => `- ${x.feature} / 평균 ${x.average} / 신뢰도 ${x.confidence}`)}
 
 장르 참고:
-${(preferenceInsights.genrePreferences || []).map(x => `- ${x.genre} / 평균 ${x.average} / count ${x.count}`).join('\n')}
+${safeList(preferenceInsights.genrePreferences, x => `- ${x.genre} / 평균 ${x.average} / count ${x.count}`)}
 ` : '';
-    const payload = {
-        contents: [{
-            parts: [{ text: `사용자의 티어리스트는 다음과 같습니다.
+
+  const prompt = `
+사용자의 애니메이션 티어리스트는 다음과 같습니다.
+
 SS: ${ss || '없음'}
 S: ${s || '없음'}
 A: ${a || '없음'}
@@ -32,54 +48,154 @@ D: ${d || '없음'}
 
 ${insightText}
 
-이 데이터를 바탕으로 사용자의 애니메이션 취향을 나타내는 별명을 만들고 짧게 설명해.
-SS는 '최애 인생작', D는 '거의 안 맞는 작품'이므로 분석에서 중요하게 반영해.
-특히 SS에 있는 작품들은 사용자의 핵심 취향으로, D에 있는 작품들은 강한 비선호 경향으로 판단해 분석해.
-장르만으로 단정하지 말고, 한줄평에 드러난 취향 포인트를 우선 반영해.
-특히 서사, 캐릭터, 주인공 성격, 감성, 작화/연출, 음악, 결말, 시즌별 편차를 고려해서 분석해.
-분석 시 preferenceInsights를 가장 중요한 근거로 사용하고,
-단순 장르 분포보다 사용자 리뷰에서 드러난 취향을 우선 반영하라.
-반드시 아래 형식의 JSON 객체로만 응답해.` }]
-        }],
-        generationConfig: {
-            responseMimeType: "application/json",
-            responseSchema: {
-                type: "OBJECT",
-                properties: {
-                    titleKo: { type: "STRING" },
-                    titleEn: { type: "STRING" },
-                    description: { type: "STRING" }
-                }
-            }
+너의 역할:
+- 사용자의 애니메이션 취향을 한 줄 별명과 짧은 설명으로 정리한다.
+- SS는 핵심 선호, D는 강한 비선호로 가장 중요하게 반영한다.
+- 장르만으로 단정하지 말고, 리뷰와 preferenceInsights를 최우선 근거로 삼는다.
+- 특히 서사, 캐릭터, 주인공 성격, 감성, 작화/연출, 음악, 결말, 시즌별 편차를 고려한다.
+
+매우 중요:
+- 반드시 JSON 객체만 반환한다.
+- 마크다운 코드블록을 절대 쓰지 마라.
+- 설명문 안에 "json", "schema", "titleKo", "description", "예시", "provided examples" 같은 메타 설명을 절대 쓰지 마라.
+- 한국어 중심으로 작성하되, titleEn만 자연스러운 영어 별명으로 작성한다.
+- titleKo는 8-20자 정도의 짧은 별명이어야 한다.
+- titleEn은 10-40자 정도의 짧은 영어 별명이어야 한다.
+- description은 1-3문장, 90-220자 내외로만 작성한다.
+- 설명은 결과만 말하고, 분석 과정이나 내부 규칙 설명은 절대 포함하지 마라.
+`;
+
+  const payload = {
+    contents: [
+      {
+        parts: [{ text: prompt }]
+      }
+    ],
+    generationConfig: {
+      temperature: 0.4,
+      topP: 0.8,
+      topK: 20,
+      maxOutputTokens: 220,
+      responseMimeType: 'application/json',
+      responseSchema: {
+        type: 'OBJECT',
+        required: ['titleKo', 'titleEn', 'description'],
+        properties: {
+          titleKo: { type: 'STRING' },
+          titleEn: { type: 'STRING' },
+          description: { type: 'STRING' }
         }
+      }
+    }
+  };
+
+  const models = [
+    'gemini-2.5-flash',
+    'gemini-2.5-flash-lite'
+  ];
+
+  const isBadProfileText = (value) => {
+    const text = String(value || '').trim();
+    if (!text) return true;
+
+    return (
+      text.includes('```') ||
+      text.includes('titleKo') ||
+      text.includes('titleEn') ||
+      text.includes('"description"') ||
+      text.includes('schema') ||
+      text.includes('provided examples') ||
+      text.includes('generation process') ||
+      text.includes('must be') ||
+      text.includes('{') ||
+      text.includes('}')
+    );
+  };
+
+  const sanitizeProfile = (raw) => {
+    if (!raw || typeof raw !== 'object') return null;
+
+    const titleKo = String(raw.titleKo || '').trim();
+    const titleEn = String(raw.titleEn || '').trim();
+    const description = String(raw.description || '').trim();
+
+    if (!titleKo || !titleEn || !description) return null;
+    if (titleKo.length > 40 || titleEn.length > 60 || description.length > 320) return null;
+    if (isBadProfileText(titleKo) || isBadProfileText(titleEn) || isBadProfileText(description)) return null;
+
+    return {
+      titleKo,
+      titleEn,
+      description
     };
+  };
 
-    let result = null;
-    const models = ['gemini-2.5-flash-lite','gemini-2.5-flash', 'gemini-3-flash', 'gemini-3.1-flash-lite'];
-    
-    for (const model of models) {
-        try {
-            const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            if (!r.ok) continue;
-            
-            const json = await r.json();
-            const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (text) {
-                result = JSON.parse(text.replace(/```json/g, '').replace(/```/g, '').trim());
-                break;
-            }
-        } catch(e) {
-            continue;
+  const parseGeminiJson = (text) => {
+    const cleaned = String(text || '')
+      .replace(/```json/gi, '')
+      .replace(/```/g, '')
+      .trim();
+
+    return JSON.parse(cleaned);
+  };
+
+  let lastError = null;
+
+  for (const model of models) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 40000);
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          signal: controller.signal
         }
-    }
+      );
 
-    if (!result) {
-        return res.status(429).json({ error: 'AI limit reached' });
-    }
+      clearTimeout(timeout);
 
-    return res.status(200).json(result);
+      if (!response.ok) {
+        const errText = await response.text().catch(() => '');
+        lastError = `Model ${model} failed: ${response.status} ${errText}`;
+        continue;
+      }
+
+      const json = await response.json();
+      const text = json?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (!text) {
+        lastError = `Model ${model} returned empty text`;
+        continue;
+      }
+
+      let parsed;
+      try {
+        parsed = parseGeminiJson(text);
+      } catch (parseErr) {
+        lastError = `Model ${model} JSON parse failed: ${parseErr.message}`;
+        continue;
+      }
+
+      const sanitized = sanitizeProfile(parsed);
+      if (!sanitized) {
+        lastError = `Model ${model} returned invalid profile shape/content`;
+        continue;
+      }
+
+      return res.status(200).json(sanitized);
+    } catch (err) {
+      lastError = `Model ${model} error: ${err.message}`;
+      continue;
+    }
+  }
+
+  console.error('taste-profile failed:', lastError);
+  return res.status(502).json({
+    error: 'taste_profile_generation_failed',
+    detail: lastError || 'Unknown error'
+  });
 }
