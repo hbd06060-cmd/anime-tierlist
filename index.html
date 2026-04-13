@@ -593,9 +593,7 @@ AI 추천 이유
     </div>
   </div>
 </div>
-<div id="main-content-new" class="hidden">
-  <h1 style="color:white; padding:20px;">NEW UI 영역 (테스트)</h1>
-</div>
+
 <script>
 // ==========================================
 // 환경 변수 설정
@@ -903,28 +901,28 @@ function getAnimeSettings() {
 function saveAnimeSettings(settings) {
   localStorage.setItem('anime_settings', JSON.stringify(settings));
 }
-function applyUiVersion(uiVersion) {
-  const body = document.body;
-  const redesignRoot = document.getElementById('main-content-new');
+function getUiTargetPath(uiVersion) {
+  return uiVersion === 'redesign' ? './redesign.html' : './';
+}
+
+function syncUiVersionRadios(uiVersion) {
+  const uiLegacyRadio = document.getElementById('uiLegacyRadio');
+  const uiRedesignRadio = document.getElementById('uiRedesignRadio');
+
+  if (uiLegacyRadio) uiLegacyRadio.checked = uiVersion === 'legacy';
+  if (uiRedesignRadio) uiRedesignRadio.checked = uiVersion === 'redesign';
+}
+
+function applyUiVersion(uiVersion, options = {}) {
+  const { redirect = false } = options;
+  const normalized = uiVersion === 'redesign' ? 'redesign' : 'legacy';
+
+  document.body.setAttribute('data-ui-version', normalized);
+  syncUiVersionRadios(normalized);
+
   const legacyRoot = document.getElementById('legacy-main-content');
-
-  // 새 UI가 아직 테스트용이면 강제로 legacy 사용
-  const safeUiVersion = uiVersion === 'redesign' ? 'legacy' : uiVersion;
-
-  body.setAttribute('data-ui-version', safeUiVersion);
-
-  if (redesignRoot) {
-    if (safeUiVersion === 'redesign') {
-      redesignRoot.classList.remove('hidden');
-      redesignRoot.style.display = '';
-    } else {
-      redesignRoot.classList.add('hidden');
-      redesignRoot.style.display = 'none';
-    }
-  }
-
   if (legacyRoot) {
-    if (safeUiVersion === 'legacy') {
+    if (normalized === 'legacy') {
       legacyRoot.classList.remove('hidden');
       legacyRoot.style.display = '';
     } else {
@@ -933,23 +931,33 @@ function applyUiVersion(uiVersion) {
     }
   }
 
-  const uiLegacyRadio = document.getElementById('uiLegacyRadio');
-  const uiRedesignRadio = document.getElementById('uiRedesignRadio');
+  if (!redirect) return;
 
-  if (uiLegacyRadio) uiLegacyRadio.checked = safeUiVersion === 'legacy';
-  if (uiRedesignRadio) uiRedesignRadio.checked = safeUiVersion === 'redesign';
+  const target = getUiTargetPath(normalized);
+  const currentPath = window.location.pathname;
+
+  const isOnRedesignPage = currentPath.endsWith('/redesign.html');
+  const shouldMoveToRedesign = normalized === 'redesign' && !isOnRedesignPage;
+  const shouldMoveToLegacy = normalized === 'legacy' && isOnRedesignPage;
+
+  if (shouldMoveToRedesign || shouldMoveToLegacy) {
+    window.location.href = target;
+  }
 }
 
 function setUiVersion(uiVersion, options = {}) {
   const { silent = false } = options;
+  const normalized = uiVersion === 'redesign' ? 'redesign' : 'legacy';
+
   const settings = getAnimeSettings();
-  settings.uiVersion = uiVersion;
+  settings.uiVersion = normalized;
   saveAnimeSettings(settings);
-  applyUiVersion(uiVersion);
 
   if (!silent) {
-    showToast(uiVersion === 'legacy' ? '기존 UI로 변경되었습니다.' : '새 UI로 변경되었습니다.');
+    showToast(normalized === 'legacy' ? '기존 UI로 변경되었습니다.' : '새 UI로 변경되었습니다.');
   }
+
+  applyUiVersion(normalized, { redirect: true });
 }
 const AI_REVIEW_LIMIT = 5;
 const AI_RECOMMEND_LIMIT = 3;
@@ -1472,7 +1480,14 @@ async function saveUserMetaToDB() {
 // ==========================================
 document.addEventListener('DOMContentLoaded', async () => {
   const settings = getAnimeSettings();
-  applyUiVersion(settings.uiVersion || 'legacy');
+  const preferredUi = settings.uiVersion || 'legacy';
+
+  if (preferredUi === 'redesign') {
+    applyUiVersion('redesign', { redirect: true });
+    return;
+  }
+
+  applyUiVersion('legacy', { redirect: false });
   await initializeApp();
 });
 
@@ -3349,11 +3364,6 @@ document.addEventListener('keydown', (e) => {
       closeShareModal();
       closeSettingsModal();
     }
-});
-// 페이지 최초 로딩 시 UI 적용
-document.addEventListener('DOMContentLoaded', () => {
-  const settings = getAnimeSettings();
-  applyUiVersion(settings.uiVersion);
 });
 </script>
 </body>
