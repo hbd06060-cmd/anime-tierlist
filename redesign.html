@@ -442,6 +442,7 @@ body {
   color: var(--muted);
   font-size: 14px;
   line-height: 1.7;
+  min-height: 72px;
 }
 
 .quick-insight-pills,
@@ -504,6 +505,10 @@ body {
   border-radius: 20px;
   border: 1px solid rgba(255,255,255,0.06);
   background: rgba(255,255,255,0.03);
+  min-height: 266px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .quick-radar-canvas {
@@ -548,6 +553,8 @@ body {
   border: 1px solid rgba(255,255,255,0.06);
   background: rgba(255,255,255,0.035);
   padding: 16px;
+  display: flex;
+  flex-direction: column;
 }
 
 .insight-chart-head {
@@ -653,7 +660,10 @@ body {
   height: 240px;
   display: block;
 }
-
+.radar-score-hint {
+  font-size: 11px;
+  color: #9fb0d9;
+}
 @media (max-width: 1100px) {
   .insight-map {
     grid-template-columns: 1fr;
@@ -2683,21 +2693,63 @@ function drawRadarChart(canvasId, scores) {
     ctx.arc(p.x, p.y, 3.8, 0, Math.PI * 2);
     ctx.fillStyle = '#f5f7ff';
     ctx.fill();
+
     ctx.beginPath();
     ctx.arc(p.x, p.y, 2.2, 0, Math.PI * 2);
     ctx.fillStyle = '#8b5cf6';
     ctx.fill();
   });
 
-  ctx.fillStyle = '#c7d2fe';
-  ctx.font = '700 12px SUIT, system-ui, sans-serif';
+  scores.forEach((score, index) => {
+  const angle = startAngle + (Math.PI * 2 * index / scores.length);
+  const isRightSide = Math.cos(angle) > 0.28;
+  const isLeftSide = Math.cos(angle) < -0.28;
+  const isTopSide = Math.sin(angle) < -0.55;
+  const isBottomSide = Math.sin(angle) > 0.55;
+  const isGenreChart = canvasId === 'genreInsightRadar';
+
+  let blockRatio = isGenreChart ? 1.38 : 1.34;
+
+if (isRightSide || isLeftSide) {
+  blockRatio += 0.03;
+}
+
+if (isTopSide) {
+  blockRatio += 0.02;
+}
+
+if (isBottomSide) {
+  blockRatio += 0.01;
+}
+
+  const blockPoint = getPoint(index, blockRatio);
+
+  let blockOffsetX = 0;
+  let blockOffsetY = 0;
+
+  if (isRightSide) blockOffsetX += 8;
+  if (isLeftSide) blockOffsetX -= 8;
+  if (isTopSide) blockOffsetY -= 2;
+  if (isBottomSide) blockOffsetY -= 2;
+
+  if (isGenreChart && index === 0) {
+    blockOffsetY += 10;
+  }
+
+  const centerX = blockPoint.x + blockOffsetX;
+  const centerY = blockPoint.y + blockOffsetY;
+
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
-  scores.forEach((score, index) => {
-    const p = getPoint(index, 1.18);
-    ctx.fillText(score.label, p.x, p.y);
-  });
+  ctx.fillStyle = '#c7d2fe';
+  ctx.font = '700 12px SUIT, system-ui, sans-serif';
+  ctx.fillText(String(score.label || ''), centerX, centerY - 8);
+
+  ctx.fillStyle = 'rgba(255,255,255,0.80)';
+  ctx.font = '700 11px SUIT, system-ui, sans-serif';
+  ctx.fillText(String(score.value), centerX, centerY + 10);
+});
 }
 
 function getMissingMetadataCount() {
