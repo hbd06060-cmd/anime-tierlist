@@ -990,40 +990,41 @@ body {
   상단에서는 지금의 취향과 계정 상태를 빠르게 확인하고, 아래에서는 티어별 작품 흐름을 한눈에 관리할 수 있습니다.
 </div>
 
-      <div class="profile-box">
-  <div class="label">Taste Profile</div>
-  <div class="value" id="taste-profile-title">아직 분석되지 않음</div>
-  <p id="taste-profile-desc">티어리스트를 채우고 분석해보세요.</p>
-</div>
-
-        <div class="profile-box">
-  <div class="label">Quick Insight</div>
-  <p id="quick-insight-text" class="quick-insight-note">
-    아직 취향 분석이 없습니다. 작품을 더 채운 뒤 전체 취향 분석을 실행하면 핵심 선호 포인트를 이 영역에서 바로 확인할 수 있습니다.
-  </p>
-
-  <div class="quick-insight-pills">
-    <div class="quick-pill">
-      <span class="label">핵심 취향</span>
-      <span class="value" id="quick-insight-focus">분석 대기</span>
-    </div>
-    <div class="quick-pill">
-      <span class="label">상위 티어</span>
-      <span class="value" id="quick-insight-top-tier">SS 0 · S 0</span>
-    </div>
-    <div class="quick-pill">
-      <span class="label">추천 상태</span>
-      <span class="value" id="quick-insight-rec">추천 0작품</span>
-    </div>
+<div class="profile-card">
+  <div class="profile-box">
+    <div class="label">Taste Profile</div>
+    <div class="value" id="taste-profile-title">아직 분석되지 않음</div>
+    <p id="taste-profile-desc">티어리스트를 채우고 분석해보세요.</p>
   </div>
 
-  <div style="margin-top:14px;">
-    <button id="tasteProfileBtn" onclick="generateTasteProfile(this)" class="cta" style="padding:12px 16px; font-size:13px;">
-      전체 취향 분석
-    </button>
-  </div>
-</div>
+  <div class="profile-box">
+    <div class="label">Quick Insight</div>
+    <p id="quick-insight-text" class="quick-insight-note">
+      아직 취향 분석이 없습니다. 작품을 더 채운 뒤 전체 취향 분석을 실행하면 핵심 선호 포인트를 이 영역에서 바로 확인할 수 있습니다.
+    </p>
+
+    <div class="quick-insight-pills">
+      <div class="quick-pill">
+        <span class="label">핵심 취향</span>
+        <span class="value" id="quick-insight-focus">분석 대기</span>
       </div>
+      <div class="quick-pill">
+        <span class="label">상위 티어</span>
+        <span class="value" id="quick-insight-top-tier">SS 0 · S 0</span>
+      </div>
+      <div class="quick-pill">
+        <span class="label">추천 상태</span>
+        <span class="value" id="quick-insight-rec">추천 0작품</span>
+      </div>
+    </div>
+
+    <div style="margin-top:14px;">
+      <button id="tasteProfileBtn" onclick="generateTasteProfile(this)" class="cta" style="padding:12px 16px; font-size:13px;">
+        전체 취향 분석
+      </button>
+    </div>
+  </div>
+</div>
     </div>
 
     <aside class="panel hero-side">
